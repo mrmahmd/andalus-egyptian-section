@@ -3,9 +3,28 @@
 import Link from "next/link";
 import { useState } from "react";
 
+const gradeOptions = Array.from({ length: 10 }, (_, index) => `Grade ${index + 1}`);
+
+const subjectOptions = ["Arabic", "Islamic", "English OL", "English AL", "Math", "Science", "Social", "ICT"];
+
 export default function TeacherLoginPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const [mode, setMode] = useState<"signin" | "create">("signin");
+  const [grade, setGrade] = useState(gradeOptions[0]);
+  const [classType, setClassType] = useState("A");
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+
+  const addClass = () => {
+    const className = `${grade} · ${classType}`;
+    setSelectedClasses((current) => current.includes(className) ? current : [...current, className]);
+  };
+
+  const toggleSubject = (subject: string) => {
+    setSelectedSubjects((current) =>
+      current.includes(subject) ? current.filter((item) => item !== subject) : [...current, subject],
+    );
+  };
 
   return (
     <main className="teacher-auth-page">
@@ -36,7 +55,7 @@ export default function TeacherLoginPage() {
           <span><strong>ALANDALUS</strong><small>Teacher Workspace</small></span>
         </div>
 
-        <div className="teacher-auth-card">
+        <div className={`teacher-auth-card ${mode === "create" ? "create-mode" : ""}`}>
           <div className="teacher-auth-tabs" role="tablist" aria-label="Teacher account access">
             <button type="button" role="tab" aria-selected={mode === "signin"} className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign In</button>
             <button type="button" role="tab" aria-selected={mode === "create"} className={mode === "create" ? "active" : ""} onClick={() => setMode("create")}>Create New Account</button>
@@ -45,7 +64,7 @@ export default function TeacherLoginPage() {
           <div className="teacher-auth-heading">
             <span>{mode === "signin" ? "Welcome back" : "Join the workspace"}</span>
             <h2>{mode === "signin" ? "Sign in to your account" : "Create your teacher account"}</h2>
-            <p>{mode === "signin" ? "Enter your details to continue to the teacher dashboard." : "Start with your account details. Classes and subjects will be added later."}</p>
+            <p>{mode === "signin" ? "Enter your details to continue to the teacher dashboard." : "Add your account details, teaching classes and subjects."}</p>
           </div>
 
           <form onSubmit={(event) => event.preventDefault()}>
@@ -54,6 +73,34 @@ export default function TeacherLoginPage() {
             )}
             <label>Username<input type="text" name="username" placeholder="Enter your username" autoComplete="username" /></label>
             <label>Password<input type="password" name="password" placeholder="Enter your password" autoComplete={mode === "signin" ? "current-password" : "new-password"} /></label>
+
+            {mode === "create" && (
+              <section className="teacher-auth-assignments" aria-labelledby="teaching-assignments-title">
+                <div className="teacher-auth-assignment-heading">
+                  <span>TA</span>
+                  <div><strong id="teaching-assignments-title">Teaching Assignments</strong><small>Select every class and subject you teach.</small></div>
+                </div>
+
+                <div className="teacher-auth-class-picker">
+                  <label>Grade<select value={grade} onChange={(event) => setGrade(event.target.value)}>{gradeOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+                  <label>Class<select value={classType} onChange={(event) => setClassType(event.target.value)}><option value="A">Class A</option><option value="B">Class B</option></select></label>
+                  <button type="button" onClick={addClass}>＋ Add Class</button>
+                </div>
+
+                <div className="teacher-auth-selected-classes" aria-live="polite">
+                  {selectedClasses.length === 0 ? <small>No classes added yet.</small> : selectedClasses.map((className) => (
+                    <button key={className} type="button" onClick={() => setSelectedClasses((current) => current.filter((item) => item !== className))}>{className}<span>×</span></button>
+                  ))}
+                </div>
+
+                <fieldset className="teacher-auth-subjects">
+                  <legend>Subjects</legend>
+                  <div>{subjectOptions.map((subject) => (
+                    <button key={subject} type="button" aria-pressed={selectedSubjects.includes(subject)} onClick={() => toggleSubject(subject)}><span>{subject.slice(0, 2).toUpperCase()}</span>{subject}<i>{selectedSubjects.includes(subject) ? "✓" : "+"}</i></button>
+                  ))}</div>
+                </fieldset>
+              </section>
+            )}
 
             {mode === "signin" && (
               <div className="teacher-auth-options"><label><input type="checkbox" />Remember me</label><button type="button">Forgot password?</button></div>

@@ -33,7 +33,7 @@ test("renders one merged day cell for each school day", async () => {
   assert.match(html, /Quick Check/);
 });
 
-test("renders teacher sign in and account creation without assignments", async () => {
+test("renders teacher sign in and account creation entry point", async () => {
   const html = await readFile(
     new URL("teachers/login/index.html", outputRoot),
     "utf8",
@@ -42,5 +42,18 @@ test("renders teacher sign in and account creation without assignments", async (
   assert.match(html, /Sign In/);
   assert.match(html, /Create New Account/);
   assert.match(html, /Username/);
-  assert.doesNotMatch(html, /Choose your subjects and classes/);
+});
+
+test("configures Grades 1 to 10, classes A and B, and teacher subjects", async () => {
+  const source = await readFile(
+    new URL("../app/teachers/login/page.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /Array\.from\(\{ length: 10 \}/);
+  assert.match(source, /Class A/);
+  assert.match(source, /Class B/);
+  for (const subject of ["Arabic", "Islamic", "English OL", "English AL", "Math", "Science", "Social", "ICT"]) {
+    assert.match(source, new RegExp(subject));
+  }
 });

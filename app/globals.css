@@ -582,6 +582,30 @@ button, select, input { font: inherit; }
 .teacher-auth-card form > label { display: grid; gap: 8px; color: #283751; font-size: 12px; font-weight: 800; }
 .teacher-auth-card input[type="text"], .teacher-auth-card input[type="password"] { width: 100%; height: 50px; padding: 0 14px; border: 1px solid #d6dee8; border-radius: 10px; outline: 0; background: #fbfcfe; color: #12213d; font: inherit; font-size: 13px; }
 .teacher-auth-card input:focus { border-color: #168daa; box-shadow: 0 0 0 3px rgba(22,141,170,.12); background: white; }
+.teacher-auth-card.create-mode { width: min(680px, 100%); }
+.teacher-auth-assignments { margin-top: 3px; overflow: hidden; border: 1px solid #dbe4ed; border-radius: 15px; background: #f8fafc; }
+.teacher-auth-assignment-heading { min-height: 67px; padding: 13px 15px; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid #e0e7ef; background: linear-gradient(105deg, #f1f8fb, #faf4f8); }
+.teacher-auth-assignment-heading > span { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 9px; display: grid; place-items: center; background: linear-gradient(135deg, #0d3b70, #b31b78); color: white; font-size: 9px; font-weight: 900; }
+.teacher-auth-assignment-heading > div { display: grid; gap: 3px; }
+.teacher-auth-assignment-heading strong { color: #192844; font-size: 12px; }
+.teacher-auth-assignment-heading small { color: #7d899c; font-size: 10px; }
+.teacher-auth-class-picker { padding: 15px; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(120px, .75fr) auto; align-items: end; gap: 10px; }
+.teacher-auth-class-picker label { display: grid; gap: 7px; color: #34425a; font-size: 10px; font-weight: 800; }
+.teacher-auth-class-picker select { width: 100%; height: 42px; padding: 0 11px; border: 1px solid #d6dfe9; border-radius: 9px; outline: 0; background: white; color: #15233d; font: inherit; font-size: 11px; }
+.teacher-auth-class-picker select:focus { border-color: #168daa; box-shadow: 0 0 0 3px rgba(22,141,170,.1); }
+.teacher-auth-class-picker > button { height: 42px; padding: 0 13px; border: 0; border-radius: 9px; background: #0c356a; color: white; font: inherit; font-size: 10px; font-weight: 900; cursor: pointer; white-space: nowrap; }
+.teacher-auth-selected-classes { min-height: 45px; padding: 0 15px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.teacher-auth-selected-classes > small { color: #8a96a8; font-size: 10px; }
+.teacher-auth-selected-classes > button { min-height: 31px; padding: 0 7px 0 10px; border: 1px solid #c9d9e4; border-radius: 8px; display: flex; align-items: center; gap: 8px; background: #eef7fa; color: #174e67; font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; }
+.teacher-auth-selected-classes > button span { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: white; color: #8b3b67; font-size: 13px; }
+.teacher-auth-subjects { margin: 0; padding: 13px 15px 16px; border: 0; border-top: 1px solid #e1e7ee; }
+.teacher-auth-subjects legend { padding: 0 6px; color: #34425a; font-size: 10px; font-weight: 900; }
+.teacher-auth-subjects > div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.teacher-auth-subjects button { min-height: 43px; padding: 7px 8px; border: 1px solid #dae2eb; border-radius: 9px; display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 6px; background: white; color: #34425a; font: inherit; font-size: 9px; font-weight: 800; text-align: left; cursor: pointer; }
+.teacher-auth-subjects button > span { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: #edf2f7; color: #244b75; font-size: 7px; }
+.teacher-auth-subjects button > i { width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; background: #eef2f6; color: #788599; font-size: 8px; font-style: normal; }
+.teacher-auth-subjects button[aria-pressed="true"] { border-color: #168daa; background: #eefafd; color: #0d657b; box-shadow: inset 0 0 0 1px #168daa; }
+.teacher-auth-subjects button[aria-pressed="true"] > i { background: #168daa; color: white; }
 .teacher-auth-options { display: flex; align-items: center; justify-content: space-between; gap: 15px; color: #738096; font-size: 11px; }
 .teacher-auth-options label { display: flex; align-items: center; gap: 7px; }
 .teacher-auth-options input { accent-color: #0c356a; }
@@ -614,6 +638,17 @@ button, select, input { font: inherit; }
   .teacher-auth-mobile-brand strong { font-size: 12px; letter-spacing: .1em; }
   .teacher-auth-mobile-brand small { color: #b8c8dc; font-size: 9px; }
   .teacher-auth-card { margin: 0 auto; padding: 27px 22px; border-radius: 18px; }
+  .teacher-auth-class-picker { grid-template-columns: 1fr 1fr; }
+  .teacher-auth-class-picker > button { grid-column: 1 / -1; }
+  .teacher-auth-subjects > div { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 420px) {
+  .teacher-auth-tabs { grid-template-columns: .75fr 1.25fr; }
+  .teacher-auth-tabs button { font-size: 10px; }
+  .teacher-auth-class-picker { grid-template-columns: 1fr; }
+  .teacher-auth-class-picker > button { grid-column: auto; }
+  .teacher-auth-subjects > div { grid-template-columns: 1fr; }
 }
 
 @media print {
