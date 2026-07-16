@@ -10,6 +10,7 @@ const subjectOptions = ["Arabic", "Islamic", "English OL", "English AL", "Math",
 export default function TeacherLoginPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const [mode, setMode] = useState<"signin" | "create">("signin");
+  const [accountType, setAccountType] = useState<"teacher" | "admin">("teacher");
   const [grade, setGrade] = useState(gradeOptions[0]);
   const [classType, setClassType] = useState("A");
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
@@ -71,10 +72,19 @@ export default function TeacherLoginPage() {
             {mode === "create" && (
               <label>Full Name<input type="text" name="fullName" placeholder="e.g. Mohamed Farid" autoComplete="name" /></label>
             )}
+            {mode === "create" && (
+              <fieldset className="teacher-auth-account-type">
+                <legend>Account Type</legend>
+                <div>
+                  <button type="button" aria-pressed={accountType === "teacher"} onClick={() => setAccountType("teacher")}><span>TC</span><b>Teacher</b><small>Create and publish weekly plans.</small><i>{accountType === "teacher" ? "✓" : ""}</i></button>
+                  <button type="button" aria-pressed={accountType === "admin"} onClick={() => setAccountType("admin")}><span>AD</span><b>Admin</b><small>Manage accounts and school plans.</small><i>{accountType === "admin" ? "✓" : ""}</i></button>
+                </div>
+              </fieldset>
+            )}
             <label>Username<input type="text" name="username" placeholder="Enter your username" autoComplete="username" /></label>
             <label>Password<input type="password" name="password" placeholder="Enter your password" autoComplete={mode === "signin" ? "current-password" : "new-password"} /></label>
 
-            {mode === "create" && (
+            {mode === "create" && accountType === "teacher" && (
               <section className="teacher-auth-assignments" aria-labelledby="teaching-assignments-title">
                 <div className="teacher-auth-assignment-heading">
                   <span>TA</span>
@@ -100,6 +110,10 @@ export default function TeacherLoginPage() {
                   ))}</div>
                 </fieldset>
               </section>
+            )}
+
+            {mode === "create" && accountType === "admin" && (
+              <p className="teacher-auth-admin-note"><span>AD</span><strong>Administrator access</strong><small>This account type requires school management approval before activation.</small></p>
             )}
 
             {mode === "signin" && (
