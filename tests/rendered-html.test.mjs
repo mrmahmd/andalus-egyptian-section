@@ -27,4 +27,20 @@ test("renders one merged day cell for each school day", async () => {
   assert.match(html, /<td[^>]*rowspan="2"[^>]*>Tuesday<\/td>/i);
   assert.match(html, /<td[^>]*rowspan="2"[^>]*>Wednesday<\/td>/i);
   assert.match(html, /<td[^>]*rowspan="1"[^>]*>Thursday<\/td>/i);
+  assert.match(html, /QUIZZES &amp; ASSESSMENTS/);
+  assert.match(html, /class="quiz-table"/);
+  assert.match(html, /Spelling Quiz/);
+  assert.match(html, /Quick Check/);
+});
+
+test("renders teacher sign in and account creation without assignments", async () => {
+  const html = await readFile(
+    new URL("teachers/login/index.html", outputRoot),
+    "utf8",
+  );
+
+  assert.match(html, /Sign In/);
+  assert.match(html, /Create New Account/);
+  assert.match(html, /Username/);
+  assert.doesNotMatch(html, /Choose your subjects and classes/);
 });

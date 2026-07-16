@@ -40,6 +40,23 @@ const days = [
   },
 ];
 
+const quizzes = [
+  {
+    day: "Tuesday",
+    course: "English",
+    assessment: "Spelling Quiz",
+    scope: "animal · habitat · butterfly · grow · change",
+    notes: "Revise the spelling list on Classera",
+  },
+  {
+    day: "Wednesday",
+    course: "Mathematics",
+    assessment: "Quick Check",
+    scope: "Multiplication facts ×2 and ×5",
+    notes: "10-minute classroom assessment",
+  },
+];
+
 export default function WeeklyPlanPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -98,6 +115,28 @@ export default function WeeklyPlanPage() {
             </tbody>
           </table>
         </div>
+        <section className="quiz-schedule" aria-labelledby="quiz-schedule-title">
+          <div className="quiz-schedule-heading">
+            <div><span>QA</span><div><small>Weekly assessment schedule</small><h3 id="quiz-schedule-title">QUIZZES &amp; ASSESSMENTS</h3></div></div>
+            <p>{quizzes.length} scheduled this week</p>
+          </div>
+          <div className="table-wrap quiz-table-wrap">
+            <table className="quiz-table">
+              <thead><tr><th>Day</th><th>Course</th><th>Quiz / Assessment</th><th>Study Scope</th><th>Notes</th></tr></thead>
+              <tbody>
+                {quizzes.map((quiz) => (
+                  <tr key={`${quiz.day}-${quiz.course}`}>
+                    <td className="quiz-day-cell">{quiz.day}</td>
+                    <td className="course-cell">{quiz.course}</td>
+                    <td><strong>{quiz.assessment}</strong></td>
+                    <td>{quiz.scope}</td>
+                    <td>{quiz.notes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
         <div className="important-notes"><strong>Important Notes</strong><p>English spelling: animal · habitat · butterfly · grow · change &nbsp; | &nbsp; Mathematics quiz on Tuesday.</p></div>
       </section>
     </main>

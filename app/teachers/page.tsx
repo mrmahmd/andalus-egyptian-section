@@ -17,28 +17,11 @@ const plans = [
   { day: "Tuesday", className: "Grade 4 · B", course: "Social Studies", status: "Published", tone: "green" },
 ];
 
-const subjects = ["English", "Mathematics", "Science", "Arabic", "Social Studies", "ICT", "Religion"];
-const classes = ["Grade 4 · A", "Grade 4 · B", "Grade 5 · A", "Grade 5 · B", "Grade 6 · A"];
-
 export default function TeachersDashboardPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const [activeNav, setActiveNav] = useState("Overview");
   const [editorOpen, setEditorOpen] = useState(false);
-  const [setupOpen, setSetupOpen] = useState(false);
-  const [selectedSubjects, setSelectedSubjects] = useState(["English", "Social Studies"]);
-  const [selectedClasses, setSelectedClasses] = useState(["Grade 4 · A", "Grade 4 · B"]);
-
-  const toggleSubject = (subject: string) => {
-    setSelectedSubjects((current) =>
-      current.includes(subject) ? current.filter((item) => item !== subject) : [...current, subject],
-    );
-  };
-
-  const toggleClass = (className: string) => {
-    setSelectedClasses((current) =>
-      current.includes(className) ? current.filter((item) => item !== className) : [...current, className],
-    );
-  };
+  const [quizEnabled, setQuizEnabled] = useState(true);
 
   return (
     <main className="teacher-portal">
@@ -59,7 +42,7 @@ export default function TeachersDashboardPage() {
             </button>
           ))}
           <p>Account</p>
-          <button onClick={() => setSetupOpen(true)}><span className="teacher-nav-icon">PR</span>Profile & assignments</button>
+          <button><span className="teacher-nav-icon">PR</span>Profile & assignments</button>
           <button><span className="teacher-nav-icon">ST</span>Settings</button>
         </nav>
 
@@ -91,7 +74,6 @@ export default function TeachersDashboardPage() {
           <div className="teacher-page-heading">
             <div><p className="teacher-kicker">Thursday, 16 July</p><h1>Good evening, Mr. Mohamed.</h1><span>Here’s what is happening with your weekly plans.</span></div>
             <div className="teacher-heading-actions">
-              <button className="teacher-secondary-button" onClick={() => setSetupOpen(true)}>Preview first-time setup</button>
               <button className="teacher-primary-button" onClick={() => setEditorOpen(true)}><span>＋</span> Create weekly entry</button>
             </div>
           </div>
@@ -138,7 +120,7 @@ export default function TeachersDashboardPage() {
               </section>
 
               <section className="teacher-card teacher-assignments-card">
-                <div className="teacher-card-heading"><div><h2>My assignments</h2><p>Saved to your teacher profile</p></div><button onClick={() => setSetupOpen(true)}>Manage</button></div>
+                <div className="teacher-card-heading"><div><h2>My assignments</h2><p>Saved to your teacher profile</p></div><button>Manage</button></div>
                 <div className="assignment-group"><small>Subjects</small><span><b>EN</b>English</span><span><b>SS</b>Social Studies</span></div>
                 <div className="assignment-group"><small>Classes</small><div><span>Grade 4 · A</span><span>Grade 4 · B</span></div></div>
               </section>
@@ -161,23 +143,26 @@ export default function TeachersDashboardPage() {
               <label>Classwork<textarea rows={3} defaultValue="Unit 2: Amazing Animals — pages 18–19" /></label>
               <label>Homework<textarea rows={3} placeholder="Add homework or write No homework" /></label>
               <label>Classera notes<textarea rows={2} placeholder="Quiz, materials, upload instructions or reminders" /></label>
+              <section className={`teacher-quiz-editor ${quizEnabled ? "active" : ""}`}>
+                <div className="teacher-quiz-editor-heading">
+                  <div><span>QA</span><div><strong>Add a quiz or assessment</strong><small>Published in a separate table under the weekly plan.</small></div></div>
+                  <button className="teacher-switch" type="button" aria-pressed={quizEnabled} onClick={() => setQuizEnabled((current) => !current)}><i /></button>
+                </div>
+                {quizEnabled && (
+                  <div className="teacher-quiz-fields">
+                    <div className="teacher-form-row">
+                      <label>Assessment type<select defaultValue="Quiz"><option>Quiz</option><option>Quick Check</option><option>Oral Assessment</option><option>Project</option></select></label>
+                      <label>Quiz day<select defaultValue="Tuesday"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option></select></label>
+                      <label>Course<input defaultValue="English" /></label>
+                    </div>
+                    <label>Quiz title<input defaultValue="Spelling Quiz" /></label>
+                    <label>Study scope<textarea rows={2} defaultValue="animal · habitat · butterfly · grow · change" /></label>
+                    <label>Notes for families<textarea rows={2} placeholder="Revision instructions, duration or materials" /></label>
+                  </div>
+                )}
+              </section>
               <div className="teacher-editor-footer"><span>Changes in this prototype are not saved.</span><div><button type="button" className="teacher-secondary-button" onClick={() => setEditorOpen(false)}>Save as draft</button><button className="teacher-primary-button" type="submit">Publish entry</button></div></div>
             </form>
-          </section>
-        </div>
-      )}
-
-      {setupOpen && (
-        <div className="teacher-setup-layer">
-          <div className="teacher-setup-top"><div className="teacher-brand"><img src={`${basePath}/school-logo.jpeg`} alt="" /><div><strong>ALANDALUS</strong><span>Teacher account setup</span></div></div><button onClick={() => setSetupOpen(false)}>Back to dashboard</button></div>
-          <section className="teacher-setup-card">
-            <div className="teacher-setup-progress"><span><i /></span><small>Step 2 of 3</small></div>
-            <p className="teacher-kicker">Personalise your workspace</p>
-            <h1>Choose your subjects and classes.</h1>
-            <p className="teacher-setup-intro">You’ll only see weekly plans related to these teaching assignments. An administrator can approve or change them later.</p>
-            <div className="teacher-setup-section"><div><strong>01</strong><span><h2>Your subjects</h2><p>Select every subject you currently teach.</p></span></div><div className="teacher-choice-grid subjects">{subjects.map((subject) => <button key={subject} className={selectedSubjects.includes(subject) ? "selected" : ""} onClick={() => toggleSubject(subject)}><span>{subject.slice(0, 2).toUpperCase()}</span>{subject}<i>{selectedSubjects.includes(subject) ? "✓" : "+"}</i></button>)}</div></div>
-            <div className="teacher-setup-section"><div><strong>02</strong><span><h2>Your classes</h2><p>Select all classes assigned to you.</p></span></div><div className="teacher-choice-grid classes">{classes.map((className) => <button key={className} className={selectedClasses.includes(className) ? "selected" : ""} onClick={() => toggleClass(className)}><span>{className.split(" · ")[0]}</span>{className.split(" · ")[1]}<i>{selectedClasses.includes(className) ? "✓" : "+"}</i></button>)}</div></div>
-            <div className="teacher-setup-footer"><span><b>{selectedSubjects.length}</b> subjects and <b>{selectedClasses.length}</b> classes selected</span><div><button className="teacher-secondary-button" onClick={() => setSetupOpen(false)}>Save for later</button><button className="teacher-primary-button" onClick={() => setSetupOpen(false)}>Continue to dashboard <span>→</span></button></div></div>
           </section>
         </div>
       )}
