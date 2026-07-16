@@ -42,6 +42,7 @@ test("renders teacher sign in and account creation entry point", async () => {
   assert.match(html, /Sign In/);
   assert.match(html, /Create New Account/);
   assert.match(html, /Username/);
+  assert.match(html, /Plus\+Jakarta\+Sans/);
 });
 
 test("configures Grades 1 to 10, classes A and B, and teacher subjects", async () => {
