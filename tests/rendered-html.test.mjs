@@ -75,3 +75,17 @@ test("uses the high-readability teacher typography scale", async () => {
   assert.match(css, /\.teacher-auth-assignment-row select \{[^}]*font-size: 14px/);
   assert.match(css, /\.teacher-plan-table \{[^}]*font-size: 13px/);
 });
+
+test("renders the administrator weekly-plan control center", async () => {
+  const html = await readFile(
+    new URL("admin/index.html", outputRoot),
+    "utf8",
+  );
+
+  assert.match(html, /Admin Control Center/);
+  assert.match(html, /All Weekly Plans/);
+  assert.match(html, /Weekly plan directory/);
+  assert.match(html, /Full administrator access/);
+  assert.match(html, /class="edit">Edit/);
+  assert.match(html, /class="delete">Delete/);
+});

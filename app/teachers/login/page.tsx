@@ -137,7 +137,7 @@ export default function TeacherLoginPage() {
               <div className="teacher-auth-options"><label><input type="checkbox" />Remember me</label><button type="button">Forgot password?</button></div>
             )}
 
-            <Link className="teacher-auth-submit" href="/teachers">
+            <Link className="teacher-auth-submit" href={mode === "create" && accountType === "admin" ? "/admin" : "/teachers"}>
               {mode === "signin" ? "Sign In" : "Create Account"}<span>→</span>
             </Link>
           </form>
