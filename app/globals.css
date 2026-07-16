@@ -615,6 +615,21 @@ button, select, input { font: inherit; }
 .teacher-auth-assignment-heading > div { display: grid; gap: 3px; }
 .teacher-auth-assignment-heading strong { color: #192844; font-size: 14px; }
 .teacher-auth-assignment-heading small { color: #6f7d92; font-size: 11px; }
+.teacher-auth-assignment-builder { padding: 16px; display: grid; grid-template-columns: minmax(150px, 1.35fr) minmax(115px, 1fr) minmax(105px, .85fr) auto; align-items: end; gap: 11px; background: white; }
+.teacher-auth-assignment-builder label { min-width: 0; display: grid; gap: 7px; color: #34425a; font-size: 13px; font-weight: 700; }
+.teacher-auth-assignment-builder select { width: 100%; min-width: 0; height: 48px; padding: 0 11px; border: 1px solid #cdd8e3; border-radius: 9px; outline: 0; background: #fbfcfe; color: #17263f; font: inherit; font-size: 14px; }
+.teacher-auth-assignment-builder select:focus { border-color: #168daa; box-shadow: 0 0 0 3px rgba(22,141,170,.1); background: white; }
+.teacher-auth-assignment-builder > button { min-height: 48px; padding: 0 15px; border: 0; border-radius: 9px; background: #0c356a; color: white; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.teacher-auth-assignment-error { margin: 0; padding: 10px 16px; background: #fff3f6; color: #a21b59; font-size: 12px; font-weight: 700; }
+.teacher-auth-assignment-summary { padding: 0 16px 16px; display: grid; gap: 9px; background: white; }
+.teacher-auth-assignment-summary > p, .teacher-auth-assignment-summary article { margin: 0; padding: 12px; border: 1px solid #dce4ed; border-radius: 10px; display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; background: #f8fafc; }
+.teacher-auth-assignment-summary > p > span, .teacher-auth-assignment-summary article > span { width: 34px; height: 34px; grid-row: 1 / 3; border-radius: 9px; display: grid; place-items: center; background: #e8f1f7; color: #245078; font-size: 10px; font-weight: 800; }
+.teacher-auth-assignment-summary > p strong { color: #3b4960; font-size: 13px; }
+.teacher-auth-assignment-summary > p small { grid-column: 2 / 4; color: #78869a; font-size: 11px; }
+.teacher-auth-assignment-summary article > div { display: grid; gap: 3px; }
+.teacher-auth-assignment-summary article strong { color: #172b4b; font-size: 14px; }
+.teacher-auth-assignment-summary article small { color: #65758c; font-size: 12px; }
+.teacher-auth-assignment-summary article > button { width: 34px; height: 34px; border: 1px solid #eadbe4; border-radius: 8px; background: #fff7fb; color: #a81771; font: inherit; font-size: 18px; cursor: pointer; }
 .teacher-auth-assignment-list { padding: 14px; display: grid; gap: 10px; }
 .teacher-auth-assignment-row { padding: 11px; border: 1px solid #dce4ed; border-radius: 11px; display: grid; grid-template-columns: 30px minmax(135px, 1.35fr) minmax(105px, 1fr) minmax(95px, .8fr) 32px; align-items: end; gap: 9px; background: white; }
 .teacher-auth-assignment-row > span { width: 30px; height: 30px; align-self: center; border-radius: 8px; display: grid; place-items: center; background: #edf3f8; color: #245078; font-size: 9px; font-weight: 800; }
@@ -678,6 +693,9 @@ button, select, input { font: inherit; }
   .teacher-auth-mobile-brand strong { font-size: 14px; letter-spacing: .1em; }
   .teacher-auth-mobile-brand small { color: #c1d0e1; font-size: 11px; }
   .teacher-auth-card { margin: 0 auto; padding: 27px 22px; border-radius: 18px; }
+  .teacher-auth-assignment-builder { grid-template-columns: 1fr 1fr; }
+  .teacher-auth-assignment-builder label:first-child { grid-column: 1 / -1; }
+  .teacher-auth-assignment-builder > button { grid-column: 1 / -1; }
   .teacher-auth-assignment-row { grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr) 32px; align-items: end; }
   .teacher-auth-assignment-row > span { grid-column: 1; grid-row: 1 / 3; align-self: center; }
   .teacher-auth-assignment-row label:nth-of-type(1) { grid-column: 2 / 4; }
@@ -696,6 +714,8 @@ button, select, input { font: inherit; }
   .teacher-auth-class-picker > button { grid-column: auto; }
   .teacher-auth-subjects > div { grid-template-columns: 1fr; }
   .teacher-auth-account-type > div { grid-template-columns: 1fr; }
+  .teacher-auth-assignment-builder { grid-template-columns: 1fr; }
+  .teacher-auth-assignment-builder label:first-child, .teacher-auth-assignment-builder > button { grid-column: auto; }
 }
 
 @media print {
@@ -792,6 +812,15 @@ button, select, input { font: inherit; }
 .teacher-auth-assignment-heading strong { font-size: 15px; }
 .teacher-auth-assignment-heading small { font-size: 13px; }
 .teacher-auth-assignment-list { padding: 16px; gap: 12px; }
+.teacher-auth-assignment-builder label { font-size: 14px; }
+.teacher-auth-assignment-builder select { height: 52px; font-size: 15px; }
+.teacher-auth-assignment-builder option { font-size: 15px; }
+.teacher-auth-assignment-builder > button { min-height: 52px; font-size: 14px; }
+.teacher-auth-assignment-error { font-size: 13px; }
+.teacher-auth-assignment-summary > p strong { font-size: 14px; }
+.teacher-auth-assignment-summary > p small { font-size: 12px; }
+.teacher-auth-assignment-summary article strong { font-size: 15px; }
+.teacher-auth-assignment-summary article small { font-size: 13px; }
 .teacher-auth-assignment-row { padding: 13px; grid-template-columns: 32px minmax(150px, 1.4fr) minmax(115px, 1fr) minmax(105px, .85fr) 36px; gap: 11px; }
 .teacher-auth-assignment-row > span { width: 32px; height: 32px; font-size: 10px; }
 .teacher-auth-assignment-row label { font-size: 13px; }

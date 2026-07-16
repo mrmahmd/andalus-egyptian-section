@@ -18,20 +18,29 @@ export default function TeacherLoginPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const [mode, setMode] = useState<"signin" | "create">("signin");
   const [accountType, setAccountType] = useState<"teacher" | "admin">("teacher");
-  const [teachingAssignments, setTeachingAssignments] = useState<TeachingAssignment[]>([
-    { id: 1, subject: "English OL", grade: "Grade 1", classType: "A" },
-  ]);
+  const [draftSubject, setDraftSubject] = useState("English OL");
+  const [draftGrade, setDraftGrade] = useState("Grade 1");
+  const [draftClassType, setDraftClassType] = useState<"A" | "B">("A");
+  const [teachingAssignments, setTeachingAssignments] = useState<TeachingAssignment[]>([]);
+  const [assignmentError, setAssignmentError] = useState("");
 
   const addAssignment = () => {
-    setTeachingAssignments((current) => [
-      ...current,
-      {
-        id: Math.max(...current.map((assignment) => assignment.id), 0) + 1,
-        subject: subjectOptions[0],
-        grade: gradeOptions[0],
-        classType: "A",
-      },
-    ]);
+    const alreadyAdded = teachingAssignments.some((assignment) =>
+      assignment.subject === draftSubject && assignment.grade === draftGrade && assignment.classType === draftClassType,
+    );
+
+    if (alreadyAdded) {
+      setAssignmentError("This subject and class assignment has already been added.");
+      return;
+    }
+
+    setTeachingAssignments((current) => [...current, {
+      id: Math.max(...current.map((assignment) => assignment.id), 0) + 1,
+      subject: draftSubject,
+      grade: draftGrade,
+      classType: draftClassType,
+    }]);
+    setAssignmentError("");
   };
 
   return (
@@ -95,20 +104,27 @@ export default function TeacherLoginPage() {
               <section className="teacher-auth-assignments" aria-labelledby="teaching-assignments-title">
                 <div className="teacher-auth-assignment-heading">
                   <span>TA</span>
-                  <div><strong id="teaching-assignments-title">Teaching Assignments</strong><small>Add one row for every subject and class you teach.</small></div>
+                  <div><strong id="teaching-assignments-title">Teaching Assignments</strong><small>Choose a subject and class, then add another assignment when needed.</small></div>
                 </div>
 
-                <div className="teacher-auth-assignment-list">
-                  {teachingAssignments.map((assignment, index) => (
-                    <div className="teacher-auth-assignment-row" key={assignment.id}>
+                <div className="teacher-auth-assignment-builder">
+                  <label>Subject<select value={draftSubject} onChange={(event) => setDraftSubject(event.target.value)}>{subjectOptions.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
+                  <label>Grade<select value={draftGrade} onChange={(event) => setDraftGrade(event.target.value)}>{gradeOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+                  <label>Class<select value={draftClassType} onChange={(event) => setDraftClassType(event.target.value as "A" | "B")}><option value="A">Class A</option><option value="B">Class B</option></select></label>
+                  <button type="button" onClick={addAssignment}>＋ {teachingAssignments.length === 0 ? "Add Assignment" : "Add Another Assignment"}</button>
+                </div>
+                {assignmentError && <p className="teacher-auth-assignment-error" role="alert">{assignmentError}</p>}
+
+                <div className="teacher-auth-assignment-summary" aria-live="polite">
+                  {teachingAssignments.length === 0 ? (
+                    <p><span>01</span><strong>No assignments added yet</strong><small>Choose the first subject and class above, then press Add Assignment.</small></p>
+                  ) : teachingAssignments.map((assignment, index) => (
+                    <article key={assignment.id}>
                       <span>{String(index + 1).padStart(2, "0")}</span>
-                      <label>Subject<select value={assignment.subject} onChange={(event) => setTeachingAssignments((current) => current.map((item) => item.id === assignment.id ? { ...item, subject: event.target.value } : item))}>{subjectOptions.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
-                      <label>Grade<select value={assignment.grade} onChange={(event) => setTeachingAssignments((current) => current.map((item) => item.id === assignment.id ? { ...item, grade: event.target.value } : item))}>{gradeOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
-                      <label>Class<select value={assignment.classType} onChange={(event) => setTeachingAssignments((current) => current.map((item) => item.id === assignment.id ? { ...item, classType: event.target.value as "A" | "B" } : item))}><option value="A">Class A</option><option value="B">Class B</option></select></label>
-                      <button type="button" aria-label={`Remove assignment ${index + 1}`} disabled={teachingAssignments.length === 1} onClick={() => setTeachingAssignments((current) => current.filter((item) => item.id !== assignment.id))}>×</button>
-                    </div>
+                      <div><strong>{assignment.subject}</strong><small>{assignment.grade} · Class {assignment.classType}</small></div>
+                      <button type="button" aria-label={`Remove ${assignment.subject} for ${assignment.grade} Class ${assignment.classType}`} onClick={() => setTeachingAssignments((current) => current.filter((item) => item.id !== assignment.id))}>×</button>
+                    </article>
                   ))}
-                  <button className="teacher-auth-add-assignment" type="button" onClick={addAssignment}>＋ Add Another Assignment</button>
                 </div>
               </section>
             )}
