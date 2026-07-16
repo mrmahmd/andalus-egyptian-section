@@ -977,6 +977,7 @@ button, select, input { font: inherit; }
 .super-row-actions { display: flex; align-items: center; gap: 6px; }
 .super-row-actions a, .super-row-actions button { min-height: 36px; padding: 0 10px; border: 1px solid #d6dfe9; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: white; color: #34445e; font: inherit; font-size: 11px; font-weight: 800; text-decoration: none; cursor: pointer; }
 .super-row-actions .review { border-color: #dcb7ce; background: #fbf1f7; color: #9b1a70; }
+.super-row-actions .manage { border-color: #b8d9e4; background: #eef9fc; color: #0d6d84; }
 .super-empty { padding: 45px !important; color: #7a879a !important; font-size: 14px; text-align: center; }
 .super-review-modal { width: min(720px, 100%); }
 .super-review-profile { margin: 18px 25px 0; padding: 13px; border: 1px solid #eadde6; border-radius: 12px; display: flex; align-items: center; gap: 11px; background: #fbf5f9; }
@@ -987,6 +988,7 @@ button, select, input { font: inherit; }
 .super-review-grid small { color: #7b8799; font-size: 11px; }.super-review-grid strong { color: #263852; font-size: 13px; }
 .super-review-note { padding: 12px; border-radius: 10px; display: flex; align-items: flex-start; gap: 9px; background: #f8edf5; color: #754e67; }
 .super-review-note span { width: 27px; height: 27px; flex: 0 0 auto; border-radius: 8px; display: grid; place-items: center; background: #ad1b74; color: white; font-size: 8px; font-weight: 900; }.super-review-note p { margin: 1px 0; font-size: 12px; line-height: 1.5; }
+.super-assignment-help { margin: -7px 0 0; padding: 9px 11px; border-left: 3px solid #1b91ac; background: #f0f9fb; color: #547083; font-size: 12px; line-height: 1.55; }
 .super-reject-button { min-height: 46px; padding: 0 15px; border: 1px solid #e1b8c9; border-radius: 10px; background: #fff4f7; color: #9f1d5d; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
 
 @media (max-width: 1050px) {

@@ -31,7 +31,7 @@ export default function SuperAdminPage() {
   const [accounts, setAccounts] = useState(initialAccounts);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All Roles");
-  const [statusFilter, setStatusFilter] = useState("Pending");
+  const [statusFilter, setStatusFilter] = useState("All Statuses");
   const [reviewAccount, setReviewAccount] = useState<ManagedAccount | null>(null);
 
   const filteredAccounts = useMemo(() => accounts.filter((account) => {
@@ -54,6 +54,12 @@ export default function SuperAdminPage() {
   const rejectAccount = () => {
     if (!reviewAccount) return;
     setAccounts((current) => current.map((account) => account.id === reviewAccount.id ? { ...account, status: "Rejected", lastAction: "Rejected just now" } : account));
+    setReviewAccount(null);
+  };
+
+  const saveAccount = () => {
+    if (!reviewAccount) return;
+    setAccounts((current) => current.map((account) => account.id === reviewAccount.id ? { ...reviewAccount, lastAction: "Account settings updated just now" } : account));
     setReviewAccount(null);
   };
 
@@ -98,7 +104,7 @@ export default function SuperAdminPage() {
             </div>
             <div className="super-admin-table-wrap"><table className="super-admin-table"><thead><tr><th>Account</th><th>Requested Role</th><th>Classes & Subjects</th><th>Requested</th><th>Status</th><th>Last Action</th><th>Actions</th></tr></thead><tbody>
               {filteredAccounts.map((account) => (
-                <tr key={account.id}><td><div className="super-account-name"><span>{account.name.split(" ").slice(0, 2).map((part) => part[0]).join("")}</span><div><strong>{account.name}</strong><small>@{account.username}</small></div></div></td><td><span className={`super-role ${account.role.toLowerCase()}`}>{account.role === "Teacher" ? "TC" : "AD"}{account.role}</span></td><td>{account.assignments}</td><td>{account.requested}</td><td><span className={`super-account-status ${account.status.toLowerCase()}`}><i />{account.status}</span></td><td>{account.lastAction}</td><td><div className="super-row-actions">{account.status === "Pending" ? <button className="review" onClick={() => setReviewAccount({ ...account })}>Review</button> : <Link href={account.role === "Admin" ? "/admin" : "/teachers"}>Open workspace</Link>}</div></td></tr>
+                <tr key={account.id}><td><div className="super-account-name"><span>{account.name.split(" ").slice(0, 2).map((part) => part[0]).join("")}</span><div><strong>{account.name}</strong><small>@{account.username}</small></div></div></td><td><span className={`super-role ${account.role.toLowerCase()}`}>{account.role === "Teacher" ? "TC" : "AD"}{account.role}</span></td><td>{account.assignments}</td><td>{account.requested}</td><td><span className={`super-account-status ${account.status.toLowerCase()}`}><i />{account.status}</span></td><td>{account.lastAction}</td><td><div className="super-row-actions">{account.status === "Pending" ? <button className="review" onClick={() => setReviewAccount({ ...account })}>Review</button> : <><button className="manage" onClick={() => setReviewAccount({ ...account })}>Manage</button><Link href={account.role === "Admin" ? "/admin" : "/teachers"}>Open workspace</Link></>}</div></td></tr>
               ))}
               {filteredAccounts.length === 0 && <tr><td className="super-empty" colSpan={7}>No accounts match the selected filters.</td></tr>}
             </tbody></table></div>
@@ -109,14 +115,15 @@ export default function SuperAdminPage() {
       {reviewAccount && (
         <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setReviewAccount(null)}>
           <section className="teacher-editor-modal super-review-modal" role="dialog" aria-modal="true" aria-labelledby="review-account-title">
-            <div className="teacher-modal-heading"><div><p>Super Admin approval</p><h2 id="review-account-title">Review account request</h2></div><button aria-label="Close review" onClick={() => setReviewAccount(null)}>×</button></div>
+            <div className="teacher-modal-heading"><div><p>{reviewAccount.status === "Pending" ? "Super Admin approval" : "Super Admin account management"}</p><h2 id="review-account-title">{reviewAccount.status === "Pending" ? "Review account request" : "Manage teacher account"}</h2></div><button aria-label="Close review" onClick={() => setReviewAccount(null)}>×</button></div>
             <div className="super-review-profile"><span>{reviewAccount.name.split(" ").slice(0, 2).map((part) => part[0]).join("")}</span><div><strong>{reviewAccount.name}</strong><small>@{reviewAccount.username} · Requested {reviewAccount.requested}</small></div></div>
-            <form onSubmit={(event) => { event.preventDefault(); approveAccount(); }}>
+            <form onSubmit={(event) => { event.preventDefault(); reviewAccount.status === "Pending" ? approveAccount() : saveAccount(); }}>
               <div className="super-review-grid"><div><small>Requested role</small><strong>{reviewAccount.role}</strong></div><div><small>Workspace after approval</small><strong>{reviewAccount.role === "Admin" ? "Admin Control Center" : "Teacher Workspace"}</strong></div></div>
               <label>Account Role<select value={reviewAccount.role} onChange={(event) => setReviewAccount({ ...reviewAccount, role: event.target.value as AccountRole })}><option>Teacher</option><option>Admin</option></select></label>
-              <label>Classes & Subjects<textarea rows={3} value={reviewAccount.assignments} onChange={(event) => setReviewAccount({ ...reviewAccount, assignments: event.target.value })} /></label>
-              <div className="super-review-note"><span>SA</span><p>Approving this account activates login access and sends the user to the correct dashboard based on the assigned role.</p></div>
-              <div className="teacher-editor-footer"><button type="button" className="super-reject-button" onClick={rejectAccount}>Reject request</button><div><button type="button" className="teacher-secondary-button" onClick={() => setReviewAccount(null)}>Cancel</button><button type="submit" className="teacher-primary-button">Approve account</button></div></div>
+              <label>{reviewAccount.role === "Teacher" ? "Teacher Classes & Subjects" : "Admin Access Scope"}<textarea rows={3} value={reviewAccount.assignments} onChange={(event) => setReviewAccount({ ...reviewAccount, assignments: event.target.value })} /></label>
+              {reviewAccount.role === "Teacher" && <p className="super-assignment-help">Edit the teacher’s materials and classes here. Example: English OL · Grade 4 A, Grade 4 B.</p>}
+              <div className="super-review-note"><span>SA</span><p>{reviewAccount.status === "Pending" ? "Approving this account activates login access and sends the user to the correct dashboard based on the assigned role." : "Saving these changes updates the teacher’s permitted classes and subjects for the next login."}</p></div>
+              <div className="teacher-editor-footer">{reviewAccount.status === "Pending" ? <button type="button" className="super-reject-button" onClick={rejectAccount}>Reject request</button> : <span>Only you can change this teacher’s classes and subjects.</span>}<div><button type="button" className="teacher-secondary-button" onClick={() => setReviewAccount(null)}>Cancel</button><button type="submit" className="teacher-primary-button">{reviewAccount.status === "Pending" ? "Approve account" : "Save account changes"}</button></div></div>
             </form>
           </section>
         </div>
