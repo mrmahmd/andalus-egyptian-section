@@ -159,8 +159,8 @@ export default function AdminDashboardPage() {
           <section className="admin-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-plan-title">
             <span className="admin-delete-icon">!</span>
             <h2 id="delete-plan-title">Delete this weekly plan?</h2>
-            <p><strong>{deletePlan.subject}</strong> for {deletePlan.grade} · Class {deletePlan.classType} will be removed from the admin directory.</p>
-            <small>This action will require administrator confirmation in the live system.</small>
+            <p><strong>{deletePlan.subject}</strong> for {deletePlan.grade} · Class {deletePlan.classType} will be removed from the admin directory and the parent-facing public site.</p>
+            <small>This action will permanently update the published weekly-plan record once the database is connected.</small>
             <div><button className="teacher-secondary-button" onClick={() => setDeletePlan(null)}>Cancel</button><button className="admin-danger-button" onClick={() => { setPlans((current) => current.filter((plan) => plan.id !== deletePlan.id)); setDeletePlan(null); }}>Delete plan</button></div>
           </section>
         </div>

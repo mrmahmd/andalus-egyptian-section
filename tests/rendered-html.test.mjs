@@ -89,3 +89,16 @@ test("renders the administrator weekly-plan control center", async () => {
   assert.match(html, /class="edit">Edit/);
   assert.match(html, /class="delete">Delete/);
 });
+
+test("renders the Super Admin account approval center", async () => {
+  const html = await readFile(
+    new URL("super-admin/index.html", outputRoot),
+    "utf8",
+  );
+
+  assert.match(html, /Super Admin Control Center/);
+  assert.match(html, /Account Approvals/);
+  assert.match(html, /Primary Super Admin/);
+  assert.match(html, /Manage Public Plans/);
+  assert.match(html, /class="review">Review/);
+});
