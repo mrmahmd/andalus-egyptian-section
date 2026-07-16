@@ -57,6 +57,8 @@ test("configures Grades 1 to 10, classes A and B, and teacher subjects", async (
   assert.match(source, /Account Type/);
   assert.match(source, />Teacher</);
   assert.match(source, />Admin</);
+  assert.match(source, /TeachingAssignment/);
+  assert.match(source, /Add Another Assignment/);
   for (const subject of ["Arabic", "Islamic", "English OL", "English AL", "Math", "Science", "Social", "ICT"]) {
     assert.match(source, new RegExp(subject));
   }

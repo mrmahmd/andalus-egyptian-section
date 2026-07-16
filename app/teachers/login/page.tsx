@@ -7,24 +7,31 @@ const gradeOptions = Array.from({ length: 10 }, (_, index) => `Grade ${index + 1
 
 const subjectOptions = ["Arabic", "Islamic", "English OL", "English AL", "Math", "Science", "Social", "ICT"];
 
+type TeachingAssignment = {
+  id: number;
+  subject: string;
+  grade: string;
+  classType: "A" | "B";
+};
+
 export default function TeacherLoginPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const [mode, setMode] = useState<"signin" | "create">("signin");
   const [accountType, setAccountType] = useState<"teacher" | "admin">("teacher");
-  const [grade, setGrade] = useState(gradeOptions[0]);
-  const [classType, setClassType] = useState("A");
-  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [teachingAssignments, setTeachingAssignments] = useState<TeachingAssignment[]>([
+    { id: 1, subject: "English OL", grade: "Grade 1", classType: "A" },
+  ]);
 
-  const addClass = () => {
-    const className = `${grade} · ${classType}`;
-    setSelectedClasses((current) => current.includes(className) ? current : [...current, className]);
-  };
-
-  const toggleSubject = (subject: string) => {
-    setSelectedSubjects((current) =>
-      current.includes(subject) ? current.filter((item) => item !== subject) : [...current, subject],
-    );
+  const addAssignment = () => {
+    setTeachingAssignments((current) => [
+      ...current,
+      {
+        id: Math.max(...current.map((assignment) => assignment.id), 0) + 1,
+        subject: subjectOptions[0],
+        grade: gradeOptions[0],
+        classType: "A",
+      },
+    ]);
   };
 
   return (
@@ -88,27 +95,21 @@ export default function TeacherLoginPage() {
               <section className="teacher-auth-assignments" aria-labelledby="teaching-assignments-title">
                 <div className="teacher-auth-assignment-heading">
                   <span>TA</span>
-                  <div><strong id="teaching-assignments-title">Teaching Assignments</strong><small>Select every class and subject you teach.</small></div>
+                  <div><strong id="teaching-assignments-title">Teaching Assignments</strong><small>Add one row for every subject and class you teach.</small></div>
                 </div>
 
-                <div className="teacher-auth-class-picker">
-                  <label>Grade<select value={grade} onChange={(event) => setGrade(event.target.value)}>{gradeOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
-                  <label>Class<select value={classType} onChange={(event) => setClassType(event.target.value)}><option value="A">Class A</option><option value="B">Class B</option></select></label>
-                  <button type="button" onClick={addClass}>＋ Add Class</button>
-                </div>
-
-                <div className="teacher-auth-selected-classes" aria-live="polite">
-                  {selectedClasses.length === 0 ? <small>No classes added yet.</small> : selectedClasses.map((className) => (
-                    <button key={className} type="button" onClick={() => setSelectedClasses((current) => current.filter((item) => item !== className))}>{className}<span>×</span></button>
+                <div className="teacher-auth-assignment-list">
+                  {teachingAssignments.map((assignment, index) => (
+                    <div className="teacher-auth-assignment-row" key={assignment.id}>
+                      <span>{String(index + 1).padStart(2, "0")}</span>
+                      <label>Subject<select value={assignment.subject} onChange={(event) => setTeachingAssignments((current) => current.map((item) => item.id === assignment.id ? { ...item, subject: event.target.value } : item))}>{subjectOptions.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
+                      <label>Grade<select value={assignment.grade} onChange={(event) => setTeachingAssignments((current) => current.map((item) => item.id === assignment.id ? { ...item, grade: event.target.value } : item))}>{gradeOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+                      <label>Class<select value={assignment.classType} onChange={(event) => setTeachingAssignments((current) => current.map((item) => item.id === assignment.id ? { ...item, classType: event.target.value as "A" | "B" } : item))}><option value="A">Class A</option><option value="B">Class B</option></select></label>
+                      <button type="button" aria-label={`Remove assignment ${index + 1}`} disabled={teachingAssignments.length === 1} onClick={() => setTeachingAssignments((current) => current.filter((item) => item.id !== assignment.id))}>×</button>
+                    </div>
                   ))}
+                  <button className="teacher-auth-add-assignment" type="button" onClick={addAssignment}>＋ Add Another Assignment</button>
                 </div>
-
-                <fieldset className="teacher-auth-subjects">
-                  <legend>Subjects</legend>
-                  <div>{subjectOptions.map((subject) => (
-                    <button key={subject} type="button" aria-pressed={selectedSubjects.includes(subject)} onClick={() => toggleSubject(subject)}><span>{subject.slice(0, 2).toUpperCase()}</span>{subject}<i>{selectedSubjects.includes(subject) ? "✓" : "+"}</i></button>
-                  ))}</div>
-                </fieldset>
               </section>
             )}
 
