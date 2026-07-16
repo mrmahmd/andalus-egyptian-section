@@ -2,17 +2,42 @@
 
 import Link from "next/link";
 
-const rows = [
-  ["Sunday", "English", "Unit 2: Amazing Animals — pages 18–19", "Workbook page 9", "Bring the English reader"],
-  ["", "Mathematics", "Multiplication facts: ×2 and ×5", "Complete worksheet 2A", "Quiz on Tuesday"],
-  ["", "Science", "The life cycle of a butterfly", "Draw and label a life cycle", "Bring coloured pencils"],
-  ["Monday", "Arabic", "Subject and object practice", "Complete the book activity", "—"],
-  ["", "Social Studies", "Egyptian landmarks map activity", "Research one landmark", "Upload to Classera"],
-  ["Tuesday", "English", "Spelling and guided writing", "Write five sentences", "Spelling quiz today"],
-  ["", "Mathematics", "Two-step word problems", "Workbook page 12", "—"],
-  ["Wednesday", "Religion", "Good manners and daily behaviour", "Memorise the lesson", "—"],
-  ["", "ICT", "Safe internet use", "Complete online task", "Computer lab"],
-  ["Thursday", "Science", "Unit review and assessment", "Prepare for next week", "Have a lovely weekend"],
+const days = [
+  {
+    day: "Sunday",
+    lessons: [
+      ["English", "Unit 2: Amazing Animals — pages 18–19", "Workbook page 9", "Bring the English reader"],
+      ["Mathematics", "Multiplication facts: ×2 and ×5", "Complete worksheet 2A", "Quiz on Tuesday"],
+      ["Science", "The life cycle of a butterfly", "Draw and label a life cycle", "Bring coloured pencils"],
+    ],
+  },
+  {
+    day: "Monday",
+    lessons: [
+      ["Arabic", "Subject and object practice", "Complete the book activity", "—"],
+      ["Social Studies", "Egyptian landmarks map activity", "Research one landmark", "Upload to Classera"],
+    ],
+  },
+  {
+    day: "Tuesday",
+    lessons: [
+      ["English", "Spelling and guided writing", "Write five sentences", "Spelling quiz today"],
+      ["Mathematics", "Two-step word problems", "Workbook page 12", "—"],
+    ],
+  },
+  {
+    day: "Wednesday",
+    lessons: [
+      ["Religion", "Good manners and daily behaviour", "Memorise the lesson", "—"],
+      ["ICT", "Safe internet use", "Complete online task", "Computer lab"],
+    ],
+  },
+  {
+    day: "Thursday",
+    lessons: [
+      ["Science", "Unit review and assessment", "Prepare for next week", "Have a lovely weekend"],
+    ],
+  },
 ];
 
 export default function WeeklyPlanPage() {
@@ -57,11 +82,19 @@ export default function WeeklyPlanPage() {
           <table className="weekly-table">
             <thead><tr><th>Day</th><th>Course</th><th>Classwork</th><th>Homework</th><th>Classera Notes</th></tr></thead>
             <tbody>
-              {rows.map((row, index) => (
-                <tr key={`${row[0]}-${row[1]}`} className={row[0] ? "new-day" : ""}>
-                  <td className="day-cell">{row[0]}</td><td className="course-cell">{row[1]}</td><td>{row[2]}</td><td>{row[3]}</td><td>{row[4]}</td>
-                </tr>
-              ))}
+              {days.flatMap(({ day, lessons }) =>
+                lessons.map((lesson, lessonIndex) => (
+                  <tr key={`${day}-${lesson[0]}`} className={lessonIndex === 0 ? "new-day" : ""}>
+                    {lessonIndex === 0 && (
+                      <td className="day-cell" rowSpan={lessons.length}>{day}</td>
+                    )}
+                    <td className="course-cell">{lesson[0]}</td>
+                    <td>{lesson[1]}</td>
+                    <td>{lesson[2]}</td>
+                    <td>{lesson[3]}</td>
+                  </tr>
+                )),
+              )}
             </tbody>
           </table>
         </div>
