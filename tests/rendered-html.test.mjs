@@ -21,6 +21,7 @@ test("renders one merged day cell for each school day", async () => {
 
   const dayCells = html.match(/class="day-cell"/g) ?? [];
   assert.equal(dayCells.length, 5);
+  assert.match(html, /Mr\.Mohamed Farid/);
   assert.match(html, /<td[^>]*rowspan="3"[^>]*>Sunday<\/td>/i);
   assert.match(html, /<td[^>]*rowspan="2"[^>]*>Monday<\/td>/i);
   assert.match(html, /<td[^>]*rowspan="2"[^>]*>Tuesday<\/td>/i);

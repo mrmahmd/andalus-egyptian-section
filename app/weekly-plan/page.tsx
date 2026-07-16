@@ -74,7 +74,7 @@ export default function WeeklyPlanPage() {
         </div>
         <div className="paper-meta">
           <span><small>Class</small><strong>Grade 4 · A</strong></span>
-          <span><small>Class Teacher</small><strong>Ms. Sara Ahmed</strong></span>
+          <span><small>Class Teacher</small><strong>Mr.Mohamed Farid</strong></span>
           <span><small>Week No.</small><strong>03</strong></span>
           <span><small>Date</small><strong>20–24 Sep 2026</strong></span>
         </div>
