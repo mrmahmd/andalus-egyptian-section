@@ -63,3 +63,15 @@ test("configures Grades 1 to 10, classes A and B, and teacher subjects", async (
     assert.match(source, new RegExp(subject));
   }
 });
+
+test("uses the high-readability teacher typography scale", async () => {
+  const css = await readFile(
+    new URL("../app/globals.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(css, /High-readability type scale/);
+  assert.match(css, /\.teacher-portal, \.teacher-auth-page[\s\S]*font-size: 18px/);
+  assert.match(css, /\.teacher-auth-assignment-row select \{[^}]*font-size: 14px/);
+  assert.match(css, /\.teacher-plan-table \{[^}]*font-size: 13px/);
+});

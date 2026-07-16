@@ -705,3 +705,128 @@ button, select, input { font: inherit; }
   .quiz-table { min-width: 0; font-size: 8px; }
   .quiz-table th, .quiz-table td { padding: 6px 4px; }
 }
+
+/* High-readability type scale for the complete teacher platform */
+.teacher-portal, .teacher-auth-page {
+  font-family: "Plus Jakarta Sans", "Aptos", "Segoe UI Variable", "Segoe UI", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+.teacher-portal button, .teacher-portal input, .teacher-portal select, .teacher-portal textarea,
+.teacher-auth-page button, .teacher-auth-page input, .teacher-auth-page select { font-family: inherit; }
+
+/* Dashboard */
+.teacher-sidebar { width: 274px; }
+.teacher-main { width: calc(100% - 274px); margin-left: 274px; }
+.teacher-brand strong { font-size: 17px; font-weight: 800; }
+.teacher-brand span { font-size: 13px; }
+.teacher-school-year span { font-size: 12px; }
+.teacher-school-year strong { font-size: 14px; }
+.teacher-nav > p { font-size: 11px; }
+.teacher-nav button { min-height: 50px; font-size: 15px; font-weight: 700; }
+.teacher-nav button small { width: 22px; height: 22px; font-size: 11px; }
+.teacher-help-card strong { font-size: 14px; }
+.teacher-help-card p, .teacher-help-card button { font-size: 12px; }
+.teacher-sidebar-profile strong { font-size: 13px; }
+.teacher-sidebar-profile small { font-size: 12px; }
+.teacher-search { height: 44px; }
+.teacher-search input { font-size: 15px; }
+.teacher-sync { font-size: 12px; }
+.teacher-profile-chip strong { font-size: 13px; }
+.teacher-profile-chip small { font-size: 11px; }
+.teacher-kicker { font-size: 12px; }
+.teacher-page-heading h1 { font-size: clamp(32px, 3vw, 44px); font-weight: 800; line-height: 1.16; }
+.teacher-page-heading > div:first-child > span { font-size: 16px; }
+.teacher-primary-button, .teacher-secondary-button { min-height: 46px; padding-inline: 18px; font-size: 14px; font-weight: 800; }
+.teacher-stats article { min-height: 126px; }
+.teacher-stats small { font-size: 13px; }
+.teacher-stats strong { font-size: 31px; }
+.teacher-stats p { font-size: 12px; }
+.teacher-card-heading h2 { font-size: 20px; }
+.teacher-card-heading p { font-size: 13px; }
+.teacher-filter-button, .teacher-more-button { height: 37px; font-size: 12px; }
+.teacher-plan-table { min-width: 760px; font-size: 13px; }
+.teacher-plan-table th { padding-block: 13px; font-size: 11px; }
+.teacher-plan-table td { padding-block: 15px; }
+.teacher-plan-table td strong { font-size: 13px; }
+.teacher-day-badge { width: 31px; height: 31px; font-size: 10px; }
+.teacher-status { padding: 6px 9px; font-size: 11px; }
+.teacher-plan-table td:last-child button, .teacher-view-all { min-height: 48px; font-size: 12px; }
+.teacher-progress-ring { width: 56px; height: 56px; font-size: 12px; }
+.teacher-progress-card > p strong { font-size: 13px; }
+.teacher-progress-card > p span, .teacher-progress-card > button { font-size: 12px; }
+.teacher-assignments-card .teacher-card-heading button { font-size: 12px; }
+.assignment-group > small { font-size: 11px; }
+.assignment-group > span { font-size: 13px; }
+.assignment-group > div span { font-size: 12px; }
+.teacher-modal-heading p { font-size: 12px; }
+.teacher-modal-heading h2 { font-size: 27px; }
+.teacher-editor-context { font-size: 13px; }
+.teacher-editor-modal label { font-size: 14px; }
+.teacher-editor-modal input, .teacher-editor-modal select, .teacher-editor-modal textarea { padding: 12px 13px; font-size: 15px; }
+.teacher-editor-modal select { height: 48px; }
+.teacher-editor-footer > span { font-size: 12px; }
+.teacher-quiz-editor-heading strong { font-size: 15px; }
+.teacher-quiz-editor-heading small { font-size: 12px; }
+
+/* Sign in and account creation */
+.teacher-auth-card { width: min(540px, 100%); }
+.teacher-auth-card.create-mode { width: min(740px, 100%); }
+.teacher-auth-tabs { height: 54px; }
+.teacher-auth-tabs button { font-size: 14px; }
+.teacher-auth-heading > span { font-size: 13px; }
+.teacher-auth-heading h2 { font-size: clamp(34px, 3.4vw, 46px); }
+.teacher-auth-heading p { font-size: 16px; }
+.teacher-auth-card form { gap: 19px; }
+.teacher-auth-card form > label, .teacher-auth-account-type legend { font-size: 15px; }
+.teacher-auth-card input[type="text"], .teacher-auth-card input[type="password"] { height: 58px; font-size: 16px; }
+.teacher-auth-account-type button { min-height: 72px; padding: 12px; }
+.teacher-auth-account-type button > span { width: 36px; height: 36px; font-size: 10px; }
+.teacher-auth-account-type button b { font-size: 14px; }
+.teacher-auth-account-type button small { font-size: 12px; }
+.teacher-auth-assignment-heading { min-height: 75px; padding: 15px 17px; }
+.teacher-auth-assignment-heading > span { width: 38px; height: 38px; font-size: 10px; }
+.teacher-auth-assignment-heading strong { font-size: 15px; }
+.teacher-auth-assignment-heading small { font-size: 13px; }
+.teacher-auth-assignment-list { padding: 16px; gap: 12px; }
+.teacher-auth-assignment-row { padding: 13px; grid-template-columns: 32px minmax(150px, 1.4fr) minmax(115px, 1fr) minmax(105px, .85fr) 36px; gap: 11px; }
+.teacher-auth-assignment-row > span { width: 32px; height: 32px; font-size: 10px; }
+.teacher-auth-assignment-row label { font-size: 13px; }
+.teacher-auth-assignment-row select { height: 48px; padding-inline: 11px; font-size: 14px; }
+.teacher-auth-assignment-row option { font-size: 14px; }
+.teacher-auth-assignment-row > button { width: 36px; height: 36px; font-size: 19px; }
+.teacher-auth-add-assignment { min-height: 49px; font-size: 14px; }
+.teacher-auth-admin-note strong { font-size: 14px; }
+.teacher-auth-admin-note small { font-size: 13px; }
+.teacher-auth-options { font-size: 14px; }
+.teacher-auth-submit { height: 60px; font-size: 15px; }
+.teacher-auth-notice { font-size: 13px; }
+.teacher-auth-switch-copy { font-size: 14px; }
+.teacher-auth-features b { font-size: 14px; }
+.teacher-auth-features small { font-size: 12px; }
+
+@media (max-width: 760px) {
+  .teacher-sidebar { display: none; }
+  .teacher-main { width: 100%; margin-left: 0; }
+  .teacher-mobile-brand { font-size: 14px; }
+  .teacher-content { padding-inline: 18px; }
+  .teacher-page-heading > div:first-child > span { font-size: 15px; }
+  .teacher-stats small { font-size: 12px; }
+  .teacher-auth-page { font-size: 17px; }
+  .teacher-auth-card { padding: 28px 23px; }
+  .teacher-auth-heading h2 { font-size: clamp(31px, 8vw, 39px); }
+  .teacher-auth-heading p { font-size: 15px; }
+  .teacher-auth-assignment-row { grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr) 36px; }
+  .teacher-auth-assignment-row label { font-size: 13px; }
+  .teacher-auth-assignment-row select { font-size: 14px; }
+}
+
+@media (max-width: 420px) {
+  .teacher-auth-tabs button { font-size: 13px; }
+  .teacher-auth-account-type > div { grid-template-columns: 1fr; }
+  .teacher-auth-card { padding-inline: 19px; }
+  .teacher-stats { grid-template-columns: 1fr; }
+}
