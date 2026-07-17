@@ -32,7 +32,9 @@ body { margin: 0; background: var(--white); color: var(--ink); font-family: "Apt
 .arabic-ui .hero-photo { inset: 0 37% 0 0; background-position: 56% 42%; }
 .arabic-ui .hero-wash { background: linear-gradient(270deg, rgba(6,27,58,.99) 0%, rgba(8,38,83,.93) 35%, rgba(8,38,83,.58) 60%, rgba(6,27,58,.08) 100%); }
 .arabic-ui .hero-wash::after { right: auto; left: 0; background: linear-gradient(270deg, var(--cyan-500), var(--magenta-600), var(--coral-500)); }
-.arabic-ui .hero-content { align-items: flex-end; text-align: right; }
+.arabic-ui .hero-content { align-items: flex-end; text-align: right; direction: rtl; }
+.arabic-ui .hero-content h1, .arabic-ui .hero-content > p, .arabic-ui .hero-kicker, .arabic-ui .hero-actions { width: min(700px, 100%); text-align: right; }
+.arabic-ui .hero-kicker, .arabic-ui .hero-actions { justify-content: flex-start; }
 .arabic-ui .hero-actions, .arabic-ui .finder-heading, .arabic-ui .finder-fields, .arabic-ui .preview-grid, .arabic-ui .teacher-banner, .arabic-ui .footer-grid { direction: rtl; }
 .arabic-ui .super-admin-portal, .arabic-ui .super-admin-portal * { direction: ltr; font-family: "Plus Jakarta Sans", "Aptos", "Segoe UI", sans-serif !important; }
 .arabic-ui .super-admin-portal .teacher-sidebar { inset: 0 auto 0 0; text-align: left; }
