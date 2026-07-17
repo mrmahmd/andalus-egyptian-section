@@ -26,8 +26,21 @@ body { margin: 0; background: var(--white); color: var(--ink); font-family: "Apt
 .arabic-ui .teacher-auth-intro, .arabic-ui .teacher-auth-features, .arabic-ui .teacher-auth-brand-panel { text-align: right; direction: rtl; }
 .arabic-ui .teacher-auth-intro { text-align: center; }
 .arabic-ui table { direction: rtl; }
+.arabic-ui .teacher-sidebar { inset: 0 0 0 auto; text-align: right; }
+.arabic-ui .teacher-main { margin-left: 0; margin-right: 258px; }
+.arabic-ui .teacher-sidebar-profile button { margin-left: 0; margin-right: auto; }
+.arabic-ui .hero-photo { inset: 0 0 0 37%; background-position: 44% 42%; }
+.arabic-ui .hero-wash { background: linear-gradient(270deg, rgba(6,27,58,.99) 0%, rgba(8,38,83,.93) 35%, rgba(8,38,83,.58) 60%, rgba(6,27,58,.08) 100%); }
+.arabic-ui .hero-wash::after { right: auto; left: 0; background: linear-gradient(270deg, var(--cyan-500), var(--magenta-600), var(--coral-500)); }
+.arabic-ui .hero-content { align-items: flex-end; text-align: right; }
+.arabic-ui .hero-actions, .arabic-ui .finder-heading, .arabic-ui .finder-fields, .arabic-ui .preview-grid, .arabic-ui .teacher-banner, .arabic-ui .footer-grid { direction: rtl; }
+.arabic-ui .super-admin-portal, .arabic-ui .super-admin-portal * { direction: ltr; font-family: "Plus Jakarta Sans", "Aptos", "Segoe UI", sans-serif !important; }
+.arabic-ui .super-admin-portal .teacher-sidebar { inset: 0 auto 0 0; text-align: left; }
+.arabic-ui .super-admin-portal .teacher-main { margin-right: 0; margin-left: 258px; }
+.arabic-ui .super-admin-portal .teacher-sidebar-profile button { margin-right: 0; margin-left: auto; }
 html[dir="rtl"] .language-switcher { right: auto; left: 18px; font-family: "Cairo", "Tahoma", sans-serif; }
 @media (max-width: 760px) { .language-switcher { top: 12px; right: 12px; min-height: 38px; padding: 0 12px; font-size: 13px; } html[dir="rtl"] .language-switcher { right: auto; left: 12px; } }
+@media (max-width: 760px) { .arabic-ui .teacher-main { width: 100%; margin-right: 0; } .arabic-ui .hero-photo { inset: 0; background-position: 43% 32%; } .arabic-ui .hero-wash { background: linear-gradient(0deg, rgba(6,27,58,.98) 4%, rgba(8,38,83,.9) 48%, rgba(6,27,58,.08) 100%); } .arabic-ui .hero-content { align-items: flex-end; } }
 a { color: inherit; }
 button, select, input { font: inherit; }
 
