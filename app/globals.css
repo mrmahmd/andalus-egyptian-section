@@ -19,6 +19,7 @@
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--white); color: var(--ink); font-family: "Aptos", "Segoe UI", Arial, sans-serif; }
 .language-switcher { position: fixed; z-index: 1000; top: 18px; right: 18px; min-height: 42px; padding: 0 15px; border: 1px solid rgba(12,53,106,.22); border-radius: 10px; box-shadow: 0 8px 24px rgba(12,35,69,.16); background: #fff; color: #0c356a; font: 800 14px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.mobile-navigation { display: none; }
 .arabic-ui, .arabic-ui * { font-family: "Cairo", "Tahoma", sans-serif !important; }
 .arabic-ui .teacher-sidebar, .arabic-ui .teacher-nav, .arabic-ui .teacher-topbar, .arabic-ui .site-header-inner { direction: rtl; }
 .arabic-ui .teacher-search, .arabic-ui .teacher-top-actions, .arabic-ui .teacher-page-heading, .arabic-ui .teacher-editor-footer { flex-direction: row-reverse; }
@@ -48,6 +49,7 @@ body { margin: 0; background: var(--white); color: var(--ink); font-family: "Apt
 .arabic-ui .compact-header, .arabic-ui .plan-toolbar { direction: rtl; text-align: right; }
 html[dir="rtl"] .language-switcher { right: auto; left: 18px; font-family: "Cairo", "Tahoma", sans-serif; }
 @media (max-width: 760px) { .language-switcher { top: 12px; right: 12px; min-height: 38px; padding: 0 12px; font-size: 13px; } html[dir="rtl"] .language-switcher { right: auto; left: 12px; } }
+@media (max-width: 760px) { body { padding-bottom: 78px; }.mobile-navigation { position: fixed; z-index: 950; right: 10px; bottom: 10px; left: 10px; min-height: 62px; padding: 5px; border: 1px solid rgba(203,218,234,.95); border-radius: 16px; display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(255,255,255,.97); box-shadow: 0 10px 32px rgba(10,31,64,.2); backdrop-filter: blur(12px); }.mobile-navigation a { min-width: 0; padding: 5px 2px; border-radius: 11px; display: grid; place-items: center; gap: 2px; color: #52657d; text-decoration: none; }.mobile-navigation a.active { background: #e8f2fb; color: #0a4f91; }.mobile-navigation span { min-width: 24px; font: 900 9px "Plus Jakarta Sans", sans-serif; letter-spacing: -.04em; }.mobile-navigation b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 10px "Plus Jakarta Sans", sans-serif; } .arabic-ui .mobile-navigation { direction: rtl; }.arabic-ui .mobile-navigation span, .arabic-ui .mobile-navigation b { font-family: "Alexandria", "Cairo", sans-serif !important; } }
 @media (max-width: 760px) { .arabic-ui .teacher-main { width: 100%; margin-right: 0; } .arabic-ui .hero-photo { inset: 0; background-position: 43% 32%; } .arabic-ui .hero-wash { background: linear-gradient(0deg, rgba(6,27,58,.98) 4%, rgba(8,38,83,.9) 48%, rgba(6,27,58,.08) 100%); } .arabic-ui .hero-content { align-items: flex-end; } }
 a { color: inherit; }
 button, select, input { font: inherit; }
@@ -400,7 +402,7 @@ button, select, input { font: inherit; }
   @page { size: A4 landscape; margin: 10mm; }
   /* Preserve the portal's navy, magenta and soft table backgrounds in the PDF. */
   .plan-paper, .plan-paper * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .language-switcher, .whatsapp-support, .plan-page > :not(.selected-plan-wrap), .selected-plan-wrap .plan-toolbar { display: none !important; }
+  .language-switcher, .mobile-navigation, .whatsapp-support, .plan-page > :not(.selected-plan-wrap), .selected-plan-wrap .plan-toolbar { display: none !important; }
   .selected-plan-wrap, .selected-plan-wrap.is-open { display: block !important; }
   .plan-paper { position: static; box-sizing: border-box; width: auto; margin: 0; padding: 0; border: 0; box-shadow: none; background: var(--white); }
   .plan-paper .table-wrap { overflow: visible; margin-top: 9px; }
