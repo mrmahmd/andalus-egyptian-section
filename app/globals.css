@@ -44,6 +44,7 @@ body { margin: 0; background: var(--white); color: var(--ink); font-family: "Apt
 .arabic-ui .super-admin-portal .teacher-main { margin-right: 0; margin-left: 258px; }
 .arabic-ui .super-admin-portal .teacher-sidebar-profile button { margin-right: 0; margin-left: auto; }
 .arabic-ui .plan-paper, .arabic-ui .plan-paper * { direction: ltr; font-family: "Plus Jakarta Sans", "Aptos", "Segoe UI", sans-serif !important; text-align: left; }
+.arabic-ui .plan-paper .paper-header, .arabic-ui .plan-paper .paper-header * { text-align: center !important; }
 .arabic-ui .compact-header, .arabic-ui .plan-toolbar { direction: rtl; text-align: right; }
 html[dir="rtl"] .language-switcher { right: auto; left: 18px; font-family: "Cairo", "Tahoma", sans-serif; }
 @media (max-width: 760px) { .language-switcher { top: 12px; right: 12px; min-height: 38px; padding: 0 12px; font-size: 13px; } html[dir="rtl"] .language-switcher { right: auto; left: 12px; } }
@@ -265,6 +266,12 @@ button, select, input { font: inherit; }
 .important-notes strong { color: var(--navy-900); }
 .important-notes p { margin: 7px 0 0; color: #5a6475; font-size: 13px; }
 
+/* Parent timetable */
+.timetable-hero { padding: 70px 0 105px; color: white; background: linear-gradient(120deg, #071c40, #0f4e83 64%, #167a95); }.timetable-hero .eyebrow { color: #81d7e7; }.timetable-hero h1 { margin: 8px 0; font-size: clamp(42px, 5vw, 66px); letter-spacing: -.05em; }.timetable-hero p:last-child { max-width: 570px; margin: 0; color: #dceaf6; font-size: 17px; line-height: 1.65; }
+.timetable-directory { position: relative; margin-top: -55px; margin-bottom: 65px; padding: 26px; border: 1px solid #dbe5ef; border-radius: 18px; background: white; box-shadow: 0 22px 55px rgba(18,45,82,.15); }.timetable-controls { padding: 17px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 14px; align-items: end; background: #f5f8fc; }.timetable-controls label { display: grid; gap: 7px; color: #344660; font-size: 13px; font-weight: 800; }.timetable-controls select { height: 49px; padding: 0 13px; border: 1px solid #cbd8e6; border-radius: 9px; background: white; color: #173151; font: inherit; font-size: 14px; font-weight: 700; }.timetable-controls > div { min-height: 49px; padding: 9px 13px; border: 1px solid #cfe3ea; border-radius: 9px; display: grid; gap: 2px; background: #edf9fb; }.timetable-controls small { color: #5a7786; font-size: 11px; }.timetable-controls strong { color: #116a7e; font-size: 14px; }
+.timetable-heading { margin: 28px 0 17px; padding-bottom: 18px; border-bottom: 1px solid #e4ebf2; display: flex; align-items: end; justify-content: space-between; gap: 18px; }.timetable-heading > div { display: flex; align-items: center; gap: 12px; }.timetable-heading > div > span { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, #0b3e75, #14a2c3); color: white; font-size: 11px; font-weight: 900; }.timetable-heading .eyebrow { margin: 0 0 3px; }.timetable-heading h2 { margin: 0; color: #1a2d49; font-size: 25px; }.timetable-heading > p { max-width: 380px; margin: 0; color: #677991; font-size: 13px; line-height: 1.55; }
+.timetable-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }.timetable-day { overflow: hidden; border: 1px solid #dce5ef; border-radius: 13px; background: white; }.timetable-day header { padding: 15px 14px 13px; background: #0b376c; color: white; }.timetable-day header span { color: #8fdde9; font-size: 10px; font-weight: 900; letter-spacing: .12em; }.timetable-day h3 { margin: 4px 0 2px; font-size: 18px; }.timetable-day header small { color: #c8d9ee; font-size: 11px; }.timetable-day ol { margin: 0; padding: 0; list-style: none; }.timetable-day li { min-height: 47px; padding: 0 12px; border-bottom: 1px solid #e8eef4; display: flex; align-items: center; gap: 9px; color: #263b59; font-size: 13px; font-weight: 800; }.timetable-day li:last-child { border-bottom: 0; }.timetable-day li b { width: 21px; color: #9aabc0; font-size: 10px; }.timetable-note { margin-top: 22px; padding: 16px 18px; border-left: 4px solid var(--magenta-600); border-radius: 0 10px 10px 0; background: #faf2f8; }.timetable-note strong { color: #213756; }.timetable-note p { margin: 5px 0 0; color: #617089; font-size: 13px; line-height: 1.55; }
+
 /* Login */
 .login-page { min-height: 100vh; display: grid; grid-template-columns: 1.08fr .92fr; background: var(--white); }
 .login-visual { min-height: 100vh; position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 42px 54px; color: var(--white); background: linear-gradient(0deg, rgba(6,27,58,.95), rgba(6,27,58,.18)), url('/school-building.jpeg') center/cover no-repeat; }
@@ -367,6 +374,7 @@ button, select, input { font: inherit; }
   .paper-header h2 { font-size: 15px; }
   .paper-meta { grid-template-columns: 1fr 1fr; }
   .paper-meta > span { border-bottom: 1px solid var(--line); }
+  .timetable-hero { padding: 40px 0 76px; }.timetable-hero h1 { font-size: 40px; }.timetable-hero p:last-child { font-size: 15px; }.timetable-directory { width: min(100% - 30px, 1050px); margin-top: -38px; padding: 17px; }.timetable-controls { grid-template-columns: 1fr; padding: 14px; }.timetable-heading { align-items: flex-start; flex-direction: column; }.timetable-heading > p { max-width: none; }.timetable-grid { grid-template-columns: 1fr; gap: 12px; }.timetable-day header { padding: 13px 15px; }.timetable-day ol { display: grid; grid-template-columns: 1fr 1fr; }.timetable-day li:nth-child(odd) { border-right: 1px solid #e8eef4; }
   .login-page { grid-template-columns: 1fr; }
   .login-visual { min-height: 360px; padding: 28px 22px; }
   .login-visual-copy h1 { font-size: 43px; }
@@ -403,7 +411,8 @@ button, select, input { font: inherit; }
   .paper-meta > span { padding: 7px 9px; }
   .weekly-table { min-width: 0; font-size: 10px; }
   .weekly-table thead { display: table-header-group; }
-  .weekly-day-group, .weekly-table tr { break-inside: avoid; page-break-inside: avoid; }
+  .weekly-day-group { display: table-row-group; break-inside: avoid !important; page-break-inside: avoid !important; }
+  .weekly-table tr { break-inside: avoid !important; page-break-inside: avoid !important; }
   .weekly-table th { padding: 7px 5px; }
   .weekly-table td { padding: 4px 5px; }
   .weekly-table td:not(.day-cell):not(.course-cell) { font-size: 10px; font-weight: 700; line-height: 1.25; }

@@ -14,7 +14,7 @@ const ar: Record<string, string> = {
 };
 
 const homeAr: Record<string, string> = {
-  "Home": "الرئيسية", "Weekly Plan": "الخطة الأسبوعية", "How it works": "كيف تعمل المنصة؟", "Technical Support": "الدعم الفني", "Support": "الدعم الفني",
+  "Home": "الرئيسية", "Weekly Plan": "الخطة الأسبوعية", "Timetable": "جدول الحصص", "How it works": "كيف تعمل المنصة؟", "Technical Support": "الدعم الفني", "Support": "الدعم الفني",
   "Weekly plans are published every Thursday for the following school week.": "تُنشر الخطط الأسبوعية كل يوم خميس للأسبوع الدراسي التالي.",
   "ALANDALUS PRIVATE SCHOOLS": "مدارس الأندلس الأهلية", "Egyptian Section · Weekly Study Plan": "المسار المصري · الخطة الدراسية الأسبوعية", "Egyptian Section": "المسار المصري",
   "Find your plan": "ابحث عن خطتك", "One clear plan.": "خطة واحدة واضحة.", "A stronger school week.": "أسبوع دراسي أكثر تنظيمًا.",
@@ -28,6 +28,7 @@ const homeAr: Record<string, string> = {
   "A week at a glance": "الأسبوع في نظرة واحدة", "From Sunday to Thursday, nothing gets missed.": "من الأحد إلى الخميس، كل شيء واضح.", "Each subject appears in its own row, with classwork, homework, and notes kept clear and easy to scan.": "تظهر كل مادة في صف مستقل مع عمل الحصة والواجبات والملاحظات بشكل واضح.", "Explore the full weekly plan": "استكشف الخطة الأسبوعية الكاملة",
   "For families": "لأولياء الأمور", "Everything your child needs for the week.": "كل ما يحتاجه طفلك خلال الأسبوع.", "Open the approved school plan from any device, then save or print a copy whenever you need it.": "افتح الخطة المعتمدة من أي جهاز، ثم احفظها أو اطبعها وقتما تحتاج.", "View this week’s plan": "عرض خطة هذا الأسبوع",
   "Weekly Study Plan · Academic Year 2026–2027": "الخطة الدراسية الأسبوعية · العام الدراسي 2026–2027", "View weekly plan": "عرض الخطة الأسبوعية",
+  "Class Timetable": "جدول الحصص", "Choose your child's grade and class to see the official lesson order for the week.": "اختر صف وشعبة طفلك لعرض ترتيب الحصص الرسمي خلال الأسبوع.", "Viewing timetable for": "الجدول المعروض لـ", "WEEKLY LESSON ORDER": "ترتيب الحصص الأسبوعي", "lessons": "حصص", "How this helps": "كيف يساعدك ذلك", "This order will later organise published weekly-plan subjects automatically.": "سيُنظّم هذا الجدول مواد الخطة الأسبوعية المنشورة تلقائيًا عند ربط النظام.",
   "Sunday": "الأحد", "Monday": "الاثنين", "Tuesday": "الثلاثاء", "Wednesday": "الأربعاء", "Thursday": "الخميس", "DAY": "اليوم", "COURSE": "المادة", "HOMEWORK": "الواجب", "Teacher updated": "يحدّثها المعلم", "Print-ready PDF": "PDF جاهز للطباعة"
 };
 

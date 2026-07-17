@@ -40,6 +40,7 @@ export default function Home() {
         <nav className="desktop-nav" aria-label="Main navigation">
           <Link className="active" href="/">Home</Link>
           <Link href="/weekly-plan">Weekly Plan</Link>
+          <Link href="/timetable">Timetable</Link>
           <a href="#how-it-works">How it works</a>
           <Link href="/support">Technical Support</Link>
         </nav>

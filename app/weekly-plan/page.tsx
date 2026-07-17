@@ -38,7 +38,7 @@ export default function WeeklyPlanPage() {
   };
 
   return <main className="subpage plan-page">
-    <header className="compact-header"><Link href="/" className="brand-lockup"><img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" /><span className="brand-copy"><strong>ALANDALUS PRIVATE SCHOOLS</strong><small>Egyptian Section</small></span></Link><nav><Link href="/">Home</Link><Link className="active" href="/weekly-plan">Weekly Plan</Link></nav><Link className="button button-outline" href="/support">Technical Support</Link></header>
+    <header className="compact-header"><Link href="/" className="brand-lockup"><img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" /><span className="brand-copy"><strong>ALANDALUS PRIVATE SCHOOLS</strong><small>Egyptian Section</small></span></Link><nav><Link href="/">Home</Link><Link className="active" href="/weekly-plan">Weekly Plan</Link><Link href="/timetable">Timetable</Link></nav><Link className="button button-outline" href="/support">Technical Support</Link></header>
 
     <section className="plan-directory-hero"><div className="page-width"><p className="eyebrow">FAMILY ACCESS</p><h1>Weekly Plan Library</h1><span>Select a class to view every weekly plan published by the school.</span></div></section>
 
