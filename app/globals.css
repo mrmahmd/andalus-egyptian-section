@@ -18,6 +18,16 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--white); color: var(--ink); font-family: "Aptos", "Segoe UI", Arial, sans-serif; }
+.language-switcher { position: fixed; z-index: 1000; top: 18px; right: 18px; min-height: 42px; padding: 0 15px; border: 1px solid rgba(12,53,106,.22); border-radius: 10px; box-shadow: 0 8px 24px rgba(12,35,69,.16); background: #fff; color: #0c356a; font: 800 14px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.arabic-ui, .arabic-ui * { font-family: "Cairo", "Tahoma", sans-serif !important; }
+.arabic-ui .teacher-sidebar, .arabic-ui .teacher-nav, .arabic-ui .teacher-topbar, .arabic-ui .site-header-inner { direction: rtl; }
+.arabic-ui .teacher-search, .arabic-ui .teacher-top-actions, .arabic-ui .teacher-page-heading, .arabic-ui .teacher-editor-footer { flex-direction: row-reverse; }
+.arabic-ui .teacher-sidebar-profile, .arabic-ui .teacher-brand, .arabic-ui .super-account-name, .arabic-ui .teacher-auth-brand, .arabic-ui .teacher-auth-mobile-brand { direction: rtl; }
+.arabic-ui .teacher-auth-intro, .arabic-ui .teacher-auth-features, .arabic-ui .teacher-auth-brand-panel { text-align: right; direction: rtl; }
+.arabic-ui .teacher-auth-intro { text-align: center; }
+.arabic-ui table { direction: rtl; }
+html[dir="rtl"] .language-switcher { right: auto; left: 18px; font-family: "Cairo", "Tahoma", sans-serif; }
+@media (max-width: 760px) { .language-switcher { top: 12px; right: 12px; min-height: 38px; padding: 0 12px; font-size: 13px; } html[dir="rtl"] .language-switcher { right: auto; left: 12px; } }
 a { color: inherit; }
 button, select, input { font: inherit; }
 
