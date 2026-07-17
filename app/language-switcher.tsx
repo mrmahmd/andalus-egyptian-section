@@ -32,6 +32,17 @@ const homeAr: Record<string, string> = {
   "Sunday": "الأحد", "Monday": "الاثنين", "Tuesday": "الثلاثاء", "Wednesday": "الأربعاء", "Thursday": "الخميس", "DAY": "اليوم", "COURSE": "المادة", "HOMEWORK": "الواجب", "Teacher updated": "يحدّثها المعلم", "Print-ready PDF": "PDF جاهز للطباعة"
 };
 
+const staffAr: Record<string, string> = {
+  "School Staff Portal": "بوابة موظفي المدرسة", "One secure sign in.": "تسجيل دخول آمن واحد.", "Every workspace.": "كل لوحات التحكم.", "Teachers, administrators and school owners enter from one portal and continue to their correct workspace.": "يدخل المعلمون والإداريون ومالك المدرسة من بوابة واحدة ثم ينتقل كل منهم إلى لوحته المناسبة.",
+  "One portal": "بوابة واحدة", "Every school account begins from this single sign-in page.": "يبدأ كل حساب مدرسي من صفحة الدخول الموحدة هذه.", "Role-based access": "صلاحيات حسب الدور", "Your approved account opens only the workspace assigned to you.": "يفتح حسابك المعتمد لوحة التحكم المخصصة لك فقط.", "Ready for families": "جاهزة لأولياء الأمور", "Published plans appear on the parent-facing page.": "تظهر الخطط المنشورة في صفحة أولياء الأمور.",
+  "Sign in to your school account": "سجّل دخولك إلى حساب المدرسة", "Create your school account": "أنشئ حساب المدرسة", "Your approved account will open the correct dashboard automatically.": "سيفتح حسابك المعتمد لوحة التحكم المناسبة تلقائيًا.",
+  "Sign In": "تسجيل الدخول", "Create New Account": "إنشاء حساب جديد", "Welcome back": "مرحبًا بعودتك", "Join the workspace": "انضم إلى مساحة العمل", "Full Name": "الاسم بالكامل", "Username": "اسم المستخدم", "Password": "كلمة المرور", "Account Type": "نوع الحساب", "Teacher": "معلم", "Admin": "إداري", "Create Account": "إنشاء الحساب",
+  "Teaching Department": "القسم التعليمي", "Administrative Position": "المسمى الإداري", "Deputy": "وكيل", "Department Supervisor": "مشرف شعبة", "Supervised Department": "القسم المُشرف عليه", "Teaching Assignments": "المواد والفصول", "Subject": "المادة", "Grade": "الصف", "Class": "الشعبة", "Add Assignment": "إضافة تكليف", "Add Another Assignment": "إضافة تكليف آخر", "Remember me": "تذكرني", "Forgot password?": "هل نسيت كلمة المرور؟", "First time here?": "هل تزور البوابة لأول مرة؟", "Already have an account?": "لديك حساب بالفعل؟",
+  "Teacher Workspace": "لوحة تحكم المعلم", "Overview": "نظرة عامة", "Weekly Plans": "الخطط الأسبوعية", "My Classes": "فصولي", "My Subjects": "موادي", "Calendar": "التقويم", "Workspace": "مساحة العمل", "Account": "الحساب", "Settings": "الإعدادات", "Academic year": "العام الدراسي", "Profile & assignments": "الملف الشخصي والتكليفات", "Need help?": "هل تحتاج مساعدة؟", "Open support": "فتح الدعم الفني", "All changes saved": "تم حفظ جميع التغييرات", "Create weekly entry": "إضافة إدخال أسبوعي", "Good evening, Mr. Mohamed.": "مساء الخير، أستاذ محمد.", "Here’s what is happening with your weekly plans.": "إليك آخر ما يحدث في خططك الأسبوعية.",
+  "This week’s entries": "إدخالات هذا الأسبوع", "Published": "منشور", "Drafts": "مسودات", "Needs attention": "تحتاج متابعة", "This week’s plans": "خطط هذا الأسبوع", "Weekly progress": "التقدم الأسبوعي", "My assignments": "تكليفاتي", "Edit": "تعديل", "Delete": "حذف", "Save draft": "حفظ كمسودة", "Publish plan": "نشر الخطة", "Classwork": "عمل الحصة", "Homework": "الواجب المنزلي", "Classera Notes": "ملاحظات كلاسيرا", "Quizzes & Assessments": "الاختبارات والتقييمات",
+  "Admin Control Center": "مركز تحكم الإدارة", "All Weekly Plans": "كل الخطط الأسبوعية", "Teacher Accounts": "حسابات المعلمين", "Activity Log": "سجل النشاط", "Open public plan": "فتح الخطة العامة", "Administration workspace": "مساحة عمل الإدارة", "Review and manage every published plan, draft and teacher submission.": "راجع وأدر كل خطة منشورة أو مسودة أو إدخال من المعلمين.", "Weekly plan directory": "دليل الخطط الأسبوعية", "Full administrator access": "صلاحيات إدارية كاملة", "Actions": "الإجراءات", "View": "عرض", "Cancel": "إلغاء", "Save changes": "حفظ التعديلات", "Delete this weekly plan?": "حذف هذه الخطة الأسبوعية؟"
+};
+
 function normalizedText(value: string) {
   return value.replaceAll("â€™", "’").replaceAll("â€”", "—").replaceAll("â€“", "–").replaceAll("â†’", "→").replaceAll("â†“", "↓").replaceAll("آ·", "·");
 }
@@ -44,12 +55,12 @@ function translatePage(root: HTMLElement) {
     if (node.parentElement?.closest(".plan-paper, .super-admin-portal")) return;
     const original = node.nodeValue ?? "";
     const value = original.trim();
-    const translated = homeAr[normalizedText(value)] ?? ar[value];
+    const translated = staffAr[normalizedText(value)] ?? homeAr[normalizedText(value)] ?? ar[value];
     if (translated) node.nodeValue = original.replace(value, translated);
   });
   root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input[placeholder], textarea[placeholder]").forEach((field) => {
     if (field.closest(".plan-paper, .super-admin-portal")) return;
-    const translated = homeAr[normalizedText(field.placeholder.trim())] ?? ar[field.placeholder.trim()];
+    const translated = staffAr[normalizedText(field.placeholder.trim())] ?? homeAr[normalizedText(field.placeholder.trim())] ?? ar[field.placeholder.trim()];
     if (translated) field.placeholder = translated;
   });
 }
