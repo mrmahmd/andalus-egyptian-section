@@ -7,6 +7,7 @@ const gradeOptions = Array.from({ length: 10 }, (_, index) => `Grade ${index + 1
 
 const subjectOptions = ["Arabic", "Islamic", "English OL", "English AL", "Math", "Science", "Social", "ICT"];
 const departmentOptions = ["English Department", "Arabic & Social Studies Department", "Math & Science Department"];
+const adminRoleOptions = ["Administrative", "English Supervisor", "Arabic Supervisor", "Math & Science Supervisor"] as const;
 
 type TeachingAssignment = {
   id: number;
@@ -20,8 +21,7 @@ export default function TeacherLoginPage() {
   const [mode, setMode] = useState<"signin" | "create">("signin");
   const [accountType, setAccountType] = useState<"teacher" | "admin">("teacher");
   const [teacherDepartment, setTeacherDepartment] = useState(departmentOptions[0]);
-  const [adminPosition, setAdminPosition] = useState<"Deputy" | "Department Supervisor">("Deputy");
-  const [supervisorDepartment, setSupervisorDepartment] = useState(departmentOptions[0]);
+  const [adminPosition, setAdminPosition] = useState<(typeof adminRoleOptions)[number]>("Administrative");
   const [draftSubject, setDraftSubject] = useState("English OL");
   const [draftGrade, setDraftGrade] = useState("Grade 1");
   const [draftClassType, setDraftClassType] = useState<"A" | "B">("A");
@@ -106,9 +106,8 @@ export default function TeacherLoginPage() {
             )}
             {mode === "create" && accountType === "admin" && (
               <section className="teacher-auth-admin-role" aria-labelledby="admin-role-title">
-                <label id="admin-role-title">Administrative Position<select value={adminPosition} onChange={(event) => setAdminPosition(event.target.value as "Deputy" | "Department Supervisor")}><option value="Deputy">Deputy</option><option value="Department Supervisor">Department Supervisor</option></select></label>
-                {adminPosition === "Department Supervisor" && <label>Supervised Department<select value={supervisorDepartment} onChange={(event) => setSupervisorDepartment(event.target.value)}>{departmentOptions.map((department) => <option key={department}>{department}</option>)}</select></label>}
-                <p><span>SC</span>{adminPosition === "Department Supervisor" ? `You will supervise teachers in the ${supervisorDepartment} only.` : "Deputy access will be defined by the Super Admin after approval."}</p>
+                <label id="admin-role-title">Administrative Role<select value={adminPosition} onChange={(event) => setAdminPosition(event.target.value as (typeof adminRoleOptions)[number])}>{adminRoleOptions.map((role) => <option key={role}>{role}</option>)}</select></label>
+                <p><span>SC</span>{adminPosition === "Administrative" ? "Administrative access will be defined by the Super Admin after approval." : `You will supervise ${adminPosition.replace(" Supervisor", "")} teachers only.`}</p>
               </section>
             )}
             <label>Username<input type="text" name="username" placeholder="Enter your username" autoComplete="username" /></label>
