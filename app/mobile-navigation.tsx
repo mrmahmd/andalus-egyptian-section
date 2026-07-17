@@ -7,6 +7,7 @@ const links = [
   { href: "/", label: "Home", icon: "H" },
   { href: "/weekly-plan", label: "Weekly Plan", icon: "WP" },
   { href: "/timetable", label: "Timetable", icon: "TT" },
+  { href: "/portal", label: "Portal", icon: "IN" },
   { href: "/support", label: "Support", icon: "?" },
 ];
 

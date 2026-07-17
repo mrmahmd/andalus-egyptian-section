@@ -14,7 +14,7 @@ const ar: Record<string, string> = {
 };
 
 const homeAr: Record<string, string> = {
-  "Home": "الرئيسية", "Weekly Plan": "الخطة الأسبوعية", "Timetable": "جدول الحصص", "How it works": "كيف تعمل المنصة؟", "Technical Support": "الدعم الفني", "Support": "الدعم الفني",
+  "Home": "الرئيسية", "Weekly Plan": "الخطة الأسبوعية", "Timetable": "جدول الحصص", "Portal": "البوابة", "School Portal": "بوابة المدرسة", "How it works": "كيف تعمل المنصة؟", "Technical Support": "الدعم الفني", "Support": "الدعم الفني",
   "Weekly plans are published every Thursday for the following school week.": "تُنشر الخطط الأسبوعية كل يوم خميس للأسبوع الدراسي التالي.",
   "ALANDALUS PRIVATE SCHOOLS": "مدارس الأندلس الأهلية", "Egyptian Section · Weekly Study Plan": "المسار المصري · الخطة الدراسية الأسبوعية", "Egyptian Section": "المسار المصري",
   "Find your plan": "ابحث عن خطتك", "One clear plan.": "خطة واحدة واضحة.", "A stronger school week.": "أسبوع دراسي أكثر تنظيمًا.",

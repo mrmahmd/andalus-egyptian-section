@@ -56,15 +56,15 @@ export default function TeacherLoginPage() {
         </div>
 
         <div className="teacher-auth-intro">
-          <p>Teacher Workspace</p>
-          <h1>Plan the week.<br />Keep every family informed.</h1>
-          <span>A focused workspace for publishing classwork, homework, Classera notes and weekly assessments.</span>
+          <p>School Staff Portal</p>
+          <h1>One secure sign in.<br />Every workspace.</h1>
+          <span>Teachers, administrators and school owners enter from one portal and continue to their correct workspace.</span>
         </div>
 
         <div className="teacher-auth-features">
-          <span><i>01</i><b>One weekly plan</b><small>All daily entries stay organised in one clear view.</small></span>
-          <span><i>02</i><b>Ready for families</b><small>Published plans appear instantly on the parent-facing page.</small></span>
-          <span><i>03</i><b>Print &amp; PDF</b><small>The same design stays clean when printed or saved.</small></span>
+          <span><i>01</i><b>One portal</b><small>Every school account begins from this single sign-in page.</small></span>
+          <span><i>02</i><b>Role-based access</b><small>Your approved account opens only the workspace assigned to you.</small></span>
+          <span><i>03</i><b>Ready for families</b><small>Published plans appear on the parent-facing page.</small></span>
         </div>
 
         <p className="teacher-auth-credit">AlAndalus Private Schools · Egyptian Section</p>
@@ -84,8 +84,8 @@ export default function TeacherLoginPage() {
 
           <div className="teacher-auth-heading">
             <span>{mode === "signin" ? "Welcome back" : "Join the workspace"}</span>
-            <h2>{mode === "signin" ? "Sign in to your account" : "Create your teacher account"}</h2>
-            <p>{mode === "signin" ? "Enter your details to continue to the teacher dashboard." : "Add your account details, teaching classes and subjects."}</p>
+            <h2>{mode === "signin" ? "Sign in to your school account" : "Create your school account"}</h2>
+            <p>{mode === "signin" ? "Your approved account will open the correct dashboard automatically." : "Add your account details, teaching classes and subjects."}</p>
           </div>
 
           <form onSubmit={(event) => event.preventDefault()}>

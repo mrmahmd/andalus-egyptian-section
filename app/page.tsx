@@ -44,9 +44,7 @@ export default function Home() {
           <a href="#how-it-works">How it works</a>
           <Link href="/support">Technical Support</Link>
         </nav>
-        <a className="button button-outline staff-link" href="#plan-finder">
-          Find your plan <span aria-hidden="true">↓</span>
-        </a>
+        <Link className="button button-outline staff-link" href="/portal">School Portal <span aria-hidden="true">→</span></Link>
       </header>
 
       <section className="hero-section">
