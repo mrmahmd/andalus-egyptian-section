@@ -33,7 +33,7 @@ const homeAr: Record<string, string> = {
 };
 
 const staffAr: Record<string, string> = {
-  "School Staff Portal": "بوابة موظفي المدرسة", "One secure sign in.": "تسجيل دخول آمن واحد.", "Every workspace.": "كل لوحات التحكم.", "Teachers, administrators and school owners enter from one portal and continue to their correct workspace.": "يدخل المعلمون والإداريون ومالك المدرسة من بوابة واحدة ثم ينتقل كل منهم إلى لوحته المناسبة.",
+  "School Staff Portal": "بوابة موظفي المدرسة", "One secure sign in.": "تسجيل دخول آمن واحد.", "Every workspace.": "كل لوحات التحكم.", "Teachers and administrators enter from one portal and continue to their correct workspace.": "يدخل المعلمون والإداريون من بوابة واحدة ثم ينتقل كل منهم إلى لوحته المناسبة.",
   "One portal": "بوابة واحدة", "Every school account begins from this single sign-in page.": "يبدأ كل حساب مدرسي من صفحة الدخول الموحدة هذه.", "Role-based access": "صلاحيات حسب الدور", "Your approved account opens only the workspace assigned to you.": "يفتح حسابك المعتمد لوحة التحكم المخصصة لك فقط.", "Ready for families": "جاهزة لأولياء الأمور", "Published plans appear on the parent-facing page.": "تظهر الخطط المنشورة في صفحة أولياء الأمور.",
   "Sign in to your school account": "سجّل دخولك إلى حساب المدرسة", "Create your school account": "أنشئ حساب المدرسة", "Your approved account will open the correct dashboard automatically.": "سيفتح حسابك المعتمد لوحة التحكم المناسبة تلقائيًا.",
   "Sign In": "تسجيل الدخول", "Create New Account": "إنشاء حساب جديد", "Welcome back": "مرحبًا بعودتك", "Join the workspace": "انضم إلى مساحة العمل", "Full Name": "الاسم بالكامل", "Username": "اسم المستخدم", "Password": "كلمة المرور", "Account Type": "نوع الحساب", "Teacher": "معلم", "Admin": "إداري", "Create Account": "إنشاء الحساب",

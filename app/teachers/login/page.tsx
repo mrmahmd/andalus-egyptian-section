@@ -58,7 +58,7 @@ export default function TeacherLoginPage() {
         <div className="teacher-auth-intro">
           <p>School Staff Portal</p>
           <h1>One secure sign in.<br />Every workspace.</h1>
-          <span>Teachers, administrators and school owners enter from one portal and continue to their correct workspace.</span>
+          <span>Teachers and administrators enter from one portal and continue to their correct workspace.</span>
         </div>
 
         <div className="teacher-auth-features">
