@@ -29,3 +29,11 @@ The site is deployed automatically to GitHub Pages when changes reach the `main`
 ## Planned next phase
 
 A separate teacher dashboard will manage subjects, classes, and weekly entries, then publish them to this parent-facing website.
+
+### Weekly-plan publication rules
+
+- The timetable is the source of truth for which subjects appear on each day, grade, and class section.
+- Teachers can enter their plans in any order; the published plan follows the lesson order defined in that timetable.
+- A scheduled subject must still appear if its teacher has not submitted an entry. Its Classwork, Homework, and Classera Notes cells show `Plan not published yet` until the plan is published.
+- The Super Admin manages timetables and can review missing subject plans before a weekly plan is made public.
+- Each day uses one merged day cell and automatically expands or contracts to match its actual number of lessons.
