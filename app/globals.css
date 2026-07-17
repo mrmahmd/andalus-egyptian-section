@@ -241,7 +241,7 @@ button, select, input { font: inherit; }
 .plan-paper { margin-bottom: 70px; padding: 34px; background: var(--white); border: 1px solid var(--line); box-shadow: 0 22px 65px rgba(29,48,78,.10); }
 .paper-header { display: grid; grid-template-columns: 95px 1fr 95px; align-items: center; gap: 20px; padding-bottom: 22px; border-bottom: 4px solid var(--navy-800); text-align: center; }
 .paper-header img { width: 90px; height: 66px; object-fit: cover; border-radius: 4px; }
-.paper-header img:last-child { justify-self: end; }
+.paper-header img { justify-self: start; }
 .paper-header > div { display: grid; gap: 4px; }
 .paper-header strong { color: var(--navy-900); font-size: 17px; letter-spacing: .08em; }
 .paper-header span { color: var(--muted); }
@@ -260,6 +260,7 @@ button, select, input { font: inherit; }
 .weekly-table tr.new-day td { border-top: 3px solid #b8c6d9; }
 .weekly-table .day-cell { width: 85px; color: var(--navy-900); font-weight: 800; background: #f1f5fa; }
 .weekly-table .course-cell { color: var(--navy-900); font-weight: 800; white-space: nowrap; }
+.weekly-day-group { break-inside: avoid; page-break-inside: avoid; }
 .important-notes { margin-top: 20px; padding: 17px 20px; border-left: 4px solid var(--magenta-600); background: #f8f1f7; }
 .important-notes strong { color: var(--navy-900); }
 .important-notes p { margin: 7px 0 0; color: #5a6475; font-size: 13px; }
@@ -388,14 +389,16 @@ button, select, input { font: inherit; }
 }
 
 @media print {
-  @page { size: A4; margin: 0; }
+  @page { size: A4 landscape; margin: 0; }
   /* Preserve the portal's navy, magenta and soft table backgrounds in the PDF. */
   .plan-paper, .plan-paper * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body * { visibility: hidden; }
   .plan-paper, .plan-paper * { visibility: visible; }
-  .plan-paper { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 10mm; border: 0; box-shadow: none; background: var(--white); }
+  .plan-paper { position: absolute; top: 0; left: 0; box-sizing: border-box; width: 100%; margin: 0; padding: 8mm 10mm; border: 0; box-shadow: none; background: var(--white); }
   .plan-paper .table-wrap { overflow: visible; }
   .weekly-table { min-width: 0; font-size: 10px; }
+  .weekly-table thead { display: table-header-group; }
+  .weekly-day-group, .weekly-table tr { break-inside: avoid; page-break-inside: avoid; }
   .weekly-table td { padding: 7px 5px; }
   .weekly-table td:not(.day-cell):not(.course-cell) { font-size: 10px; font-weight: 700; }
 }
