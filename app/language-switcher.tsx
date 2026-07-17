@@ -25,6 +25,17 @@ export default function LanguageSwitcher({ children }: { children: React.ReactNo
   const [language, setLanguage] = useState<"en" | "ar">("en");
   const pathname = usePathname();
   useEffect(() => { const stored = window.localStorage.getItem("andalus-language") as "en" | "ar" | null; if (stored) setLanguage(stored); }, []);
-  useEffect(() => { document.documentElement.lang = language; document.documentElement.dir = language === "ar" ? "rtl" : "ltr"; document.body.classList.toggle("arabic-ui", language === "ar"); if (language === "ar") translatePage(document.body); window.localStorage.setItem("andalus-language", language); }, [language]);
+  useEffect(() => {
+    document.documentElement.lang = language;
+    document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+    document.body.classList.toggle("arabic-ui", language === "ar");
+    window.localStorage.setItem("andalus-language", language);
+    if (language !== "ar") return;
+
+    translatePage(document.body);
+    const observer = new MutationObserver(() => translatePage(document.body));
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, [language, pathname]);
   return <>{children}{!pathname.endsWith("/super-admin") && <button className="language-switcher" type="button" onClick={() => { const next = language === "en" ? "ar" : "en"; window.localStorage.setItem("andalus-language", next); window.location.reload(); }}>{language === "en" ? "العربية" : "English"}</button>}</>;
 }
