@@ -242,7 +242,7 @@ button, select, input { font: inherit; }
 .paper-header { display: grid; grid-template-columns: 95px 1fr 95px; align-items: center; gap: 20px; padding-bottom: 22px; border-bottom: 4px solid var(--navy-800); text-align: center; }
 .paper-header img { width: 90px; height: 66px; object-fit: cover; border-radius: 4px; }
 .paper-header img { justify-self: start; }
-.paper-header > div { display: grid; gap: 4px; }
+.paper-header > div { display: grid; grid-column: 2; justify-self: center; width: 100%; gap: 4px; text-align: center; }
 .paper-header strong { color: var(--navy-900); font-size: 17px; letter-spacing: .08em; }
 .paper-header span { color: var(--muted); }
 .paper-header h2 { margin: 12px 0 0; color: var(--navy-950); font-size: 24px; letter-spacing: .11em; }
@@ -254,7 +254,8 @@ button, select, input { font: inherit; }
 .table-wrap { overflow-x: auto; margin-top: 22px; }
 .weekly-table { width: 100%; border-collapse: collapse; min-width: 800px; table-layout: auto; font-size: 12px; }
 .weekly-table th { padding: 13px 10px; background: var(--navy-800); color: var(--white); border: 1px solid var(--navy-800); text-transform: uppercase; letter-spacing: .07em; font-size: 9px; }
-.weekly-table td { padding: 12px 10px; border: 1px solid #dce3ed; text-align: center; vertical-align: middle; }
+.weekly-table th, .weekly-table td { text-align: center !important; }
+.weekly-table td { padding: 12px 10px; border: 1px solid #dce3ed; vertical-align: middle; }
 /* Keep Classwork, Homework and Classera Notes especially readable on screen and in print. */
 .weekly-table td:not(.day-cell):not(.course-cell) { color: #1b2e4a; font-size: 12.5px; font-weight: 700; line-height: 1.55; }
 .weekly-table tr.new-day td { border-top: 3px solid #b8c6d9; }
@@ -389,7 +390,7 @@ button, select, input { font: inherit; }
 }
 
 @media print {
-  @page { size: A4 landscape; margin: 0; }
+  @page { size: A4 landscape; margin: 10mm; }
   /* Preserve the portal's navy, magenta and soft table backgrounds in the PDF. */
   .plan-paper, .plan-paper * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body * { visibility: hidden; }

@@ -13,6 +13,28 @@ const ar: Record<string, string> = {
   "Sunday": "الأحد", "Monday": "الاثنين", "Tuesday": "الثلاثاء", "Wednesday": "الأربعاء", "Thursday": "الخميس", "Course": "المادة", "Classwork": "عمل الحصة", "Homework": "الواجب المنزلي", "Classera Notes": "ملاحظات كلاسيرا", "Notes": "ملاحظات", "Assessments & Quizzes": "الاختبارات والتقييمات"
 };
 
+const homeAr: Record<string, string> = {
+  "Home": "الرئيسية", "Weekly Plan": "الخطة الأسبوعية", "How it works": "كيف تعمل المنصة؟", "Technical Support": "الدعم الفني", "Support": "الدعم الفني",
+  "Weekly plans are published every Thursday for the following school week.": "تُنشر الخطط الأسبوعية كل يوم خميس للأسبوع الدراسي التالي.",
+  "ALANDALUS PRIVATE SCHOOLS": "مدارس الأندلس الأهلية", "Egyptian Section · Weekly Study Plan": "المسار المصري · الخطة الدراسية الأسبوعية", "Egyptian Section": "المسار المصري",
+  "Find your plan": "ابحث عن خطتك", "One clear plan.": "خطة واحدة واضحة.", "A stronger school week.": "أسبوع دراسي أكثر تنظيمًا.",
+  "Everything families need to follow lessons, homework, and teacher notes—beautifully organised in one place.": "كل ما يحتاجه ولي الأمر لمتابعة الدروس والواجبات وملاحظات المعلمين، في مكان واحد منظم.",
+  "Find your weekly plan": "ابحث عن خطتك الأسبوعية", "View sample plan": "عرض نموذج الخطة", "Weekly planner": "مخطط أسبوعي", "Find your class plan": "ابحث عن خطة الفصل",
+  "Grade": "الصف", "Class": "الشعبة", "School week": "الأسبوع الدراسي", "Select grade": "اختر الصف", "Select class": "اختر الشعبة", "View plan": "عرض الخطة",
+  "Designed around families": "مصممة لأولياء الأمور", "School planning that feels effortless.": "تنظيم مدرسي واضح وسهل.", "A calm, reliable view of the week—on any screen, at any time.": "متابعة هادئة وموثوقة للأسبوع، من أي جهاز وفي أي وقت.",
+  "Clear weekly learning": "تعلم أسبوعي واضح", "Classwork, homework, and Classera notes arranged by subject and school day.": "عمل الحصة والواجبات وملاحظات كلاسيرا مرتبة حسب المادة واليوم الدراسي.",
+  "Updated by teachers": "يُحدّثه المعلمون", "Every subject teacher adds their own plan, so families always see the latest version.": "يضيف كل معلم خطته، لتظهر لولي الأمر أحدث نسخة دائمًا.",
+  "Ready to print": "جاهزة للطباعة", "Open the complete weekly plan online or download a school-branded PDF in one click.": "اعرض الخطة كاملة على الموقع أو حمّل نسخة PDF رسمية بضغطة واحدة.",
+  "A week at a glance": "الأسبوع في نظرة واحدة", "From Sunday to Thursday, nothing gets missed.": "من الأحد إلى الخميس، كل شيء واضح.", "Each subject appears in its own row, with classwork, homework, and notes kept clear and easy to scan.": "تظهر كل مادة في صف مستقل مع عمل الحصة والواجبات والملاحظات بشكل واضح.", "Explore the full weekly plan": "استكشف الخطة الأسبوعية الكاملة",
+  "For families": "لأولياء الأمور", "Everything your child needs for the week.": "كل ما يحتاجه طفلك خلال الأسبوع.", "Open the approved school plan from any device, then save or print a copy whenever you need it.": "افتح الخطة المعتمدة من أي جهاز، ثم احفظها أو اطبعها وقتما تحتاج.", "View this week’s plan": "عرض خطة هذا الأسبوع",
+  "Weekly Study Plan · Academic Year 2026–2027": "الخطة الدراسية الأسبوعية · العام الدراسي 2026–2027", "View weekly plan": "عرض الخطة الأسبوعية",
+  "Sunday": "الأحد", "Monday": "الاثنين", "Tuesday": "الثلاثاء", "Wednesday": "الأربعاء", "Thursday": "الخميس", "DAY": "اليوم", "COURSE": "المادة", "HOMEWORK": "الواجب", "Teacher updated": "يحدّثها المعلم", "Print-ready PDF": "PDF جاهز للطباعة"
+};
+
+function normalizedText(value: string) {
+  return value.replaceAll("â€™", "’").replaceAll("â€”", "—").replaceAll("â€“", "–").replaceAll("â†’", "→").replaceAll("â†“", "↓").replaceAll("آ·", "·");
+}
+
 function translatePage(root: HTMLElement) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const nodes: Text[] = [];
@@ -21,11 +43,13 @@ function translatePage(root: HTMLElement) {
     if (node.parentElement?.closest(".plan-paper, .super-admin-portal")) return;
     const original = node.nodeValue ?? "";
     const value = original.trim();
-    if (ar[value]) node.nodeValue = original.replace(value, ar[value]);
+    const translated = homeAr[normalizedText(value)] ?? ar[value];
+    if (translated) node.nodeValue = original.replace(value, translated);
   });
   root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input[placeholder], textarea[placeholder]").forEach((field) => {
     if (field.closest(".plan-paper, .super-admin-portal")) return;
-    if (ar[field.placeholder.trim()]) field.placeholder = ar[field.placeholder.trim()];
+    const translated = homeAr[normalizedText(field.placeholder.trim())] ?? ar[field.placeholder.trim()];
+    if (translated) field.placeholder = translated;
   });
 }
 
