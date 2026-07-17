@@ -239,7 +239,7 @@ button, select, input { font: inherit; }
 .plan-toolbar p:last-child { margin: 7px 0 0; color: var(--muted); }
 .toolbar-actions { display: flex; gap: 10px; }
 .plan-paper { margin-bottom: 70px; padding: 34px; background: var(--white); border: 1px solid var(--line); box-shadow: 0 22px 65px rgba(29,48,78,.10); }
-.paper-header { position: relative; display: flex; align-items: center; justify-content: center; min-height: 72px; padding: 0 110px 22px; border-bottom: 4px solid var(--navy-800); text-align: center; }
+.paper-header { position: relative; display: block; min-height: 72px; padding: 0 0 22px; border-bottom: 4px solid var(--navy-800); text-align: center; }
 .paper-header img { position: absolute; left: 0; width: 90px; height: 66px; object-fit: cover; border-radius: 4px; }
 .paper-header > div { display: grid; width: 100%; gap: 4px; text-align: center; }
 .paper-header strong { color: var(--navy-900); font-size: 17px; letter-spacing: .08em; }
@@ -392,15 +392,21 @@ button, select, input { font: inherit; }
   @page { size: A4 landscape; margin: 10mm; }
   /* Preserve the portal's navy, magenta and soft table backgrounds in the PDF. */
   .plan-paper, .plan-paper * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .plan-page > :not(.selected-plan-wrap), .selected-plan-wrap .plan-toolbar { display: none !important; }
+  .language-switcher, .whatsapp-support, .plan-page > :not(.selected-plan-wrap), .selected-plan-wrap .plan-toolbar { display: none !important; }
   .selected-plan-wrap, .selected-plan-wrap.is-open { display: block !important; }
   .plan-paper { position: static; box-sizing: border-box; width: auto; margin: 0; padding: 0; border: 0; box-shadow: none; background: var(--white); }
-  .plan-paper .table-wrap { overflow: visible; }
+  .plan-paper .table-wrap { overflow: visible; margin-top: 9px; }
+  .paper-header { min-height: 58px; padding-bottom: 12px; }
+  .paper-header img { width: 72px; height: 54px; }
+  .paper-header strong { font-size: 15px; }
+  .paper-header h2 { margin-top: 7px; font-size: 20px; }
+  .paper-meta > span { padding: 7px 9px; }
   .weekly-table { min-width: 0; font-size: 10px; }
   .weekly-table thead { display: table-header-group; }
   .weekly-day-group, .weekly-table tr { break-inside: avoid; page-break-inside: avoid; }
-  .weekly-table td { padding: 7px 5px; }
-  .weekly-table td:not(.day-cell):not(.course-cell) { font-size: 10px; font-weight: 700; }
+  .weekly-table th { padding: 7px 5px; }
+  .weekly-table td { padding: 4px 5px; }
+  .weekly-table td:not(.day-cell):not(.course-cell) { font-size: 10px; font-weight: 700; line-height: 1.25; }
 }
 
 /* Teacher workspace prototype */
