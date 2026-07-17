@@ -22,11 +22,9 @@ test("renders one merged day cell for each school day", async () => {
   const dayCells = html.match(/class="day-cell"/g) ?? [];
   assert.equal(dayCells.length, 5);
   assert.match(html, /Mr\.Mohamed Farid/);
-  assert.match(html, /<td[^>]*rowspan="3"[^>]*>Sunday<\/td>/i);
-  assert.match(html, /<td[^>]*rowspan="2"[^>]*>Monday<\/td>/i);
-  assert.match(html, /<td[^>]*rowspan="2"[^>]*>Tuesday<\/td>/i);
-  assert.match(html, /<td[^>]*rowspan="2"[^>]*>Wednesday<\/td>/i);
-  assert.match(html, /<td[^>]*rowspan="1"[^>]*>Thursday<\/td>/i);
+  for (const day of ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"]) {
+    assert.match(html, new RegExp(`<td[^>]*rowspan="8"[^>]*>${day}<\\/td>`, "i"));
+  }
   assert.match(html, /QUIZZES &amp; ASSESSMENTS/);
   assert.match(html, /class="quiz-table"/);
   assert.match(html, /Spelling Quiz/);
