@@ -577,7 +577,7 @@ button, select, input { font: inherit; }
 .teacher-auth-intro > p { margin: 0 0 14px; color: #63d0e4; font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 .teacher-auth-intro h1 { margin: 0; font-size: clamp(42px, 5vw, 72px); line-height: 1.02; letter-spacing: -.055em; }
 .teacher-auth-intro > span { display: block; max-width: 590px; margin-top: 20px; color: #c7d4e4; font-size: 18px; line-height: 1.75; }
-.teacher-auth-features { margin-top: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.teacher-auth-features { margin-top: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .teacher-auth-features > span { min-width: 0; padding: 15px; border: 1px solid rgba(255,255,255,.11); border-radius: 13px; display: grid; gap: 5px; background: rgba(255,255,255,.055); backdrop-filter: blur(8px); }
 .teacher-auth-features i { width: 27px; height: 27px; margin-bottom: 4px; border-radius: 8px; display: grid; place-items: center; background: rgba(91,205,228,.15); color: #69d5e8; font-size: 8px; font-style: normal; font-weight: 900; }
 .teacher-auth-features b { font-size: 13px; }
