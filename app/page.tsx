@@ -41,6 +41,7 @@ export default function Home() {
           <Link className="active" href="/">Home</Link>
           <Link href="/weekly-plan">Weekly Plan</Link>
           <a href="#how-it-works">How it works</a>
+          <Link href="/support">Technical Support</Link>
         </nav>
         <a className="button button-outline staff-link" href="#plan-finder">
           Find your plan <span aria-hidden="true">↓</span>
@@ -155,6 +156,7 @@ export default function Home() {
           <Link href="/weekly-plan">View weekly plan</Link>
         </div>
       </footer>
+      <Link className="whatsapp-support" href="/support" aria-label="Open technical support"><span>WA</span><b>Support</b></Link>
     </HomeReveal>
   );
 }
