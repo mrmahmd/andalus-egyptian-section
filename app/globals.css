@@ -98,6 +98,12 @@ button, select, input { font: inherit; }
 .finder-fields select { width: 100%; height: 48px; padding: 0 36px 0 13px; color: var(--ink); border: 1px solid #cfd8e6; border-radius: 8px; background: var(--white); outline: none; }
 .finder-fields select:focus { border-color: var(--blue-600); box-shadow: 0 0 0 3px rgba(17,105,179,.12); }
 .finder-button { white-space: nowrap; }
+.reveal-ready [data-reveal] { opacity: 0; transform: translateY(34px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.75,.3,1); }
+.reveal-ready [data-reveal].is-revealed { opacity: 1; transform: translateY(0); }
+.reveal-ready .feature-item { transition-delay: .05s; }
+.reveal-ready .feature-item:nth-child(2) { transition-delay: .12s; }
+.reveal-ready .feature-item:nth-child(3) { transition-delay: .19s; }
+@media (prefers-reduced-motion: reduce) { .reveal-ready [data-reveal] { opacity: 1; transform: none; transition: none; } }
 
 .experience-section { padding: 110px 0 100px; }
 .section-intro { max-width: 670px; }

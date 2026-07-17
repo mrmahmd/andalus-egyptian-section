@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HomeReveal from "./home-reveal";
 
 const features = [
   {
@@ -22,7 +23,7 @@ export default function Home() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
   return (
-    <main>
+    <HomeReveal>
       <div className="notice-bar">
         <span className="notice-dot" />
         Weekly plans are published every Thursday for the following school week.
@@ -63,7 +64,7 @@ export default function Home() {
         <div className="hero-year" aria-hidden="true">EST. 1984</div>
       </section>
 
-      <section id="plan-finder" className="finder-shell page-width" aria-label="Find your weekly plan">
+      <section id="plan-finder" className="finder-shell page-width" aria-label="Find your weekly plan" data-reveal>
         <div className="finder-heading">
           <span className="finder-icon">W</span>
           <div>
@@ -98,7 +99,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="how-it-works" className="experience-section page-width">
+      <section id="how-it-works" className="experience-section page-width" data-reveal>
         <div className="section-intro">
           <p className="eyebrow">Designed around families</p>
           <h2>School planning that feels effortless.</h2>
@@ -115,7 +116,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="preview-section">
+      <section className="preview-section" data-reveal>
         <div className="page-width preview-grid">
           <div className="preview-copy">
             <p className="eyebrow light">A week at a glance</p>
@@ -135,7 +136,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="teacher-banner page-width">
+      <section className="teacher-banner page-width" data-reveal>
         <div>
           <p className="eyebrow">For families</p>
           <h2>Everything your child needs for the week.</h2>
@@ -144,7 +145,7 @@ export default function Home() {
         <Link className="button button-dark" href="/weekly-plan">View this week’s plan <span>→</span></Link>
       </section>
 
-      <footer className="site-footer">
+      <footer className="site-footer" data-reveal>
         <div className="page-width footer-grid">
           <div className="footer-brand">
             <img src={`${basePath}/school-logo.jpeg`} alt="" />
@@ -154,6 +155,6 @@ export default function Home() {
           <Link href="/weekly-plan">View weekly plan</Link>
         </div>
       </footer>
-    </main>
+    </HomeReveal>
   );
 }
