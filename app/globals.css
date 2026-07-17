@@ -389,9 +389,12 @@ button, select, input { font: inherit; }
 
 @media print {
   @page { size: A4; margin: 0; }
+  /* Preserve the portal's navy, magenta and soft table backgrounds in the PDF. */
+  .plan-paper, .plan-paper * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body * { visibility: hidden; }
   .plan-paper, .plan-paper * { visibility: visible; }
   .plan-paper { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 10mm; border: 0; box-shadow: none; background: var(--white); }
+  .plan-paper .table-wrap { overflow: visible; }
   .weekly-table { min-width: 0; font-size: 10px; }
   .weekly-table td { padding: 7px 5px; }
   .weekly-table td:not(.day-cell):not(.course-cell) { font-size: 10px; font-weight: 700; }
