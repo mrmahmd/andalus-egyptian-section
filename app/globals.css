@@ -255,6 +255,8 @@ button, select, input { font: inherit; }
 .weekly-table { width: 100%; border-collapse: collapse; min-width: 800px; table-layout: auto; font-size: 12px; }
 .weekly-table th { padding: 13px 10px; background: var(--navy-800); color: var(--white); border: 1px solid var(--navy-800); text-transform: uppercase; letter-spacing: .07em; font-size: 9px; }
 .weekly-table td { padding: 12px 10px; border: 1px solid #dce3ed; text-align: center; vertical-align: middle; }
+/* Keep Classwork, Homework and Classera Notes especially readable on screen and in print. */
+.weekly-table td:not(.day-cell):not(.course-cell) { color: #1b2e4a; font-size: 12.5px; font-weight: 700; line-height: 1.55; }
 .weekly-table tr.new-day td { border-top: 3px solid #b8c6d9; }
 .weekly-table .day-cell { width: 85px; color: var(--navy-900); font-weight: 800; background: #f1f5fa; }
 .weekly-table .course-cell { color: var(--navy-900); font-weight: 800; white-space: nowrap; }
@@ -386,11 +388,13 @@ button, select, input { font: inherit; }
 }
 
 @media print {
-  .compact-header, .plan-toolbar { display: none !important; }
-  .subpage { background: var(--white); }
-  .plan-paper { width: 100%; margin: 0; padding: 10mm; border: 0; box-shadow: none; }
+  @page { size: A4; margin: 0; }
+  body * { visibility: hidden; }
+  .plan-paper, .plan-paper * { visibility: visible; }
+  .plan-paper { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 10mm; border: 0; box-shadow: none; background: var(--white); }
   .weekly-table { min-width: 0; font-size: 10px; }
   .weekly-table td { padding: 7px 5px; }
+  .weekly-table td:not(.day-cell):not(.course-cell) { font-size: 10px; font-weight: 700; }
 }
 
 /* Teacher workspace prototype */
