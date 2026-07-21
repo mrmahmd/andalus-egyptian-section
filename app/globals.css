@@ -545,7 +545,17 @@ button, select, input { font: inherit; }
 .weekly-builder-days article header { display: grid; gap: 3px; margin-bottom: 11px; padding: 10px; border-radius: 9px; background: #0d376b; color: #fff; }
 .weekly-builder-days article header small { color: #a5e4ed; font-size: 10px; font-weight: 800; }
 .weekly-builder-days article label { margin-top: 9px; }
+.weekly-builder-extra { padding: 15px; border: 1px solid #dfe6ee; border-radius: 12px; background: #fbfcfe; }
+.weekly-builder-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 13px; }
+.weekly-builder-section-heading > div { display: flex; align-items: center; gap: 10px; }
+.weekly-builder-section-heading > div > span { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #0d376b; color: #fff; font-size: 9px; font-weight: 900; }
+.weekly-builder-section-heading strong, .weekly-builder-section-heading small { display: block; }
+.weekly-builder-section-heading strong { color: #1b3150; font-size: 13px; }
+.weekly-builder-section-heading small { margin-top: 3px; color: #77869b; font-size: 10px; }
+.weekly-builder-quiz-row { display: grid; grid-template-columns: .75fr 1fr 1.35fr 1.35fr; gap: 10px; }
+.weekly-builder-notes { width: 100%; box-sizing: border-box; }
 @media (max-width: 760px) { .weekly-builder-toolbar { grid-template-columns: 1fr; }.weekly-builder-days { grid-template-columns: 1fr; overflow-x: visible; }.weekly-builder-days article { min-width: 0; } }
+@media (max-width: 760px) { .weekly-builder-quiz-row { grid-template-columns: 1fr; }.weekly-builder-section-heading { align-items: flex-start; flex-direction: column; } }
 .teacher-editor-footer { margin: 4px -25px -25px; padding: 17px 25px; border-top: 1px solid #e8edf3; background: #fafbfd; display: flex; align-items: center; justify-content: space-between; gap: 16px; }.teacher-editor-footer > span { color: #8a96a8; font-size: 8px; }.teacher-editor-footer > div { display: flex; gap: 8px; }
 .teacher-setup-layer { position: fixed; inset: 0; z-index: 110; overflow-y: auto; background: radial-gradient(circle at 10% 0, #eef9fc 0, transparent 30%), #f5f7fb; }
 .teacher-setup-top { height: 78px; padding: 0 6vw; background: white; border-bottom: 1px solid #e4eaf1; display: flex; align-items: center; justify-content: space-between; }.teacher-setup-top .teacher-brand strong { color: #102349; }.teacher-setup-top .teacher-brand span { color: #75839a; }.teacher-setup-top > button { border: 0; background: transparent; color: #43516a; font: inherit; font-size: 9px; font-weight: 800; cursor: pointer; }
