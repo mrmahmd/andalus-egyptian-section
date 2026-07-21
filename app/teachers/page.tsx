@@ -34,6 +34,7 @@ export default function TeachersDashboardPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const [activeNav, setActiveNav] = useState("Overview");
   const [editorOpen, setEditorOpen] = useState(false);
+  const [weeklyBuilderOpen, setWeeklyBuilderOpen] = useState(false);
   const [quizEnabled, setQuizEnabled] = useState(true);
   const [editorClass, setEditorClass] = useState("Grade 4 · A");
   const editorGradeNumber = Number(editorClass.match(/Grade (\d+)/)?.[1] ?? 4);
@@ -90,7 +91,7 @@ export default function TeachersDashboardPage() {
           <div className="teacher-page-heading">
             <div><p className="teacher-kicker">Thursday, 16 July</p><h1>Good evening, Mr. Mohamed.</h1><span>Here’s what is happening with your weekly plans.</span></div>
             <div className="teacher-heading-actions">
-              <button className="teacher-primary-button" onClick={() => setEditorOpen(true)}><span>＋</span> Create weekly entry</button>
+              <button className="teacher-primary-button" onClick={() => setWeeklyBuilderOpen(true)}><span>＋</span> Create weekly plan</button>
             </div>
           </div>
 
@@ -178,6 +179,22 @@ export default function TeachersDashboardPage() {
                 )}
               </section>
               <div className="teacher-editor-footer"><span>Changes in this prototype are not saved.</span><div><button type="button" className="teacher-secondary-button" onClick={() => setEditorOpen(false)}>Save as draft</button><button className="teacher-primary-button" type="submit">Publish entry</button></div></div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {weeklyBuilderOpen && (
+        <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setWeeklyBuilderOpen(false)}>
+          <section className="teacher-editor-modal weekly-builder-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
+            <div className="teacher-modal-heading"><div><p>Weekly Plan · Week 03</p><h2 id="weekly-builder-title">Build the whole week</h2></div><button aria-label="Close weekly builder" onClick={() => setWeeklyBuilderOpen(false)}>×</button></div>
+            <div className="teacher-editor-context"><span>One save for the whole week</span><i />Fill all days here, then add another class or subject if needed.</div>
+            <form onSubmit={(event) => { event.preventDefault(); setWeeklyBuilderOpen(false); }}>
+              <div className="weekly-builder-toolbar"><label>Class<select defaultValue="Grade 4 · A"><option>Grade 4 · A</option><option>Grade 4 · B</option><option>Grade 5 · A</option></select></label><label>Subject programme<select defaultValue="English - Connect Plus"><option>English · Connect Plus</option><option>English · Hello</option><option>English · Hello Plus</option><option>Discover</option><option>Arabic</option><option>Math</option><option>Science</option></select></label><button type="button" className="teacher-secondary-button">＋ Add another assignment</button></div>
+              <div className="weekly-builder-days">
+                {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"].map((day) => <article key={day}><header><strong>{day}</strong><small>English</small></header><label>Classwork<textarea rows={2} placeholder="e.g. Connect Plus · Unit 1 · Lesson 1" /></label><label>Homework<textarea rows={2} placeholder="Homework for this day" /></label><label>Classera notes<textarea rows={2} placeholder="Quiz, reminder or materials" /></label></article>)}
+              </div>
+              <div className="teacher-editor-footer"><span>All five days will be saved together.</span><div><button type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button className="teacher-primary-button" type="submit">Save weekly plan</button></div></div>
             </form>
           </section>
         </div>
