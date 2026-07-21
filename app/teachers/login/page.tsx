@@ -5,7 +5,7 @@ import { useState } from "react";
 
 const departmentOptions = ["English Department", "Arabic & Social Studies Department", "Math & Science Department"];
 const gradeOptions = Array.from({ length: 10 }, (_, index) => `Grade ${index + 1}`);
-const subjectOptions = ["Arabic", "Islamic", "English OL - Connect Plus", "English OL - Hello", "English OL - Hello Plus", "English AL", "Discover", "Math", "Science", "Social", "ICT"];
+const subjectOptions = ["Arabic", "Islamic", "English - Connect Plus", "English - Hello", "English - Hello Plus", "Discover", "Math", "Science", "Social", "ICT"];
 const adminRoleOptions = ["Administrative", "English Supervisor", "Arabic Supervisor", "Math & Science Supervisor"] as const;
 
 export default function TeacherLoginPage() {
@@ -14,7 +14,7 @@ export default function TeacherLoginPage() {
   const [accountType, setAccountType] = useState<"teacher" | "admin">("teacher");
   const [teacherDepartment, setTeacherDepartment] = useState(departmentOptions[0]);
   const [adminPosition, setAdminPosition] = useState<(typeof adminRoleOptions)[number]>("Administrative");
-  const [draftSubject, setDraftSubject] = useState("English OL - Connect Plus");
+  const [draftSubject, setDraftSubject] = useState("English - Connect Plus");
   const [draftGrade, setDraftGrade] = useState("Grade 1");
   const [draftClassType, setDraftClassType] = useState<"A" | "B">("A");
   const [teachingAssignments, setTeachingAssignments] = useState<{ id: number; subject: string; grade: string; classType: "A" | "B" }[]>([]);

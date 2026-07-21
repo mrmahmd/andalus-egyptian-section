@@ -18,16 +18,16 @@ const plans = [
 ];
 
 const courseOptions = [
-  { value: "English OL - Connect Plus", label: "English OL · Connect Plus" },
-  { value: "English OL - Hello", label: "English OL · Hello" },
-  { value: "English OL - Hello Plus", label: "English OL · Hello Plus" },
-  { value: "Discover", label: "Discover" },
-  { value: "Arabic", label: "Arabic" },
-  { value: "Islamic", label: "Islamic" },
-  { value: "Math", label: "Math" },
-  { value: "Science", label: "Science" },
-  { value: "Social", label: "Social Studies" },
-  { value: "ICT", label: "ICT" },
+  { value: "English - Connect Plus", label: "English · Connect Plus", from: 1, to: 6 },
+  { value: "English - Hello", label: "English · Hello", from: 7, to: 9 },
+  { value: "English - Hello Plus", label: "English · Hello Plus", from: 7, to: 9 },
+  { value: "Discover", label: "Discover", from: 1, to: 3 },
+  { value: "Arabic", label: "Arabic", from: 1, to: 10 },
+  { value: "Islamic", label: "Islamic", from: 1, to: 10 },
+  { value: "Math", label: "Math", from: 1, to: 10 },
+  { value: "Science", label: "Science", from: 1, to: 10 },
+  { value: "Social", label: "Social Studies", from: 1, to: 10 },
+  { value: "ICT", label: "ICT", from: 1, to: 10 },
 ];
 
 export default function TeachersDashboardPage() {
@@ -35,6 +35,9 @@ export default function TeachersDashboardPage() {
   const [activeNav, setActiveNav] = useState("Overview");
   const [editorOpen, setEditorOpen] = useState(false);
   const [quizEnabled, setQuizEnabled] = useState(true);
+  const [editorClass, setEditorClass] = useState("Grade 4 · A");
+  const editorGradeNumber = Number(editorClass.match(/Grade (\d+)/)?.[1] ?? 4);
+  const availableCourseOptions = courseOptions.filter((course) => editorGradeNumber >= course.from && editorGradeNumber <= course.to);
 
   return (
     <main className="teacher-portal">
@@ -149,8 +152,8 @@ export default function TeachersDashboardPage() {
             <div className="teacher-editor-context"><span>Mr.Mohamed Farid</span><i />Your saved classes and subjects are ready to use.</div>
             <form onSubmit={(event) => { event.preventDefault(); setEditorOpen(false); }}>
               <div className="teacher-form-row">
-                <label>Class<select defaultValue="Grade 4 · A"><option>Grade 4 · A</option><option>Grade 4 · B</option></select></label>
-                <label>Subject programme<select defaultValue="English OL - Connect Plus">{courseOptions.map((course) => <option key={course.value} value={course.value}>{course.label}</option>)}</select></label>
+                <label>Class<select value={editorClass} onChange={(event) => setEditorClass(event.target.value)}><option>Grade 4 · A</option><option>Grade 4 · B</option><option>Grade 7 · A</option><option>Grade 7 · B</option></select></label>
+                <label>Subject programme<select defaultValue="English - Connect Plus">{availableCourseOptions.map((course) => <option key={course.value} value={course.value}>{course.label}</option>)}</select></label>
                 <label>Day<select defaultValue="Sunday"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option></select></label>
               </div>
               <label>Classwork<textarea rows={3} defaultValue="Unit 2: Amazing Animals — pages 18–19" /></label>

@@ -26,7 +26,7 @@ const initialAccounts: ManagedAccount[] = [
   { id: 6, name: "School Operations", username: "school.ops", role: "Admin", status: "Active", requested: "10 Jul 2026", assignments: "Admin Control Center", lastAction: "Approved by Super Admin" },
 ];
 
-const subjects = ["Arabic", "Islamic", "English OL - Connect Plus", "English OL - Hello", "English OL - Hello Plus", "Discover", "Math", "Science", "Social", "ICT"];
+const subjects = ["Arabic", "Islamic", "English - Connect Plus", "English - Hello", "English - Hello Plus", "Discover", "Math", "Science", "Social", "ICT"];
 const grades = Array.from({ length: 10 }, (_, index) => `Grade ${index + 1}`);
 
 export default function SuperAdminPage() {
