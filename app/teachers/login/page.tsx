@@ -15,6 +15,12 @@ Object.assign(teacherDirectory, {
   "PE Department": ["ط£ط­ظ…ط¯ ط­ط¬ط²ظٹ"],
   "ICT Department": ["ظ…ط­ظ…ظˆط¯ ظ…ط¯ظƒظˆط±", "ظ…ط­ظ…ط¯ ط³ظ…ظٹط±"],
 });
+Object.assign(teacherDirectory, {
+  "Swimming Department": ["محمد معوض", "محمود مرسي"],
+  "Art Department": ["علي بدير"],
+  "PE Department": ["أحمد حجازي"],
+  "ICT Department": ["محمود مدكور", "محمد سمير"],
+});
 const adminDirectory = [
   { name: "محمود حلمي", role: "English Supervisor" },
   { name: "محمد عثمان", role: "Arabic Supervisor" },
