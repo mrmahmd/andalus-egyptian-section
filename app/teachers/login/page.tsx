@@ -18,7 +18,7 @@ Object.assign(teacherDirectory, {
 Object.assign(teacherDirectory, {
   "Swimming Department": ["محمد معوض", "محمود مرسي"],
   "Art Department": ["علي بدير"],
-  "PE Department": ["أحمد حجازي"],
+  "PE Department": ["أحمد حجي"],
   "ICT Department": ["محمود مدكور", "محمد سمير"],
 });
 const adminDirectory = [
