@@ -44,6 +44,20 @@ const staffAr: Record<string, string> = {
 };
 
 Object.assign(staffAr, {
+  "Arabic": "العربية",
+  "Islamic": "التربية الإسلامية",
+  "English": "اللغة الإنجليزية",
+  "English - Connect Plus": "اللغة الإنجليزية - Connect Plus",
+  "English - Hello": "اللغة الإنجليزية - Hello",
+  "English - Hello Plus": "اللغة الإنجليزية - Hello Plus",
+  "Discover": "Discover",
+  "Math": "الرياضيات",
+  "Science": "العلوم",
+  "Social": "الدراسات الاجتماعية",
+  "ICT": "تكنولوجيا المعلومات",
+  "PE": "التربية البدنية",
+  "Swimming": "السباحة",
+  "Art": "التربية الفنية",
   "Swimming Department": "قسم السباحة",
   "Art Department": "قسم التربية الفنية",
   "PE Department": "قسم التربية البدنية",
