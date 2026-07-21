@@ -4,8 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 
 const departmentOptions = ["English Department", "Arabic & Social Studies Department", "Math & Science Department"];
+const teacherDirectory: Record<string, string[]> = {
+  "English Department": ["محمود حلمي", "محمد بدر", "محمد فريد", "عمرو رزق", "محمد عبد الحميد", "محمود السكري"],
+  "Arabic & Social Studies Department": ["محمد سيد بكر", "محمد حمد", "محمد سعيد", "محمد شعبان", "ماجد موسى", "محمد عثمان", "أحمد سالم", "أحمد حسن", "محمد فودة", "عصام الجزار", "وائل شكري"],
+  "Math & Science Department": ["جمال عبد الرحيم", "أحمد عدس", "ممدوح بهجت", "عبد الناصر خليل", "عمر أبو شادي", "وائل أبو العلا"],
+};
+const unassignedTeachers = ["محمود مدكور", "محمد سمير", "علي بدير", "أحمد حجي", "محمد معوض", "محمود مرسي"];
 const gradeOptions = Array.from({ length: 10 }, (_, index) => `Grade ${index + 1}`);
-const subjectOptions = ["Arabic", "Islamic", "English - Connect Plus", "English - Hello", "English - Hello Plus", "Discover", "Math", "Science", "Social", "ICT"];
+const subjectOptions = ["Arabic", "Islamic", "English - Connect Plus", "English - Hello", "English - Hello Plus", "Discover", "Math", "Science", "Social", "ICT", "PE", "Swimming"];
 const adminRoleOptions = ["Administrative", "English Supervisor", "Arabic Supervisor", "Math & Science Supervisor"] as const;
 
 export default function TeacherLoginPage() {
@@ -13,6 +19,7 @@ export default function TeacherLoginPage() {
   const [mode, setMode] = useState<"signin" | "create">("signin");
   const [accountType, setAccountType] = useState<"teacher" | "admin">("teacher");
   const [teacherDepartment, setTeacherDepartment] = useState(departmentOptions[0]);
+  const [teacherName, setTeacherName] = useState(teacherDirectory[departmentOptions[0]][0]);
   const [adminPosition, setAdminPosition] = useState<(typeof adminRoleOptions)[number]>("Administrative");
   const [draftSubject, setDraftSubject] = useState("English - Connect Plus");
   const [draftGrade, setDraftGrade] = useState("Grade 1");
@@ -81,7 +88,10 @@ export default function TeacherLoginPage() {
               </fieldset>
             )}
             {mode === "create" && accountType === "teacher" && (
-              <label>Teaching Department<select value={teacherDepartment} onChange={(event) => setTeacherDepartment(event.target.value)}>{departmentOptions.map((department) => <option key={department}>{department}</option>)}</select></label>
+              <>
+                <label>Teaching Department<select value={teacherDepartment} onChange={(event) => { const department = event.target.value; setTeacherDepartment(department); setTeacherName(teacherDirectory[department][0]); }}>{departmentOptions.map((department) => <option key={department}>{department}</option>)}</select></label>
+                <label>Teacher Name<select value={teacherName} onChange={(event) => setTeacherName(event.target.value)}>{teacherDirectory[teacherDepartment].map((name) => <option key={name}>{name}</option>)}</select></label>
+              </>
             )}
             {mode === "create" && accountType === "admin" && (
               <section className="teacher-auth-admin-role" aria-labelledby="admin-role-title">
@@ -92,7 +102,7 @@ export default function TeacherLoginPage() {
             <label>Username<input type="text" name="username" placeholder="Enter your username" autoComplete="username" /></label>
             <label>Password<input type="password" name="password" placeholder="Enter your password" autoComplete={mode === "signin" ? "current-password" : "new-password"} /></label>
 
-            {mode === "create" && accountType === "teacher" && (
+            {false && mode === "create" && accountType === "teacher" && (
               <section className="teacher-auth-assignments" aria-labelledby="teaching-assignments-title">
                 <div className="teacher-auth-assignment-heading">
                   <span>TA</span>

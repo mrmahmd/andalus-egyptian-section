@@ -28,6 +28,8 @@ const courseOptions = [
   { value: "Science", label: "Science", from: 1, to: 10 },
   { value: "Social", label: "Social Studies", from: 1, to: 10 },
   { value: "ICT", label: "ICT", from: 1, to: 10 },
+  { value: "PE", label: "PE", from: 1, to: 10 },
+  { value: "Swimming", label: "Swimming", from: 1, to: 10 },
 ];
 
 export default function TeachersDashboardPage() {
