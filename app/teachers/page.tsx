@@ -17,6 +17,19 @@ const plans = [
   { day: "Tuesday", className: "Grade 4 · B", course: "Social Studies", status: "Published", tone: "green" },
 ];
 
+const courseOptions = [
+  { value: "English OL - Connect Plus", label: "English OL · Connect Plus" },
+  { value: "English OL - Hello", label: "English OL · Hello" },
+  { value: "English OL - Hello Plus", label: "English OL · Hello Plus" },
+  { value: "Discover", label: "Discover" },
+  { value: "Arabic", label: "Arabic" },
+  { value: "Islamic", label: "Islamic" },
+  { value: "Math", label: "Math" },
+  { value: "Science", label: "Science" },
+  { value: "Social", label: "Social Studies" },
+  { value: "ICT", label: "ICT" },
+];
+
 export default function TeachersDashboardPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const [activeNav, setActiveNav] = useState("Overview");
@@ -137,7 +150,7 @@ export default function TeachersDashboardPage() {
             <form onSubmit={(event) => { event.preventDefault(); setEditorOpen(false); }}>
               <div className="teacher-form-row">
                 <label>Class<select defaultValue="Grade 4 · A"><option>Grade 4 · A</option><option>Grade 4 · B</option></select></label>
-                <label>Course<select defaultValue="English"><option>English</option><option>Social Studies</option></select></label>
+                <label>Subject programme<select defaultValue="English OL - Connect Plus">{courseOptions.map((course) => <option key={course.value} value={course.value}>{course.label}</option>)}</select></label>
                 <label>Day<select defaultValue="Sunday"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option></select></label>
               </div>
               <label>Classwork<textarea rows={3} defaultValue="Unit 2: Amazing Animals — pages 18–19" /></label>

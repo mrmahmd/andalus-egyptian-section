@@ -3,18 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 
-const gradeOptions = Array.from({ length: 10 }, (_, index) => `Grade ${index + 1}`);
-
-const subjectOptions = ["Arabic", "Islamic", "English OL", "English AL", "Math", "Science", "Social", "ICT"];
 const departmentOptions = ["English Department", "Arabic & Social Studies Department", "Math & Science Department"];
+const gradeOptions = Array.from({ length: 10 }, (_, index) => `Grade ${index + 1}`);
+const subjectOptions = ["Arabic", "Islamic", "English OL - Connect Plus", "English OL - Hello", "English OL - Hello Plus", "English AL", "Discover", "Math", "Science", "Social", "ICT"];
 const adminRoleOptions = ["Administrative", "English Supervisor", "Arabic Supervisor", "Math & Science Supervisor"] as const;
-
-type TeachingAssignment = {
-  id: number;
-  subject: string;
-  grade: string;
-  classType: "A" | "B";
-};
 
 export default function TeacherLoginPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -22,31 +14,18 @@ export default function TeacherLoginPage() {
   const [accountType, setAccountType] = useState<"teacher" | "admin">("teacher");
   const [teacherDepartment, setTeacherDepartment] = useState(departmentOptions[0]);
   const [adminPosition, setAdminPosition] = useState<(typeof adminRoleOptions)[number]>("Administrative");
-  const [draftSubject, setDraftSubject] = useState("English OL");
+  const [draftSubject, setDraftSubject] = useState("English OL - Connect Plus");
   const [draftGrade, setDraftGrade] = useState("Grade 1");
   const [draftClassType, setDraftClassType] = useState<"A" | "B">("A");
-  const [teachingAssignments, setTeachingAssignments] = useState<TeachingAssignment[]>([]);
+  const [teachingAssignments, setTeachingAssignments] = useState<{ id: number; subject: string; grade: string; classType: "A" | "B" }[]>([]);
   const [assignmentError, setAssignmentError] = useState("");
 
   const addAssignment = () => {
-    const alreadyAdded = teachingAssignments.some((assignment) =>
-      assignment.subject === draftSubject && assignment.grade === draftGrade && assignment.classType === draftClassType,
-    );
-
-    if (alreadyAdded) {
-      setAssignmentError("This subject and class assignment has already been added.");
-      return;
-    }
-
-    setTeachingAssignments((current) => [...current, {
-      id: Math.max(...current.map((assignment) => assignment.id), 0) + 1,
-      subject: draftSubject,
-      grade: draftGrade,
-      classType: draftClassType,
-    }]);
+    const exists = teachingAssignments.some((item) => item.subject === draftSubject && item.grade === draftGrade && item.classType === draftClassType);
+    if (exists) { setAssignmentError("This subject and class assignment has already been added."); return; }
+    setTeachingAssignments((current) => [...current, { id: Math.max(...current.map((item) => item.id), 0) + 1, subject: draftSubject, grade: draftGrade, classType: draftClassType }]);
     setAssignmentError("");
   };
-
   return (
     <main className="teacher-auth-page">
       <section className="teacher-auth-brand-panel">
