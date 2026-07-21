@@ -9,10 +9,18 @@ const teacherDirectory: Record<string, string[]> = {
   "Arabic & Social Studies Department": ["محمد سيد بكر", "محمد حمد", "محمد سعيد", "محمد شعبان", "ماجد موسى", "محمد عثمان", "أحمد سالم", "أحمد حسن", "محمد فودة", "عصام الجزار", "وائل شكري"],
   "Math & Science Department": ["جمال عبد الرحيم", "أحمد عدس", "ممدوح بهجت", "عبد الناصر خليل", "عمر أبو شادي", "وائل أبو العلا"],
 };
+const adminDirectory = [
+  { name: "محمود حلمي", role: "English Supervisor" },
+  { name: "محمد عثمان", role: "Arabic Supervisor" },
+  { name: "جمال عبد الرحيم", role: "Math & Science Supervisor" },
+  { name: "همام عبد المنعم", role: "Vice Principal" },
+  { name: "خالد سعد الدين", role: "Vice Principal" },
+  { name: "أحمد حجازي", role: "Vice Principal" },
+];
 const unassignedTeachers = ["محمود مدكور", "محمد سمير", "علي بدير", "أحمد حجي", "محمد معوض", "محمود مرسي"];
 const gradeOptions = Array.from({ length: 10 }, (_, index) => `Grade ${index + 1}`);
 const subjectOptions = ["Arabic", "Islamic", "English - Connect Plus", "English - Hello", "English - Hello Plus", "Discover", "Math", "Science", "Social", "ICT", "PE", "Swimming"];
-const adminRoleOptions = ["Administrative", "English Supervisor", "Arabic Supervisor", "Math & Science Supervisor"] as const;
+const adminRoleOptions = ["Administrative", "English Supervisor", "Arabic Supervisor", "Math & Science Supervisor", "Vice Principal"] as const;
 
 export default function TeacherLoginPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -21,6 +29,7 @@ export default function TeacherLoginPage() {
   const [teacherDepartment, setTeacherDepartment] = useState(departmentOptions[0]);
   const [teacherName, setTeacherName] = useState(teacherDirectory[departmentOptions[0]][0]);
   const [adminPosition, setAdminPosition] = useState<(typeof adminRoleOptions)[number]>("Administrative");
+  const [adminName, setAdminName] = useState(adminDirectory[0].name);
   const [draftSubject, setDraftSubject] = useState("English - Connect Plus");
   const [draftGrade, setDraftGrade] = useState("Grade 1");
   const [draftClassType, setDraftClassType] = useState<"A" | "B">("A");
@@ -95,8 +104,8 @@ export default function TeacherLoginPage() {
             )}
             {mode === "create" && accountType === "admin" && (
               <section className="teacher-auth-admin-role" aria-labelledby="admin-role-title">
-                <label id="admin-role-title">Administrative Role<select value={adminPosition} onChange={(event) => setAdminPosition(event.target.value as (typeof adminRoleOptions)[number])}>{adminRoleOptions.map((role) => <option key={role}>{role}</option>)}</select></label>
-                <p><span>SC</span>{adminPosition === "Administrative" ? "Administrative access will be defined by the Super Admin after approval." : `You will supervise ${adminPosition.replace(" Supervisor", "")} teachers only.`}</p>
+                <label id="admin-role-title">Admin Name<select value={adminName} onChange={(event) => { const name = event.target.value; setAdminName(name); setAdminPosition(adminDirectory.find((admin) => admin.name === name)?.role as (typeof adminRoleOptions)[number]); }}>{adminDirectory.map((admin) => <option key={admin.name}>{admin.name}</option>)}</select></label>
+                <p><span>AD</span><strong>{adminPosition}</strong><small>Your role is assigned by the school and cannot be changed from this form.</small></p>
               </section>
             )}
             <label>Username<input type="text" name="username" placeholder="Enter your username" autoComplete="username" /></label>
