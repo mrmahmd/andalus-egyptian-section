@@ -43,6 +43,13 @@ const staffAr: Record<string, string> = {
   "Admin Control Center": "مركز تحكم الإدارة", "All Weekly Plans": "كل الخطط الأسبوعية", "Teacher Accounts": "حسابات المعلمين", "Activity Log": "سجل النشاط", "Open public plan": "فتح الخطة العامة", "Administration workspace": "مساحة عمل الإدارة", "Review and manage every published plan, draft and teacher submission.": "راجع وأدر كل خطة منشورة أو مسودة أو إدخال من المعلمين.", "Weekly plan directory": "دليل الخطط الأسبوعية", "Full administrator access": "صلاحيات إدارية كاملة", "Actions": "الإجراءات", "View": "عرض", "Cancel": "إلغاء", "Save changes": "حفظ التعديلات", "Delete this weekly plan?": "حذف هذه الخطة الأسبوعية؟"
 };
 
+Object.assign(staffAr, {
+  "Swimming Department": "قسم السباحة",
+  "Art Department": "قسم التربية الفنية",
+  "PE Department": "قسم التربية البدنية",
+  "ICT Department": "قسم ICT",
+});
+
 function normalizedText(value: string) {
   return value.replaceAll("â€™", "’").replaceAll("â€”", "—").replaceAll("â€“", "–").replaceAll("â†’", "→").replaceAll("â†“", "↓").replaceAll("آ·", "·");
 }

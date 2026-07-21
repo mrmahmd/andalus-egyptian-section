@@ -3,12 +3,18 @@
 import Link from "next/link";
 import { useState } from "react";
 
-const departmentOptions = ["English Department", "Arabic & Social Studies Department", "Math & Science Department"];
+const departmentOptions = ["English Department", "Arabic & Social Studies Department", "Math & Science Department", "Swimming Department", "Art Department", "PE Department", "ICT Department"];
 const teacherDirectory: Record<string, string[]> = {
   "English Department": ["محمود حلمي", "محمد بدر", "محمد فريد", "عمرو رزق", "محمد عبد الحميد", "محمود السكري"],
   "Arabic & Social Studies Department": ["محمد سيد بكر", "محمد حمد", "محمد سعيد", "محمد شعبان", "ماجد موسى", "محمد عثمان", "أحمد سالم", "أحمد حسن", "محمد فودة", "عصام الجزار", "وائل شكري"],
   "Math & Science Department": ["جمال عبد الرحيم", "أحمد عدس", "ممدوح بهجت", "عبد الناصر خليل", "عمر أبو شادي", "وائل أبو العلا"],
 };
+Object.assign(teacherDirectory, {
+  "Swimming Department": ["ظ…ط­ظ…ط¯ ظ…ط¹ظˆط¶", "ظ…ط­ظ…ظˆط¯ ظ…ط±ط³ظٹ"],
+  "Art Department": ["ط¹ظ„ظٹ ط¨ط¯ظٹط±"],
+  "PE Department": ["ط£ط­ظ…ط¯ ط­ط¬ط²ظٹ"],
+  "ICT Department": ["ظ…ط­ظ…ظˆط¯ ظ…ط¯ظƒظˆط±", "ظ…ط­ظ…ط¯ ط³ظ…ظٹط±"],
+});
 const adminDirectory = [
   { name: "محمود حلمي", role: "English Supervisor" },
   { name: "محمد عثمان", role: "Arabic Supervisor" },
