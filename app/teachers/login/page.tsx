@@ -85,9 +85,6 @@ export default function TeacherLoginPage() {
 
           <form onSubmit={(event) => event.preventDefault()}>
             {mode === "create" && (
-              <label>Full Name<input type="text" name="fullName" placeholder="e.g. Mohamed Farid" autoComplete="name" /></label>
-            )}
-            {mode === "create" && (
               <fieldset className="teacher-auth-account-type">
                 <legend>Account Type</legend>
                 <div>
