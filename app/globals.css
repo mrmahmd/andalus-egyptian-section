@@ -1253,11 +1253,17 @@ button, select, input { font: inherit; }
 .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { margin-right: auto; margin-left: 0; }
 @media (min-width: 761px) {
   .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    position: relative;
+    display: block;
     width: 100%;
-    align-items: end;
+    min-height: 150px;
   }
-  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child { grid-column: 1; justify-self: end; }
-  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { grid-column: 2; justify-self: start; margin: 0; }
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child { position: absolute; top: 0; right: 0; max-width: 72%; text-align: right; }
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { position: absolute; top: 58px; left: 0; margin: 0; }
+}
+
+@media (max-width: 760px) {
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading { min-height: 0; }
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child,
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { position: static; max-width: none; }
 }
