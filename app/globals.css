@@ -1248,3 +1248,6 @@ button, select, input { font: inherit; }
 .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-editor-modal input,
 .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-editor-modal select,
 .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-editor-modal textarea { direction: rtl; text-align: right; }
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading { direction: rtl; }
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child { text-align: right; }
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { margin-right: auto; margin-left: 0; }
