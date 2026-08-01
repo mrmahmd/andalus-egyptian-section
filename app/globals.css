@@ -1251,3 +1251,13 @@ button, select, input { font: inherit; }
 .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading { direction: rtl; }
 .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child { text-align: right; }
 .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { margin-right: auto; margin-left: 0; }
+@media (min-width: 761px) {
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+    align-items: end;
+  }
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child { grid-column: 1; justify-self: end; }
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { grid-column: 2; justify-self: start; margin: 0; }
+}
