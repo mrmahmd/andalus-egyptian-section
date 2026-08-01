@@ -60,6 +60,23 @@ test("loads the approved staff directory and defers class assignments to Super A
   assert.doesNotMatch(source, /Class B/);
 });
 
+test("connects the teacher workspace to approved Supabase data", async () => {
+  const source = await readFile(
+    new URL("../app/teachers/page.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /auth\.getUser\(\)/);
+  assert.match(source, /from\("teacher_assignments"\)/);
+  assert.match(source, /from\("academic_weeks"\)/);
+  assert.match(source, /from\("timetable_slots"\)/);
+  assert.match(source, /from\("plan_entries"\)\.upsert/);
+  assert.match(source, /from\("plan_quizzes"\)/);
+  assert.match(source, /from\("plan_notes"\)/);
+  assert.match(source, /Timetable connection required/);
+  assert.doesNotMatch(source, /Changes in this prototype are not saved/);
+});
+
 test("uses the high-readability teacher typography scale", async () => {
   const css = await readFile(
     new URL("../app/globals.css", import.meta.url),

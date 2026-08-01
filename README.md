@@ -26,9 +26,14 @@ npm run build
 
 The site is deployed automatically to GitHub Pages when changes reach the `main` branch.
 
-## Planned next phase
+## Supabase-backed staff workspace
 
-A separate teacher dashboard will manage subjects, classes, and weekly entries, then publish them to this parent-facing website.
+- Teacher and administrator registration uses the approved school staff directory.
+- New accounts remain pending until the Super Admin approves them.
+- Active teachers see only their approved classes and subjects.
+- The teacher editor saves the whole week in one action and places entries according to the timetable.
+- Quizzes and family notes are saved in their dedicated database tables.
+- Weekly-plan creation remains blocked until the academic week and timetable slots are configured.
 
 ### Weekly-plan publication rules
 

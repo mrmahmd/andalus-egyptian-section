@@ -461,6 +461,7 @@ button, select, input { font: inherit; }
 .teacher-help-card strong { font-size: 11px; }
 .teacher-help-card p { margin: 5px 0 11px; color: #afbed5; font-size: 9px; line-height: 1.5; }
 .teacher-help-card button { border: 0; background: transparent; color: white; padding: 0; font-size: 9px; font-weight: 800; cursor: pointer; }
+.teacher-help-card a { color: white; font-size: 11px; font-weight: 850; text-underline-offset: 3px; }
 .teacher-sidebar-profile { margin-top: 17px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; gap: 9px; }
 .teacher-avatar { width: 35px; height: 35px; flex: 0 0 auto; border-radius: 10px; background: linear-gradient(135deg, #27b3d4, #1a6fb0); color: white; display: grid; place-items: center; font-size: 10px; font-weight: 900; }
 .teacher-sidebar-profile div { min-width: 0; display: grid; gap: 2px; }
@@ -554,8 +555,27 @@ button, select, input { font: inherit; }
 .weekly-builder-section-heading small { margin-top: 3px; color: #77869b; font-size: 10px; }
 .weekly-builder-quiz-row { display: grid; grid-template-columns: .75fr 1fr 1.35fr 1.35fr; gap: 10px; }
 .weekly-builder-notes { width: 100%; box-sizing: border-box; }
+.teacher-live-plans-card { margin-top: 18px; }
+.teacher-live-assignment-panel { margin-top: 18px; padding: 24px; }
+.teacher-live-assignment-panel > div:first-child h2 { margin: 0 0 6px; color: #172841; font-size: 21px; }
+.teacher-live-assignment-panel > div:first-child p { margin: 0; color: #758399; font-size: 13px; }
+.teacher-live-assignment-grid { margin-top: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+.teacher-live-assignment-grid article { min-height: 150px; padding: 18px; border: 1px solid #dfe7ef; border-radius: 13px; display: flex; align-content: flex-start; align-items: flex-start; flex-wrap: wrap; gap: 8px; background: #f9fbfd; }
+.teacher-live-assignment-grid article > small { width: 100%; margin-bottom: 5px; color: #66778e; font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .07em; }
+.teacher-live-assignment-grid article > span { padding: 8px 10px; border-radius: 8px; background: #e8f5f9; color: #175e73; font-size: 12px; font-weight: 800; }
+.teacher-live-assignment-grid article > p { color: #7b8799; font-size: 13px; }
+.teacher-week-list { margin-top: 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.teacher-week-list > span { padding: 14px; border: 1px solid #dfe7ef; border-radius: 11px; display: grid; gap: 4px; background: #fbfcfe; }
+.teacher-week-list > span.current { border-color: #64b8ca; background: #eef9fb; box-shadow: inset 3px 0 #1c94ad; }
+.teacher-week-list strong { color: #1c3658; font-size: 13px; }.teacher-week-list small { color: #52657e; font-size: 12px; }.teacher-week-list i { color: #7f8b9c; font-size: 10px; font-style: normal; }
+.teacher-settings-row { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: center; }
+.teacher-settings-row > span { padding: 13px; border: 1px solid #e0e7ef; border-radius: 10px; display: grid; gap: 4px; background: #fbfcfe; }
+.teacher-settings-row small { color: #78869a; font-size: 11px; }.teacher-settings-row strong { color: #273c59; font-size: 13px; }
+.teacher-timetable-ready { min-height: 42px; padding: 0 12px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 850; white-space: nowrap; }
+.teacher-timetable-ready.ready { background: #e7f7f0; color: #24755a; }.teacher-timetable-ready.missing { background: #fff1e5; color: #9a5d19; }
 @media (max-width: 760px) { .weekly-builder-toolbar { grid-template-columns: 1fr; }.weekly-builder-days { grid-template-columns: 1fr; overflow-x: visible; }.weekly-builder-days article { min-width: 0; } }
 @media (max-width: 760px) { .weekly-builder-quiz-row { grid-template-columns: 1fr; }.weekly-builder-section-heading { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 760px) { .teacher-live-assignment-grid, .teacher-week-list, .teacher-settings-row { grid-template-columns: 1fr; } }
 .teacher-editor-footer { margin: 4px -25px -25px; padding: 17px 25px; border-top: 1px solid #e8edf3; background: #fafbfd; display: flex; align-items: center; justify-content: space-between; gap: 16px; }.teacher-editor-footer > span { color: #8a96a8; font-size: 8px; }.teacher-editor-footer > div { display: flex; gap: 8px; }
 .teacher-setup-layer { position: fixed; inset: 0; z-index: 110; overflow-y: auto; background: radial-gradient(circle at 10% 0, #eef9fc 0, transparent 30%), #f5f7fb; }
 .teacher-setup-top { height: 78px; padding: 0 6vw; background: white; border-bottom: 1px solid #e4eaf1; display: flex; align-items: center; justify-content: space-between; }.teacher-setup-top .teacher-brand strong { color: #102349; }.teacher-setup-top .teacher-brand span { color: #75839a; }.teacher-setup-top > button { border: 0; background: transparent; color: #43516a; font: inherit; font-size: 9px; font-weight: 800; cursor: pointer; }
