@@ -288,7 +288,7 @@ export default function TeachersDashboardPage() {
           <button className={activeNav === "Profile & assignments" ? "active" : ""} onClick={() => setActiveNav("Profile & assignments")}><span className="teacher-nav-icon">PR</span>Profile & assignments</button>
           <button className={activeNav === "Settings" ? "active" : ""} onClick={() => setActiveNav("Settings")}><span className="teacher-nav-icon">ST</span>Settings</button>
         </nav>
-        <div className="teacher-help-card"><span>?</span><strong>Need help?</strong><p>Contact the academic coordinator for account or assignment changes.</p><Link href={`${basePath}/support/`}>Open support</Link></div>
+        <div className="teacher-help-card"><span>?</span><strong>Need help?</strong><p>Contact the academic coordinator for account or assignment changes.</p><Link href="/support/">Open support</Link></div>
         <div className="teacher-sidebar-profile"><span className="teacher-avatar">{initials(teacherName)}</span><div><strong>{teacherName}</strong><small>Teacher</small></div><button aria-label="Sign out" onClick={() => void signOut()}>↪</button></div>
       </aside>
 
