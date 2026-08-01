@@ -94,8 +94,8 @@ test("renders the Super Admin account approval center", async () => {
 
   assert.match(html, /Super Admin Control Center/);
   assert.match(html, /Account Approvals/);
-  assert.match(html, /Primary Super Admin/);
+  assert.match(html, /Live school directory/);
   assert.match(html, /Manage Public Plans/);
-  assert.match(html, /class="review">Review/);
-  assert.match(html, /class="manage">Manage/);
+  assert.match(html, /Real school staff directory/);
+  assert.match(html, /Loading the real school directory/);
 });
