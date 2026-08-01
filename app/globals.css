@@ -232,6 +232,31 @@ button, select, input { font: inherit; }
 .support-form { padding: 31px; border: 1px solid #dce5ef; border-radius: 16px; display: grid; gap: 17px; background: white; box-shadow: 0 22px 55px rgba(24,50,86,.12); }.support-form h2 { margin: 4px 0 0; font-size: 28px; }.support-form label { display: grid; gap: 7px; color: #2b3d59; font-size: 14px; font-weight: 800; }.support-form input, .support-form select, .support-form textarea { width: 100%; border: 1px solid #cbd8e6; border-radius: 9px; padding: 12px 13px; outline: 0; background: #fbfcfe; color: #142544; font: inherit; font-size: 14px; }.support-form input, .support-form select { min-height: 48px; }.support-form textarea { resize: vertical; }.support-form input:focus, .support-form select:focus, .support-form textarea:focus { border-color: #168daa; box-shadow: 0 0 0 3px rgba(22,141,170,.12); background: white; }.support-send { width: 100%; border: 0; cursor: pointer; background: #1ca85c; font-size: 15px; }.support-send span { margin-left: -7px; }.support-note { color: #6e7e94; text-align: center; font-size: 12px; line-height: 1.55; }
 .support-whatsapp-notice { padding: 13px; border: 1px solid #bce4cc; border-radius: 10px; display: flex; align-items: flex-start; gap: 10px; background: #effbf4; }.support-whatsapp-notice > span { width: 32px; height: 32px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; background: #1ca85c; color: white; font-size: 9px; font-weight: 900; }.support-whatsapp-notice p { margin: 0; display: grid; gap: 3px; }.support-whatsapp-notice strong { color: #176f3d; font-size: 13px; }.support-whatsapp-notice small { color: #4d765e; font-size: 12px; line-height: 1.5; }
 .arabic-ui .support-page { direction: rtl; }.arabic-ui .support-header, .arabic-ui .support-hero, .arabic-ui .support-layout { direction: rtl; }.arabic-ui .support-header .button, .arabic-ui .support-form, .arabic-ui .support-info { font-family: "Alexandria", "Cairo", sans-serif !important; }.arabic-ui .support-hero h1 { font-family: "Alexandria", "Cairo", sans-serif !important; }.arabic-ui .support-form label, .arabic-ui .support-note { text-align: right; }.arabic-ui .support-send span { margin-left: 0; margin-right: -7px; }
+.support-page { overflow-x: hidden; }
+.support-header { width: 100%; box-sizing: border-box; }
+.support-header .brand-lockup { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.support-header .brand-lockup img { width: 82px; height: 64px; object-fit: contain; border-radius: 8px; }
+.support-header .brand-copy strong { display: block; font-size: clamp(14px, 1.4vw, 20px); }
+.support-header .brand-copy small { display: block; margin-top: 4px; font-size: 13px; }
+.arabic-ui .support-header .brand-copy { text-align: right; }
+.arabic-ui .support-header .button { white-space: nowrap; }
+.arabic-ui .support-hero > div { text-align: right; }
+.arabic-ui .support-info, .arabic-ui .support-form { text-align: right; }
+.arabic-ui .support-info > div { flex-direction: row-reverse; }
+.arabic-ui .support-info p, .arabic-ui .support-whatsapp-notice p { text-align: right; }
+.arabic-ui .support-form input, .arabic-ui .support-form select, .arabic-ui .support-form textarea { direction: rtl; text-align: right; font-family: "Alexandria", "Cairo", sans-serif !important; }
+@media (max-width: 760px) {
+  .support-header { min-height: 76px; padding-inline: 16px; gap: 12px; }
+  .support-header .brand-lockup img { width: 58px; height: 46px; }
+  .support-header .brand-copy strong { font-size: 12px; }
+  .support-header .brand-copy small { font-size: 10px; }
+  .support-hero { padding: 42px 22px; min-height: 250px; }
+  .support-hero h1 { font-size: 40px; }
+  .support-hero .support-mark { width: 70px; height: 70px; }
+  .support-layout { width: min(100% - 28px, 560px); grid-template-columns: 1fr; margin-top: -20px; }
+  .support-info { order: 2; }
+  .support-form { order: 1; padding: 22px; }
+}
 .compact-header { height: 94px; display: grid; grid-template-columns: minmax(330px, 1fr) auto auto; align-items: center; gap: 28px; padding: 0 max(28px, calc((100vw - 1240px) / 2)); overflow: hidden; background: var(--white); border-bottom: 1px solid var(--line); }
 .compact-header .brand-lockup { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .compact-header .brand-lockup img { display: block; width: 82px; height: 64px; flex: 0 0 82px; object-fit: cover; object-position: center; border-radius: 5px; }
