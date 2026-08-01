@@ -6,7 +6,7 @@ import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 type AccountRole = "Teacher" | "Admin";
 type AccountStatus = "Not Registered" | "Pending" | "Active" | "Suspended" | "Rejected";
-type DashboardSection = "approvals" | "accounts" | "roles" | "classes" | "activity" | "settings";
+type DashboardSection = "approvals" | "accounts" | "roles" | "plans" | "classes" | "activity" | "settings";
 
 type AssignmentItem = {
   id?: string;
@@ -45,6 +45,16 @@ type ClassOption = {
   section: string;
 };
 
+type ManagedPlan = {
+  id: string;
+  week: string;
+  className: string;
+  classTeacher: string;
+  status: "draft" | "published" | "archived";
+  entries: number;
+  updated: string;
+};
+
 function singleRelation<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
 }
@@ -63,6 +73,7 @@ export default function SuperAdminPage() {
   const [accounts, setAccounts] = useState<ManagedAccount[]>([]);
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [weeklyPlans, setWeeklyPlans] = useState<ManagedPlan[]>([]);
   const [currentAdminId, setCurrentAdminId] = useState("");
   const [currentAdminName, setCurrentAdminName] = useState("Mohamed Farid");
   const [loading, setLoading] = useState(true);
@@ -102,16 +113,17 @@ export default function SuperAdminPage() {
       setCurrentAdminId(userData.user.id);
       setCurrentAdminName(ownerProfile.display_name || "Mohamed Farid");
 
-      const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult] = await Promise.all([
+      const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult, plansResult] = await Promise.all([
         supabase.from("staff_directory").select("id, full_name, account_kind, administrative_role, department_id, departments(name_en)").eq("is_active", true).order("full_name"),
         supabase.from("registration_requests").select("id, user_id, staff_id, username, status, requested_at, reviewed_at").order("requested_at", { ascending: false }),
         supabase.from("profiles").select("user_id, staff_id, username, display_name, role, status, approved_at, updated_at"),
         supabase.from("teacher_assignments").select("id, teacher_id, class_id, subject_id, school_classes(grade, section), subjects(name_en)"),
         supabase.from("subjects").select("id, name_en, minimum_grade, maximum_grade").eq("is_active", true).eq("include_in_weekly_plan", true).order("name_en"),
         supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
+        supabase.from("weekly_plans").select("id, class_teacher_name, status, updated_at, school_classes(grade, section), academic_weeks(week_number, label), plan_entries(count)").order("updated_at", { ascending: false }),
       ]);
 
-      const firstError = [directoryResult.error, requestsResult.error, profilesResult.error, assignmentsResult.error, subjectsResult.error, classesResult.error].find(Boolean);
+      const firstError = [directoryResult.error, requestsResult.error, profilesResult.error, assignmentsResult.error, subjectsResult.error, classesResult.error, plansResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const requestsByStaff = new Map<string, Record<string, unknown>>();
@@ -184,6 +196,20 @@ export default function SuperAdminPage() {
       setAccounts(realAccounts);
       setSubjects((subjectsResult.data ?? []) as SubjectOption[]);
       setClasses((classesResult.data ?? []) as ClassOption[]);
+      setWeeklyPlans((plansResult.data ?? []).map((plan) => {
+        const schoolClass = singleRelation(plan.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
+        const week = singleRelation(plan.academic_weeks as { week_number: number; label: string } | { week_number: number; label: string }[] | null);
+        const entryCount = singleRelation(plan.plan_entries as { count: number } | { count: number }[] | null);
+        return {
+          id: String(plan.id),
+          week: week?.label ?? `Week ${week?.week_number ?? "—"}`,
+          className: `Grade ${schoolClass?.grade ?? "—"} ${schoolClass?.section ?? ""}`,
+          classTeacher: String(plan.class_teacher_name),
+          status: plan.status as ManagedPlan["status"],
+          entries: Number(entryCount?.count ?? 0),
+          updated: formatDate(plan.updated_at),
+        };
+      }));
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "The real school account directory could not be loaded.");
     } finally {
@@ -244,6 +270,7 @@ export default function SuperAdminPage() {
     approvals: { kicker: "Super Administration", title: "Account Approvals", description: "Review new teacher and administrator account requests." },
     accounts: { kicker: "Live school directory", title: "All Accounts", description: "Real teachers and administrators loaded securely from the school database." },
     roles: { kicker: "Access control", title: "Roles & Permissions", description: "See exactly what each school role is allowed to manage." },
+    plans: { kicker: "Weekly-plan control", title: "Manage Public Plans", description: "Review and control the real weekly plans stored in the school database." },
     classes: { kicker: "School structure", title: "Classes & Subjects", description: "Live classes and weekly-plan subjects available for teacher assignments." },
     activity: { kicker: "Account history", title: "Activity Log", description: "Recent account registration, approval and access activity." },
     settings: { kicker: "Platform status", title: "System Settings", description: "Review the active platform configuration and connected services." },
@@ -334,6 +361,44 @@ export default function SuperAdminPage() {
     }
   };
 
+  const updatePlanStatus = async (planId: string, status: ManagedPlan["status"]) => {
+    setBusy(true);
+    setErrorMessage("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.from("weekly_plans").update({
+        status,
+        updated_at: new Date().toISOString(),
+        published_by: status === "published" ? currentAdminId : null,
+        published_at: status === "published" ? new Date().toISOString() : null,
+      }).eq("id", planId);
+      if (error) throw error;
+      setSuccessMessage(`Weekly plan changed to ${status}.`);
+      await loadDashboard();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "The weekly plan status could not be updated.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeWeeklyPlan = async (planId: string) => {
+    if (!window.confirm("Delete this weekly plan permanently?")) return;
+    setBusy(true);
+    setErrorMessage("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.from("weekly_plans").delete().eq("id", planId);
+      if (error) throw error;
+      setSuccessMessage("Weekly plan deleted successfully.");
+      await loadDashboard();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "The weekly plan could not be deleted.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const selectedClass = classes.find((item) => item.id === assignmentDraft.classId);
   const compatibleSubjects = subjects.filter((subject) => !selectedClass || (selectedClass.grade >= subject.minimum_grade && selectedClass.grade <= subject.maximum_grade));
 
@@ -347,7 +412,7 @@ export default function SuperAdminPage() {
           <button className={activeSection === "approvals" ? "active" : ""} onClick={() => openSection("approvals")}><span className="teacher-nav-icon">AP</span>Account Approvals<small>{pendingCount}</small></button>
           <button className={activeSection === "accounts" ? "active" : ""} onClick={() => openSection("accounts")}><span className="teacher-nav-icon">AC</span>All Accounts</button>
           <button className={activeSection === "roles" ? "active" : ""} onClick={() => openSection("roles")}><span className="teacher-nav-icon">RL</span>Roles & Permissions</button>
-          <Link className="super-admin-nav-link" href="/admin"><span className="teacher-nav-icon">WP</span>Manage Public Plans</Link>
+          <button className={activeSection === "plans" ? "active" : ""} onClick={() => openSection("plans")}><span className="teacher-nav-icon">WP</span>Manage Public Plans</button>
           <p>School System</p>
           <button className={activeSection === "classes" ? "active" : ""} onClick={() => openSection("classes")}><span className="teacher-nav-icon">CL</span>Classes & Subjects</button>
           <button className={activeSection === "activity" ? "active" : ""} onClick={() => openSection("activity")}><span className="teacher-nav-icon">LG</span>Activity Log</button>
@@ -361,7 +426,7 @@ export default function SuperAdminPage() {
         <header className="teacher-topbar"><div className="teacher-mobile-brand"><img src={`${basePath}/school-logo.jpeg`} alt="" /><strong>Super Admin</strong></div><label className="teacher-search"><span>⌕</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search real staff names or assignments" /></label><div className="teacher-top-actions"><span className="teacher-sync"><i /> Supabase connected</span><button className="teacher-icon-button" aria-label="Notifications">◇<b>{pendingCount}</b></button><button className="teacher-profile-chip"><span className="teacher-avatar super-admin-avatar">MF</span><span><strong>{currentAdminName}</strong><small>Super Admin</small></span></button></div></header>
 
         <div className="teacher-content super-admin-content">
-          <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentSection.kicker}</p><h1>{currentSection.title}</h1><span>{currentSection.description}</span></div>{activeSection !== "settings" && <Link className="teacher-primary-button super-admin-plans-link" href="/admin">Manage public weekly plans <span>→</span></Link>}</div>
+          <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentSection.kicker}</p><h1>{currentSection.title}</h1><span>{currentSection.description}</span></div>{activeSection !== "plans" && <button type="button" className="teacher-primary-button super-admin-plans-link" onClick={() => openSection("plans")}>Manage public weekly plans <span>→</span></button>}</div>
 
           {errorMessage && <p className="super-admin-live-message error" role="alert">{errorMessage}</p>}
           {successMessage && <p className="super-admin-live-message success" role="status">{successMessage}</p>}
@@ -399,6 +464,14 @@ export default function SuperAdminPage() {
             <article className="teacher-card super-system-card"><span>VP</span><h2>Vice Principal</h2><p>School-wide administrative review access after account approval. Weekly-plan editing remains limited by the assigned admin scope.</p><strong>{accounts.filter((account) => account.administrativeRole === "Vice Principal").length} listed vice principals</strong></article>
             <article className="teacher-card super-system-card"><span>SP</span><h2>Department Supervisor</h2><p>Reviews only the teachers in the supervisor’s own department: English, Arabic & Social Studies, or Math & Science.</p><strong>{accounts.filter((account) => account.administrativeRole?.includes("Supervisor")).length} listed supervisors</strong></article>
             <article className="teacher-card super-system-card"><span>TC</span><h2>Teacher</h2><p>Creates weekly-plan content only for the classes and subjects assigned by the Super Admin.</p><strong>{accounts.filter((account) => account.role === "Teacher").length} listed teachers</strong></article>
+          </section>}
+
+          {activeSection === "plans" && <section className="teacher-card super-admin-accounts-card">
+            <div className="super-admin-toolbar"><div><h2>Real weekly-plan directory</h2><p>{weeklyPlans.length} plans stored in Supabase</p></div><Link className="teacher-primary-button super-admin-plans-link" href="/weekly-plan">Open family plan page <span>→</span></Link></div>
+            <div className="super-admin-table-wrap"><table className="super-admin-table"><thead><tr><th>Week</th><th>Class</th><th>Class Teacher</th><th>Entries</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
+              {weeklyPlans.map((plan) => <tr key={plan.id}><td><strong>{plan.week}</strong></td><td>{plan.className}</td><td>{plan.classTeacher}</td><td>{plan.entries}</td><td><span className={`super-account-status ${plan.status}`}><i />{plan.status}</span></td><td>{plan.updated}</td><td><div className="super-row-actions"><Link href="/weekly-plan">View</Link>{plan.status !== "published" ? <button disabled={busy} className="review" onClick={() => void updatePlanStatus(plan.id, "published")}>Publish</button> : <button disabled={busy} className="manage" onClick={() => void updatePlanStatus(plan.id, "draft")}>Unpublish</button>}<button disabled={busy} onClick={() => void updatePlanStatus(plan.id, "archived")}>Archive</button><button disabled={busy} className="super-plan-delete" onClick={() => void removeWeeklyPlan(plan.id)}>Delete</button></div></td></tr>)}
+              {!loading && weeklyPlans.length === 0 && <tr><td className="super-empty" colSpan={7}>No real weekly plans have been created yet. Plans will appear here after teachers begin submitting content.</td></tr>}
+            </tbody></table></div>
           </section>}
 
           {activeSection === "classes" && <section className="super-admin-structure-layout">

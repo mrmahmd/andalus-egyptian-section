@@ -1108,11 +1108,15 @@ button, select, input { font: inherit; }
 .super-account-status.rejected { background: #fff0f3; color: #a32659; }.super-account-status.rejected i { background: #c94b75; }
 .super-account-status.suspended { background: #f1eefb; color: #6545a0; }.super-account-status.suspended i { background: #8062ba; }
 .super-account-status.not-registered { background: #eef2f6; color: #68768a; }.super-account-status.not-registered i { background: #8c98a8; }
+.super-account-status.published { background: #e8f7f0; color: #24775b; }.super-account-status.published i { background: #2aa278; }
+.super-account-status.draft { background: #fff3de; color: #94601d; }.super-account-status.draft i { background: #d99d38; }
+.super-account-status.archived { background: #eef2f6; color: #68768a; }.super-account-status.archived i { background: #8c98a8; }
 .super-row-actions { display: flex; align-items: center; gap: 6px; }
 .super-row-actions a, .super-row-actions button { min-height: 36px; padding: 0 10px; border: 1px solid #d6dfe9; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: white; color: #34445e; font: inherit; font-size: 11px; font-weight: 800; text-decoration: none; cursor: pointer; }
 .super-row-actions button:disabled, .super-review-modal button:disabled { opacity: .55; cursor: wait; }
 .super-row-actions .review { border-color: #dcb7ce; background: #fbf1f7; color: #9b1a70; }
 .super-row-actions .manage { border-color: #b8d9e4; background: #eef9fc; color: #0d6d84; }
+.super-row-actions .super-plan-delete { border-color: #e4bfcb; background: #fff4f7; color: #9f1d5d; }
 .super-waiting-registration { color: #78869a; font-size: 11px; font-weight: 750; white-space: nowrap; }
 .super-empty { padding: 45px !important; color: #7a879a !important; font-size: 14px; text-align: center; }
 .super-admin-live-message { margin: 14px 0 0; padding: 13px 16px; border: 1px solid; border-radius: 11px; font-size: 13px; font-weight: 750; }
