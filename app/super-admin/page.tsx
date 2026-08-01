@@ -231,8 +231,8 @@ export default function SuperAdminPage() {
     setAssignmentDraft({ classId: firstClass?.id ?? "", subjectId: firstSubject?.id ?? "" });
   };
 
-  const addAssignment = () => {
-    if (!reviewAccount || !assignmentDraft.classId || !assignmentDraft.subjectId) return;
+  const addAssignment = async () => {
+    if (!reviewAccount?.userId || !currentAdminId || !assignmentDraft.classId || !assignmentDraft.subjectId) return;
     const schoolClass = classes.find((item) => item.id === assignmentDraft.classId);
     const subject = subjects.find((item) => item.id === assignmentDraft.subjectId);
     if (!schoolClass || !subject) return;
@@ -241,15 +241,48 @@ export default function SuperAdminPage() {
       return;
     }
     if (reviewAccount.assignments.some((item) => item.classId === schoolClass.id && item.subjectId === subject.id)) return;
-    setReviewAccount({
-      ...reviewAccount,
-      assignments: [...reviewAccount.assignments, { classId: schoolClass.id, subjectId: subject.id, label: `${subject.name_en} · Grade ${schoolClass.grade} ${schoolClass.section}` }],
-    });
+    setBusy(true);
+    setErrorMessage("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.from("teacher_assignments").insert({
+        teacher_id: reviewAccount.userId,
+        class_id: schoolClass.id,
+        subject_id: subject.id,
+        assigned_by: currentAdminId,
+      }).select("id").single();
+      if (error) throw error;
+      const savedAssignment = { id: String(data.id), classId: schoolClass.id, subjectId: subject.id, label: `${subject.name_en} · Grade ${schoolClass.grade} ${schoolClass.section}` };
+      setReviewAccount({ ...reviewAccount, assignments: [...reviewAccount.assignments, savedAssignment] });
+      setSuccessMessage(`${savedAssignment.label} saved immediately.`);
+      await loadDashboard();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "The teacher assignment could not be saved.");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const removeAssignment = (index: number) => {
+  const removeAssignment = async (index: number) => {
     if (!reviewAccount) return;
-    setReviewAccount({ ...reviewAccount, assignments: reviewAccount.assignments.filter((_, itemIndex) => itemIndex !== index) });
+    const assignment = reviewAccount.assignments[index];
+    if (!assignment) return;
+    setBusy(true);
+    setErrorMessage("");
+    try {
+      if (assignment.id) {
+        const supabase = getSupabaseBrowserClient();
+        const { error } = await supabase.from("teacher_assignments").delete().eq("id", assignment.id);
+        if (error) throw error;
+      }
+      setReviewAccount({ ...reviewAccount, assignments: reviewAccount.assignments.filter((_, itemIndex) => itemIndex !== index) });
+      setSuccessMessage(`${assignment.label} removed immediately.`);
+      await loadDashboard();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "The teacher assignment could not be removed.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const filteredAccounts = useMemo(() => accounts.filter((account) => {
@@ -304,39 +337,6 @@ export default function SuperAdminPage() {
       await loadDashboard();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "The account request could not be updated.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const saveAssignments = async () => {
-    if (!reviewAccount?.userId || reviewAccount.role !== "Teacher") return;
-    setBusy(true);
-    setErrorMessage("");
-    try {
-      const original = accounts.find((account) => account.id === reviewAccount.id);
-      const keptIds = new Set(reviewAccount.assignments.flatMap((assignment) => assignment.id ? [assignment.id] : []));
-      const removedIds = (original?.assignments ?? []).flatMap((assignment) => assignment.id && !keptIds.has(assignment.id) ? [assignment.id] : []);
-      const newAssignments = reviewAccount.assignments.filter((assignment) => !assignment.id).map((assignment) => ({
-        teacher_id: reviewAccount.userId,
-        class_id: assignment.classId,
-        subject_id: assignment.subjectId,
-        assigned_by: currentAdminId,
-      }));
-      const supabase = getSupabaseBrowserClient();
-      if (removedIds.length > 0) {
-        const { error } = await supabase.from("teacher_assignments").delete().in("id", removedIds);
-        if (error) throw error;
-      }
-      if (newAssignments.length > 0) {
-        const { error } = await supabase.from("teacher_assignments").insert(newAssignments);
-        if (error) throw error;
-      }
-      setReviewAccount(null);
-      setSuccessMessage("Teacher classes and subjects saved successfully.");
-      await loadDashboard();
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Teacher assignments could not be saved.");
     } finally {
       setBusy(false);
     }
@@ -495,18 +495,18 @@ export default function SuperAdminPage() {
           <section className="teacher-editor-modal super-review-modal" role="dialog" aria-modal="true" aria-labelledby="review-account-title">
             <div className="teacher-modal-heading"><div><p>{reviewAccount.status === "Pending" || reviewAccount.status === "Rejected" ? "Super Admin approval" : "Live account management"}</p><h2 id="review-account-title">{reviewAccount.status === "Pending" || reviewAccount.status === "Rejected" ? "Review account request" : "Manage real staff account"}</h2></div><button disabled={busy} aria-label="Close review" onClick={() => setReviewAccount(null)}>×</button></div>
             <div className="super-review-profile"><span>{initials(reviewAccount.name)}</span><div><strong>{reviewAccount.name}</strong><small>{reviewAccount.username === "Not registered" ? reviewAccount.department : `@${reviewAccount.username}`} · {reviewAccount.status}</small></div></div>
-            <form onSubmit={(event) => { event.preventDefault(); if (reviewAccount.status === "Pending" || reviewAccount.status === "Rejected") void reviewRequest("approved"); else if (reviewAccount.role === "Teacher") void saveAssignments(); else setReviewAccount(null); }}>
+            <form onSubmit={(event) => { event.preventDefault(); if (reviewAccount.status === "Pending" || reviewAccount.status === "Rejected") void reviewRequest("approved"); else setReviewAccount(null); }}>
               <div className="super-review-grid"><div><small>School role</small><strong>{reviewAccount.administrativeRole ?? reviewAccount.role}</strong></div><div><small>Department</small><strong>{reviewAccount.department}</strong></div></div>
 
               {(reviewAccount.status === "Pending" || reviewAccount.status === "Rejected") && <div className="super-review-note"><span>SA</span><p>Approving this request creates the real active profile and sends this user to the correct dashboard. The account role comes from the approved school directory and cannot be changed by the applicant.</p></div>}
 
-              {(reviewAccount.status === "Active" || reviewAccount.status === "Suspended") && reviewAccount.role === "Teacher" && <div className="super-assignment-manager"><label>Teacher Classes & Subjects</label><div className="super-assignment-picker"><label>Class<select value={assignmentDraft.classId} onChange={(event) => { const classId = event.target.value; const schoolClass = classes.find((item) => item.id === classId); const firstCompatible = subjects.find((subject) => schoolClass && schoolClass.grade >= subject.minimum_grade && schoolClass.grade <= subject.maximum_grade); setAssignmentDraft({ classId, subjectId: firstCompatible?.id ?? "" }); }}>{classes.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>Grade {schoolClass.grade} {schoolClass.section}</option>)}</select></label><label>Subject<select value={assignmentDraft.subjectId} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, subjectId: event.target.value })}>{compatibleSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_en}</option>)}</select></label><button type="button" className="teacher-secondary-button" onClick={addAssignment}>Add assignment</button></div><div className="super-assignment-list">{reviewAccount.assignments.map((assignment, index) => <span key={`${assignment.id ?? "new"}-${assignment.classId}-${assignment.subjectId}`}>{assignment.label}<button type="button" aria-label={`Remove ${assignment.label}`} onClick={() => removeAssignment(index)}>×</button></span>)}{reviewAccount.assignments.length === 0 && <small>No classes or subjects assigned yet.</small>}</div><p className="super-assignment-help">Assignments are saved to Supabase and control which weekly plans this teacher can edit.</p></div>}
+              {(reviewAccount.status === "Active" || reviewAccount.status === "Suspended") && reviewAccount.role === "Teacher" && <div className="super-assignment-manager"><label>Teacher Classes & Subjects</label><div className="super-assignment-picker"><label>Class<select disabled={busy} value={assignmentDraft.classId} onChange={(event) => { const classId = event.target.value; const schoolClass = classes.find((item) => item.id === classId); const firstCompatible = subjects.find((subject) => schoolClass && schoolClass.grade >= subject.minimum_grade && schoolClass.grade <= subject.maximum_grade); setAssignmentDraft({ classId, subjectId: firstCompatible?.id ?? "" }); }}>{classes.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>Grade {schoolClass.grade} {schoolClass.section}</option>)}</select></label><label>Subject<select disabled={busy} value={assignmentDraft.subjectId} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, subjectId: event.target.value })}>{compatibleSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_en}</option>)}</select></label><button disabled={busy || !assignmentDraft.subjectId} type="button" className="teacher-secondary-button" onClick={() => void addAssignment()}>{busy ? "Saving…" : "Add & save assignment"}</button></div><div className="super-assignment-list">{reviewAccount.assignments.map((assignment, index) => <span key={`${assignment.id ?? "new"}-${assignment.classId}-${assignment.subjectId}`}>{assignment.label}<button disabled={busy} type="button" aria-label={`Remove ${assignment.label}`} onClick={() => void removeAssignment(index)}>×</button></span>)}{reviewAccount.assignments.length === 0 && <small>No classes or subjects assigned yet.</small>}</div><p className="super-assignment-help">Every addition or removal is saved to Supabase immediately. The teacher will see it after refreshing the Teacher Workspace.</p></div>}
 
               {(reviewAccount.status === "Active" || reviewAccount.status === "Suspended") && reviewAccount.role === "Admin" && <div className="super-review-note"><span>AD</span><p>{reviewAccount.administrativeRole ?? "Administrator"} · {reviewAccount.department}. Admin scope is assigned from the approved school directory.</p></div>}
 
               <div className="teacher-editor-footer">
                 {reviewAccount.status === "Pending" || reviewAccount.status === "Rejected" ? <button disabled={busy || reviewAccount.status === "Rejected"} type="button" className="super-reject-button" onClick={() => void reviewRequest("rejected")}>Reject request</button> : <button disabled={busy} type="button" className="super-reject-button" onClick={() => void toggleAccountStatus()}>{reviewAccount.status === "Suspended" ? "Reactivate account" : "Suspend account"}</button>}
-                <div><button disabled={busy} type="button" className="teacher-secondary-button" onClick={() => setReviewAccount(null)}>Cancel</button><button disabled={busy} type="submit" className="teacher-primary-button">{busy ? "Saving…" : reviewAccount.status === "Pending" || reviewAccount.status === "Rejected" ? "Approve account" : reviewAccount.role === "Teacher" ? "Save assignments" : "Close"}</button></div>
+                <div><button disabled={busy} type="button" className="teacher-secondary-button" onClick={() => setReviewAccount(null)}>{reviewAccount.role === "Teacher" && reviewAccount.status === "Active" ? "Done" : "Cancel"}</button>{(reviewAccount.status === "Pending" || reviewAccount.status === "Rejected" || reviewAccount.role === "Admin") && <button disabled={busy} type="submit" className="teacher-primary-button">{busy ? "Saving…" : reviewAccount.status === "Pending" || reviewAccount.status === "Rejected" ? "Approve account" : "Close"}</button>}</div>
               </div>
             </form>
           </section>

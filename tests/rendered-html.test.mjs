@@ -121,3 +121,23 @@ test("renders the Super Admin account approval center", async () => {
   assert.match(html, /Activity Log/);
   assert.match(html, /System Settings/);
 });
+
+test("saves teacher assignments immediately and enforces English programme grades", async () => {
+  const superAdminSource = await readFile(
+    new URL("../app/super-admin/page.tsx", import.meta.url),
+    "utf8",
+  );
+  const programmeSql = await readFile(
+    new URL("../supabase/update_english_programmes.sql", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(superAdminSource, /Add & save assignment/);
+  assert.match(superAdminSource, /saved to Supabase immediately/);
+  assert.match(superAdminSource, /from\("teacher_assignments"\)\.insert/);
+  assert.match(programmeSql, /\('english', 'English'.*1, 6\)/);
+  assert.match(programmeSql, /\('connect_plus', 'Connect Plus'.*1, 6\)/);
+  assert.match(programmeSql, /\('hello', 'English Hello'.*7, 10\)/);
+  assert.match(programmeSql, /\('hello_plus', 'Hello Plus'.*7, 10\)/);
+  assert.match(programmeSql, /\('discover', 'Discover'.*1, 3\)/);
+});
