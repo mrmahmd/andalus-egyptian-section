@@ -43,23 +43,21 @@ test("renders teacher sign in and account creation entry point", async () => {
   assert.match(html, /Plus\+Jakarta\+Sans/);
 });
 
-test("configures Grades 1 to 10, classes A and B, and teacher subjects", async () => {
+test("loads the approved staff directory and defers class assignments to Super Admin", async () => {
   const source = await readFile(
     new URL("../app/teachers/login/page.tsx", import.meta.url),
     "utf8",
   );
 
-  assert.match(source, /Array\.from\(\{ length: 10 \}/);
-  assert.match(source, /Class A/);
-  assert.match(source, /Class B/);
+  assert.match(source, /from\("staff_directory"\)/);
+  assert.match(source, /registration_requests/);
+  assert.match(source, /waiting for Super Admin approval/i);
   assert.match(source, /Account Type/);
   assert.match(source, />Teacher</);
   assert.match(source, />Admin</);
-  assert.match(source, /TeachingAssignment/);
-  assert.match(source, /Add Another Assignment/);
-  for (const subject of ["Arabic", "Islamic", "English - Connect Plus", "English - Hello", "English - Hello Plus", "Discover", "Math", "Science", "Social", "ICT"]) {
-    assert.match(source, new RegExp(subject));
-  }
+  assert.doesNotMatch(source, /Add Assignment/);
+  assert.doesNotMatch(source, /Class A/);
+  assert.doesNotMatch(source, /Class B/);
 });
 
 test("uses the high-readability teacher typography scale", async () => {

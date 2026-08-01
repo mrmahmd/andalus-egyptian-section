@@ -789,9 +789,14 @@ button, select, input { font: inherit; }
 .teacher-auth-options label { display: flex; align-items: center; gap: 7px; }
 .teacher-auth-options input { accent-color: #0c356a; }
 .teacher-auth-options button { border: 0; padding: 0; background: transparent; color: #a81771; font: inherit; font-weight: 800; cursor: pointer; }
-.teacher-auth-submit { height: 56px; padding: 0 18px; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 11px; background: linear-gradient(115deg, #0b2f60, #124b81); color: white; text-decoration: none; font-size: 14px; font-weight: 800; box-shadow: 0 11px 25px rgba(11,47,96,.19); }
+.teacher-auth-submit { width: 100%; height: 56px; padding: 0 18px; border: 0; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 11px; background: linear-gradient(115deg, #0b2f60, #124b81); color: white; text-decoration: none; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 11px 25px rgba(11,47,96,.19); }
 .teacher-auth-submit span { font-size: 17px; transition: transform .2s ease; }
 .teacher-auth-submit:hover span { transform: translateX(4px); }
+.teacher-auth-submit:disabled { cursor: wait; opacity: .68; }
+.teacher-auth-status { margin: 0; padding: 13px 15px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; color: #334155; font-size: 13px; font-weight: 700; line-height: 1.6; }
+.teacher-auth-status.error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+.teacher-auth-status.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+.teacher-auth-status.info { border-color: #bae6fd; background: #f0f9ff; color: #075985; }
 .teacher-auth-notice { margin: 20px 0 0; padding: 12px 13px; border-radius: 10px; display: flex; align-items: center; gap: 9px; background: #f0f7fa; color: #566d82; font-size: 12px; line-height: 1.55; }
 .teacher-auth-notice span { width: 20px; height: 20px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; background: #d7eef4; color: #0b718a; font-weight: 900; }
 .teacher-auth-switch-copy { margin-top: 20px; color: #6b798e; font-size: 13px; text-align: center; }
