@@ -1212,3 +1212,39 @@ button, select, input { font: inherit; }
 @media (max-width: 420px) {
   .super-admin-filters { grid-template-columns: 1fr; }
 }
+
+/* Dashboard readability and language-direction pass */
+.teacher-portal, .teacher-auth-page, .super-admin-portal {
+  font-family: "Plus Jakarta Sans", "Aptos", "Segoe UI", sans-serif;
+  font-size: 16px;
+}
+.teacher-portal button, .teacher-portal input, .teacher-portal select, .teacher-portal textarea,
+.teacher-auth-page button, .teacher-auth-page input, .teacher-auth-page select, .teacher-auth-page textarea,
+.super-admin-portal button, .super-admin-portal input, .super-admin-portal select, .super-admin-portal textarea { font-size: 16px; }
+.teacher-portal .teacher-nav button, .super-admin-portal .super-admin-nav-link { font-size: 15px; }
+.teacher-portal .teacher-nav p, .super-admin-portal .super-admin-sidebar > p { font-size: 13px; }
+.teacher-portal .teacher-page-heading h1, .super-admin-portal .teacher-page-heading h1 { font-size: clamp(32px, 3.2vw, 48px); }
+.teacher-portal .teacher-page-heading > div:first-child > span, .super-admin-portal .teacher-page-heading > div:first-child > span { font-size: 15px; }
+.teacher-portal .teacher-card-heading h2, .super-admin-portal .teacher-card-heading h2 { font-size: 19px; }
+.teacher-portal .teacher-card-heading p, .super-admin-portal .teacher-card-heading p { font-size: 14px; }
+.teacher-portal .teacher-plan-table, .super-admin-portal .super-admin-table { font-size: 14px; }
+.teacher-portal .teacher-plan-table th, .super-admin-portal .super-admin-table th { font-size: 12px; }
+.teacher-portal .teacher-plan-table td strong { font-size: 14px; }
+.teacher-portal .teacher-editor-modal label, .teacher-auth-page label { font-size: 15px; }
+.teacher-portal .teacher-primary-button, .teacher-portal .teacher-secondary-button, .teacher-auth-page button { font-size: 15px; }
+.super-admin-portal .super-row-actions button, .super-admin-portal .super-role, .super-admin-portal .super-account-status { font-size: 13px; }
+
+.arabic-ui .teacher-portal:not(.super-admin-portal),
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-main,
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-content,
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-card,
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-editor-modal {
+  direction: rtl;
+  text-align: right;
+  font-family: "Alexandria", "Cairo", sans-serif !important;
+}
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-plan-table th,
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-plan-table td { text-align: right; }
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-editor-modal input,
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-editor-modal select,
+.arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-editor-modal textarea { direction: rtl; text-align: right; }
