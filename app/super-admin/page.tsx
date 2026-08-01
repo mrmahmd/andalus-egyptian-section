@@ -6,6 +6,7 @@ import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 type AccountRole = "Teacher" | "Admin";
 type AccountStatus = "Not Registered" | "Pending" | "Active" | "Suspended" | "Rejected";
+type DashboardSection = "approvals" | "accounts" | "roles" | "classes" | "activity" | "settings";
 
 type AssignmentItem = {
   id?: string;
@@ -71,6 +72,7 @@ export default function SuperAdminPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All Roles");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
+  const [activeSection, setActiveSection] = useState<DashboardSection>("accounts");
   const [reviewAccount, setReviewAccount] = useState<ManagedAccount | null>(null);
   const [assignmentDraft, setAssignmentDraft] = useState({ subjectId: "", classId: "" });
 
@@ -235,6 +237,27 @@ export default function SuperAdminPage() {
   const activeCount = accounts.filter((account) => account.status === "Active").length;
   const notRegisteredCount = accounts.filter((account) => account.status === "Not Registered").length;
   const adminCount = accounts.filter((account) => account.role === "Admin" && account.status === "Active").length;
+  const tableAccounts = activeSection === "approvals"
+    ? filteredAccounts.filter((account) => account.status === "Pending" || account.status === "Rejected")
+    : filteredAccounts;
+  const sectionCopy: Record<DashboardSection, { kicker: string; title: string; description: string }> = {
+    approvals: { kicker: "Super Administration", title: "Account Approvals", description: "Review new teacher and administrator account requests." },
+    accounts: { kicker: "Live school directory", title: "All Accounts", description: "Real teachers and administrators loaded securely from the school database." },
+    roles: { kicker: "Access control", title: "Roles & Permissions", description: "See exactly what each school role is allowed to manage." },
+    classes: { kicker: "School structure", title: "Classes & Subjects", description: "Live classes and weekly-plan subjects available for teacher assignments." },
+    activity: { kicker: "Account history", title: "Activity Log", description: "Recent account registration, approval and access activity." },
+    settings: { kicker: "Platform status", title: "System Settings", description: "Review the active platform configuration and connected services." },
+  };
+  const currentSection = sectionCopy[activeSection];
+
+  const openSection = (section: DashboardSection) => {
+    setActiveSection(section);
+    setSearch("");
+    setRoleFilter("All Roles");
+    setStatusFilter("All Statuses");
+    setErrorMessage("");
+    setSuccessMessage("");
+  };
 
   const reviewRequest = async (status: "approved" | "rejected") => {
     if (!reviewAccount?.requestId || !currentAdminId) return;
@@ -321,14 +344,14 @@ export default function SuperAdminPage() {
         <div className="teacher-school-year"><span>Academic year</span><strong>2026–2027</strong></div>
         <nav className="teacher-nav" aria-label="Super administrator navigation">
           <p>Super Administration</p>
-          <button className="active"><span className="teacher-nav-icon">AP</span>Account Approvals<small>{pendingCount}</small></button>
-          <button><span className="teacher-nav-icon">AC</span>All Accounts</button>
-          <button><span className="teacher-nav-icon">RL</span>Roles & Permissions</button>
+          <button className={activeSection === "approvals" ? "active" : ""} onClick={() => openSection("approvals")}><span className="teacher-nav-icon">AP</span>Account Approvals<small>{pendingCount}</small></button>
+          <button className={activeSection === "accounts" ? "active" : ""} onClick={() => openSection("accounts")}><span className="teacher-nav-icon">AC</span>All Accounts</button>
+          <button className={activeSection === "roles" ? "active" : ""} onClick={() => openSection("roles")}><span className="teacher-nav-icon">RL</span>Roles & Permissions</button>
           <Link className="super-admin-nav-link" href="/admin"><span className="teacher-nav-icon">WP</span>Manage Public Plans</Link>
           <p>School System</p>
-          <button><span className="teacher-nav-icon">CL</span>Classes & Subjects</button>
-          <button><span className="teacher-nav-icon">LG</span>Activity Log</button>
-          <button><span className="teacher-nav-icon">ST</span>System Settings</button>
+          <button className={activeSection === "classes" ? "active" : ""} onClick={() => openSection("classes")}><span className="teacher-nav-icon">CL</span>Classes & Subjects</button>
+          <button className={activeSection === "activity" ? "active" : ""} onClick={() => openSection("activity")}><span className="teacher-nav-icon">LG</span>Activity Log</button>
+          <button className={activeSection === "settings" ? "active" : ""} onClick={() => openSection("settings")}><span className="teacher-nav-icon">ST</span>System Settings</button>
         </nav>
         <div className="super-admin-permission-card"><span>SA</span><div><strong>Primary authority</strong><p>Approve accounts and control every school workspace.</p></div></div>
         <div className="teacher-sidebar-profile"><span className="teacher-avatar super-admin-avatar">MF</span><div><strong>{currentAdminName}</strong><small>Super Admin</small></div><button aria-label="Open profile menu">•••</button></div>
@@ -338,36 +361,59 @@ export default function SuperAdminPage() {
         <header className="teacher-topbar"><div className="teacher-mobile-brand"><img src={`${basePath}/school-logo.jpeg`} alt="" /><strong>Super Admin</strong></div><label className="teacher-search"><span>⌕</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search real staff names or assignments" /></label><div className="teacher-top-actions"><span className="teacher-sync"><i /> Supabase connected</span><button className="teacher-icon-button" aria-label="Notifications">◇<b>{pendingCount}</b></button><button className="teacher-profile-chip"><span className="teacher-avatar super-admin-avatar">MF</span><span><strong>{currentAdminName}</strong><small>Super Admin</small></span></button></div></header>
 
         <div className="teacher-content super-admin-content">
-          <div className="teacher-page-heading"><div><p className="teacher-kicker">Live school directory</p><h1>Account Approvals</h1><span>Real teachers and administrators loaded securely from the school database.</span></div><Link className="teacher-primary-button super-admin-plans-link" href="/admin">Manage public weekly plans <span>→</span></Link></div>
+          <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentSection.kicker}</p><h1>{currentSection.title}</h1><span>{currentSection.description}</span></div>{activeSection !== "settings" && <Link className="teacher-primary-button super-admin-plans-link" href="/admin">Manage public weekly plans <span>→</span></Link>}</div>
 
           {errorMessage && <p className="super-admin-live-message error" role="alert">{errorMessage}</p>}
           {successMessage && <p className="super-admin-live-message success" role="status">{successMessage}</p>}
 
-          <section className="teacher-stats" aria-label="Account approval summary">
-            <article><span className="stat-icon magenta">PN</span><div><small>Pending approval</small><strong>{pendingCount}</strong><p>Waiting for your decision</p></div></article>
-            <article><span className="stat-icon cyan">AC</span><div><small>Active accounts</small><strong>{activeCount}</strong><p>Can access their workspace</p></div></article>
-            <article><span className="stat-icon navy">NR</span><div><small>Not registered</small><strong>{notRegisteredCount}</strong><p>Listed staff without accounts</p></div></article>
-            <article><span className="stat-icon amber">AD</span><div><small>Active admins</small><strong>{adminCount}</strong><p>Admin Control Center access</p></div></article>
-          </section>
+          {(activeSection === "approvals" || activeSection === "accounts") && <>
+            <section className="teacher-stats" aria-label="Account approval summary">
+              <article><span className="stat-icon magenta">PN</span><div><small>Pending approval</small><strong>{pendingCount}</strong><p>Waiting for your decision</p></div></article>
+              <article><span className="stat-icon cyan">AC</span><div><small>Active accounts</small><strong>{activeCount}</strong><p>Can access their workspace</p></div></article>
+              <article><span className="stat-icon navy">NR</span><div><small>Not registered</small><strong>{notRegisteredCount}</strong><p>Listed staff without accounts</p></div></article>
+              <article><span className="stat-icon amber">AD</span><div><small>Active admins</small><strong>{adminCount}</strong><p>Admin Control Center access</p></div></article>
+            </section>
 
-          <section className="teacher-card super-admin-accounts-card">
-            <div className="super-admin-toolbar">
-              <div><h2>Real school staff directory</h2><p>{loading ? "Loading accounts from Supabase…" : `${filteredAccounts.length} of ${accounts.length} staff members shown`}</p></div>
-              <label className="super-admin-mobile-search">Search<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name or username" /></label>
-              <div className="super-admin-filters"><label>Role<select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}><option>All Roles</option><option>Teacher</option><option>Admin</option></select></label><label>Status<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option>All Statuses</option><option>Pending</option><option>Active</option><option>Suspended</option><option>Rejected</option><option>Not Registered</option></select></label></div>
-            </div>
-            <div className="super-admin-table-wrap"><table className="super-admin-table"><thead><tr><th>School Staff</th><th>Role</th><th>Department / Assignments</th><th>Requested</th><th>Status</th><th>Last Action</th><th>Actions</th></tr></thead><tbody>
-              {loading && <tr><td className="super-empty" colSpan={7}>Loading the real school directory…</td></tr>}
-              {!loading && filteredAccounts.map((account) => (
-                <tr key={account.id}><td><div className="super-account-name"><span>{initials(account.name)}</span><div><strong>{account.name}</strong><small>{account.username === "Not registered" ? account.department : `@${account.username}`}</small></div></div></td><td><span className={`super-role ${account.role.toLowerCase()}`}>{account.role === "Teacher" ? "TC · Teacher" : "AD · Admin"}</span></td><td>{account.assignmentSummary}</td><td>{account.requested}</td><td><span className={`super-account-status ${account.status.toLowerCase().replace(" ", "-")}`}><i />{account.status}</span></td><td>{account.lastAction}</td><td><div className="super-row-actions">
-                  {account.status === "Pending" || account.status === "Rejected" ? <button className="review" onClick={() => openAccount(account)}>Review</button> : null}
-                  {account.status === "Active" || account.status === "Suspended" ? <><button className="manage" onClick={() => openAccount(account)}>Manage</button><Link href={account.role === "Admin" ? "/admin" : "/teachers"}>Open workspace</Link></> : null}
-                  {account.status === "Not Registered" ? <span className="super-waiting-registration">Waiting for registration</span> : null}
-                </div></td></tr>
-              ))}
-              {!loading && filteredAccounts.length === 0 && <tr><td className="super-empty" colSpan={7}>No real staff accounts match the selected filters.</td></tr>}
-            </tbody></table></div>
-          </section>
+            <section className="teacher-card super-admin-accounts-card">
+              <div className="super-admin-toolbar">
+                <div><h2>{activeSection === "approvals" ? "Account requests requiring review" : "Real school staff directory"}</h2><p>{loading ? "Loading accounts from Supabase…" : `${tableAccounts.length} staff members shown`}</p></div>
+                <label className="super-admin-mobile-search">Search<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name or username" /></label>
+                <div className="super-admin-filters"><label>Role<select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}><option>All Roles</option><option>Teacher</option><option>Admin</option></select></label><label>Status<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option>All Statuses</option><option>Pending</option><option>Active</option><option>Suspended</option><option>Rejected</option><option>Not Registered</option></select></label></div>
+              </div>
+              <div className="super-admin-table-wrap"><table className="super-admin-table"><thead><tr><th>School Staff</th><th>Role</th><th>Department / Assignments</th><th>Requested</th><th>Status</th><th>Last Action</th><th>Actions</th></tr></thead><tbody>
+                {loading && <tr><td className="super-empty" colSpan={7}>Loading the real school directory…</td></tr>}
+                {!loading && tableAccounts.map((account) => (
+                  <tr key={account.id}><td><div className="super-account-name"><span>{initials(account.name)}</span><div><strong>{account.name}</strong><small>{account.username === "Not registered" ? account.department : `@${account.username}`}</small></div></div></td><td><span className={`super-role ${account.role.toLowerCase()}`}>{account.role === "Teacher" ? "TC · Teacher" : "AD · Admin"}</span></td><td>{account.assignmentSummary}</td><td>{account.requested}</td><td><span className={`super-account-status ${account.status.toLowerCase().replace(" ", "-")}`}><i />{account.status}</span></td><td>{account.lastAction}</td><td><div className="super-row-actions">
+                    {account.status === "Pending" || account.status === "Rejected" ? <button className="review" onClick={() => openAccount(account)}>Review</button> : null}
+                    {account.status === "Active" || account.status === "Suspended" ? <><button className="manage" onClick={() => openAccount(account)}>Manage</button><Link href={account.role === "Admin" ? "/admin" : "/teachers"}>Open workspace</Link></> : null}
+                    {account.status === "Not Registered" ? <span className="super-waiting-registration">Waiting for registration</span> : null}
+                  </div></td></tr>
+                ))}
+                {!loading && tableAccounts.length === 0 && <tr><td className="super-empty" colSpan={7}>{activeSection === "approvals" ? "No account requests need your review right now." : "No real staff accounts match the selected filters."}</td></tr>}
+              </tbody></table></div>
+            </section>
+          </>}
+
+          {activeSection === "roles" && <section className="super-admin-section-grid">
+            <article className="teacher-card super-system-card"><span>SA</span><h2>Super Admin</h2><p>Full school access: approves accounts, assigns classes and subjects, suspends users, manages every plan and controls platform settings.</p><strong>1 primary account</strong></article>
+            <article className="teacher-card super-system-card"><span>VP</span><h2>Vice Principal</h2><p>School-wide administrative review access after account approval. Weekly-plan editing remains limited by the assigned admin scope.</p><strong>{accounts.filter((account) => account.administrativeRole === "Vice Principal").length} listed vice principals</strong></article>
+            <article className="teacher-card super-system-card"><span>SP</span><h2>Department Supervisor</h2><p>Reviews only the teachers in the supervisor’s own department: English, Arabic & Social Studies, or Math & Science.</p><strong>{accounts.filter((account) => account.administrativeRole?.includes("Supervisor")).length} listed supervisors</strong></article>
+            <article className="teacher-card super-system-card"><span>TC</span><h2>Teacher</h2><p>Creates weekly-plan content only for the classes and subjects assigned by the Super Admin.</p><strong>{accounts.filter((account) => account.role === "Teacher").length} listed teachers</strong></article>
+          </section>}
+
+          {activeSection === "classes" && <section className="super-admin-structure-layout">
+            <article className="teacher-card super-structure-card"><div><h2>School Classes</h2><p>{classes.length} active class sections</p></div><div className="super-class-chip-grid">{classes.map((schoolClass) => <span key={schoolClass.id}>Grade {schoolClass.grade}<b>{schoolClass.section}</b></span>)}</div></article>
+            <article className="teacher-card super-structure-card"><div><h2>Weekly-plan Subjects</h2><p>{subjects.length} active subjects available for assignments</p></div><div className="super-subject-list">{subjects.map((subject) => <span key={subject.id}><strong>{subject.name_en}</strong><small>Grades {subject.minimum_grade}–{subject.maximum_grade}</small></span>)}</div></article>
+          </section>}
+
+          {activeSection === "activity" && <section className="teacher-card super-activity-card"><div><h2>Recent Account Activity</h2><p>Registration and approval activity from the live directory.</p></div><ul>{accounts.filter((account) => account.status !== "Not Registered").map((account) => <li key={account.id}><span>{initials(account.name)}</span><div><strong>{account.name}</strong><small>{account.lastAction}</small></div><time>{account.requested}</time></li>)}</ul>{accounts.every((account) => account.status === "Not Registered") && <div className="super-section-empty"><span>LG</span><strong>No staff account activity yet</strong><p>New registration requests and your approval actions will appear here.</p></div>}</section>}
+
+          {activeSection === "settings" && <section className="super-admin-section-grid">
+            <article className="teacher-card super-system-card connected"><span>DB</span><h2>Database</h2><p>Supabase is connected and the protected school directory is available.</p><strong>Connected</strong></article>
+            <article className="teacher-card super-system-card"><span>AY</span><h2>Academic Year</h2><p>The dashboard and weekly-plan workspace are prepared for the current school year.</p><strong>2026–2027</strong></article>
+            <article className="teacher-card super-system-card"><span>RG</span><h2>Grades & Sections</h2><p>Two sections are available for every grade from Grade 1 through Grade 10.</p><strong>{classes.length} active classes</strong></article>
+            <article className="teacher-card super-system-card"><span>SC</span><h2>Security</h2><p>Role-based access and Row Level Security protect staff-only database operations.</p><strong>Access control active</strong></article>
+          </section>}
         </div>
       </section>
 
