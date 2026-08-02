@@ -139,7 +139,7 @@ export default function TeachersDashboardPage() {
       const reviewsPromise = supervisorAccount
         ? supabase.from("plan_submissions").select("id, status, review_note, submitted_at, teacher_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(school_classes(grade, section), academic_weeks(label), plan_entries(day_of_week, classwork, homework, classera_notes))").in("status", ["submitted", "changes_requested", "approved"]).order("submitted_at", { ascending: false })
         : Promise.resolve({ data: [], error: null });
-      const departmentTeachersPromise = supervisorAccount ? supabase.from("supervisor_staff_links").select("teacher_staff_id, staff_directory!supervisor_staff_links_teacher_staff_id_fkey(full_name), teacher_profiles:profiles!profiles_staff_id_fkey(user_id, display_name, status, teacher_assignments(id, class_id, subject_id, school_classes(grade, section), subjects(name_en)))") : Promise.resolve({ data: [], error: null });
+      const departmentTeachersPromise = supervisorAccount ? supabase.rpc("get_my_department_teachers") : Promise.resolve({ data: [], error: null });
       const [assignmentsResult, weeksResult, slotsResult, entriesResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult] = await Promise.all([
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
@@ -193,12 +193,14 @@ export default function TeachersDashboardPage() {
           entries: (plan?.plan_entries ?? []).sort((a, b) => a.day_of_week - b.day_of_week).map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
         };
       });
-      const realDepartmentTeachers: DepartmentTeacher[] = ((departmentTeachersResult.data ?? []) as unknown as Record<string, unknown>[]).map((item) => {
-        const staff = one(item.staff_directory as { full_name: string } | { full_name: string }[] | null);
-        const teacherProfile = one(item.teacher_profiles as { user_id: string; display_name: string; status: string; teacher_assignments: Record<string, unknown>[] | null } | { user_id: string; display_name: string; status: string; teacher_assignments: Record<string, unknown>[] | null }[] | null);
-        const assignmentRows = Array.isArray(teacherProfile?.teacher_assignments) ? teacherProfile.teacher_assignments : teacherProfile?.teacher_assignments ? [teacherProfile.teacher_assignments] : [];
+      const departmentTeacherRows = (departmentTeachersResult.data ?? []) as Record<string, unknown>[];
+      const departmentTeacherIds = departmentTeacherRows.map((item) => String(item.user_id ?? "")).filter(Boolean);
+      const { data: departmentAssignmentRows = [], error: departmentAssignmentError } = departmentTeacherIds.length ? await supabase.from("teacher_assignments").select("id, teacher_id, class_id, subject_id, school_classes(grade, section), subjects(name_en)").in("teacher_id", departmentTeacherIds) : { data: [], error: null };
+      if (departmentAssignmentError) throw departmentAssignmentError;
+      const realDepartmentTeachers: DepartmentTeacher[] = departmentTeacherRows.map((item) => {
+        const assignmentRows = (departmentAssignmentRows as Record<string, unknown>[]).filter((assignment) => String(assignment.teacher_id) === String(item.user_id ?? ""));
         return {
-        userId: String(teacherProfile?.user_id ?? ""), name: String(teacherProfile?.display_name ?? staff?.full_name ?? "Teacher"), assignments: assignmentRows.map((assignment) => {
+        userId: String(item.user_id ?? ""), name: String(item.display_name ?? "Teacher"), assignments: assignmentRows.map((assignment) => {
           const schoolClass = one(assignment.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
           const subject = one(assignment.subjects as { name_en: string } | { name_en: string }[] | null);
           return { id: String(assignment.id), classId: String(assignment.class_id), subjectId: String(assignment.subject_id), grade: Number(schoolClass?.grade ?? 0), section: schoolClass?.section ?? "", subject: subject?.name_en ?? "Subject" };
