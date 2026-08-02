@@ -128,6 +128,7 @@ function translatePage(root: HTMLElement) {
 
 export default function LanguageSwitcher({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<"en" | "ar">("en");
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const pathname = usePathname();
   useEffect(() => { const stored = window.localStorage.getItem("andalus-language") as "en" | "ar" | null; if (stored) setLanguage(stored); }, []);
   useEffect(() => {
@@ -141,5 +142,10 @@ export default function LanguageSwitcher({ children }: { children: React.ReactNo
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
   }, [language, pathname]);
-  return <>{children}{!pathname.includes("/super-admin") && <button className="language-switcher" type="button" onClick={() => { const next = language === "en" ? "ar" : "en"; window.localStorage.setItem("andalus-language", next); window.location.reload(); }}>{language === "en" ? "العربية" : "English"}</button>}</>;
+  const switchLanguage = () => {
+    const next = language === "en" ? "ar" : "en";
+    window.localStorage.setItem("andalus-language", next);
+    window.location.reload();
+  };
+  return <>{children}{!pathname.includes("/super-admin") && <div className="language-control"><button className="language-switcher" type="button" aria-label="Change language" aria-expanded={languageMenuOpen} onClick={() => setLanguageMenuOpen((open) => !open)}><span aria-hidden="true">◎</span><b>{language === "en" ? "AR" : "EN"}</b></button>{languageMenuOpen && <div className="language-menu"><strong>{language === "en" ? "Language" : "اللغة"}</strong><button type="button" onClick={switchLanguage}>{language === "en" ? "العربية" : "English"}</button></div>}</div>}</>;
 }

@@ -18,7 +18,14 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--white); color: var(--ink); font-family: "Aptos", "Segoe UI", Arial, sans-serif; }
-.language-switcher { position: fixed; z-index: 1000; top: 18px; right: 18px; min-height: 42px; padding: 0 15px; border: 1px solid rgba(12,53,106,.22); border-radius: 10px; box-shadow: 0 8px 24px rgba(12,35,69,.16); background: #fff; color: #0c356a; font: 800 14px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.language-control { position: fixed; z-index: 1000; top: 14px; right: 16px; }
+.language-switcher { width: 36px; height: 36px; padding: 0; border: 1px solid rgba(12,53,106,.18); border-radius: 11px; box-shadow: 0 5px 16px rgba(12,35,69,.11); background: rgba(255,255,255,.96); color: #0c356a; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font: 800 10px "Plus Jakarta Sans", sans-serif; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.language-switcher:hover { background: #f0f7fc; box-shadow: 0 8px 18px rgba(12,35,69,.16); transform: translateY(-1px); }
+.language-switcher span { font-size: 15px; line-height: 1; }
+.language-switcher b { font-size: 9px; letter-spacing: .02em; }
+.language-menu { position: absolute; top: 44px; right: 0; min-width: 126px; padding: 8px; border: 1px solid #d9e4ef; border-radius: 12px; background: #fff; box-shadow: 0 14px 30px rgba(12,35,69,.16); display: grid; gap: 6px; }
+.language-menu strong { padding: 2px 4px; color: #63748a; font: 800 10px "Plus Jakarta Sans", sans-serif; text-transform: uppercase; letter-spacing: .08em; }
+.language-menu button { min-height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: #0c356a; color: #fff; font: 800 12px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
 .mobile-navigation { display: none; }
 .arabic-ui, .arabic-ui * { font-family: "Cairo", "Tahoma", sans-serif !important; }
 .arabic-ui .teacher-sidebar, .arabic-ui .teacher-nav, .arabic-ui .teacher-topbar, .arabic-ui .site-header-inner { direction: rtl; }
@@ -47,8 +54,10 @@ body { margin: 0; background: var(--white); color: var(--ink); font-family: "Apt
 .arabic-ui .plan-paper, .arabic-ui .plan-paper * { direction: ltr; font-family: "Plus Jakarta Sans", "Aptos", "Segoe UI", sans-serif !important; text-align: left; }
 .arabic-ui .plan-paper .paper-header, .arabic-ui .plan-paper .paper-header * { text-align: center !important; }
 .arabic-ui .compact-header, .arabic-ui .plan-toolbar { direction: rtl; text-align: right; }
-html[dir="rtl"] .language-switcher { right: auto; left: 18px; font-family: "Cairo", "Tahoma", sans-serif; }
-@media (max-width: 760px) { .language-switcher { top: 12px; right: 12px; min-height: 38px; padding: 0 12px; font-size: 13px; } html[dir="rtl"] .language-switcher { right: auto; left: 12px; } }
+html[dir="rtl"] .language-control { right: auto; left: 16px; }
+html[dir="rtl"] .language-switcher, html[dir="rtl"] .language-menu strong, html[dir="rtl"] .language-menu button { font-family: "Alexandria", "Cairo", "Tahoma", sans-serif; }
+html[dir="rtl"] .language-menu { right: auto; left: 0; direction: rtl; text-align: right; }
+@media (max-width: 760px) { .language-control { top: 10px; right: 10px; } .language-switcher { width: 33px; height: 33px; border-radius: 10px; } html[dir="rtl"] .language-control { right: auto; left: 10px; } }
 @media (max-width: 760px) { body { padding-bottom: 78px; }.mobile-navigation { position: fixed; z-index: 950; right: 10px; bottom: 10px; left: 10px; min-height: 62px; padding: 5px; border: 1px solid rgba(203,218,234,.95); border-radius: 16px; display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(255,255,255,.97); box-shadow: 0 10px 32px rgba(10,31,64,.2); backdrop-filter: blur(12px); }.mobile-navigation a { min-width: 0; padding: 5px 2px; border-radius: 11px; display: grid; place-items: center; gap: 2px; color: #52657d; text-decoration: none; }.mobile-navigation a.active { background: #e8f2fb; color: #0a4f91; }.mobile-navigation span { min-width: 24px; font: 900 9px "Plus Jakarta Sans", sans-serif; letter-spacing: -.04em; }.mobile-navigation b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 10px "Plus Jakarta Sans", sans-serif; } .arabic-ui .mobile-navigation { direction: rtl; }.arabic-ui .mobile-navigation span, .arabic-ui .mobile-navigation b { font-family: "Alexandria", "Cairo", sans-serif !important; } }
 @media (max-width: 760px) { .arabic-ui .teacher-main { width: 100%; margin-right: 0; } .arabic-ui .hero-photo { inset: 0; background-position: 43% 32%; } .arabic-ui .hero-wash { background: linear-gradient(0deg, rgba(6,27,58,.98) 4%, rgba(8,38,83,.9) 48%, rgba(6,27,58,.08) 100%); } .arabic-ui .hero-content { align-items: flex-end; } }
 a { color: inherit; }
