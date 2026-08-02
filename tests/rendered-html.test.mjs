@@ -89,18 +89,18 @@ test("uses the high-readability teacher typography scale", async () => {
   assert.match(css, /\.teacher-plan-table \{[^}]*font-size: 13px/);
 });
 
-test("renders the administrator weekly-plan control center", async () => {
+test("renders the read-only administrator published-plan report", async () => {
   const html = await readFile(
     new URL("admin/index.html", outputRoot),
     "utf8",
   );
 
-  assert.match(html, /Admin Control Center/);
-  assert.match(html, /All Weekly Plans/);
-  assert.match(html, /Weekly plan directory/);
-  assert.match(html, /Full administrator access/);
-  assert.match(html, /class="edit">Edit/);
-  assert.match(html, /class="delete">Delete/);
+  assert.match(html, /Administration Reports/);
+  assert.match(html, /Published Weekly Plan Report/);
+  assert.match(html, /Full published-plan directory/);
+  assert.match(html, /Read-only access/);
+  assert.match(html, /This account cannot create, edit or submit plans/);
+  assert.match(html, /<th>Report<\/th>/);
 });
 
 test("renders the Super Admin account approval center", async () => {

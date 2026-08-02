@@ -15,6 +15,30 @@
   --white: #ffffff;
 }
 
+.admin-report-portal .teacher-nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #8fa2c5;
+  padding: 12px 15px;
+  border-radius: 14px;
+  font-weight: 800;
+}
+
+.admin-report-portal .teacher-nav a:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.report-access-card { margin-top: auto; }
+.admin-report-card { overflow: hidden; }
+.admin-report-details > td { padding: 0 !important; background: #f7faff; }
+.admin-report-details table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.admin-report-details th { background: #eaf2fc; color: #173a70; font-size: .74rem; letter-spacing: .04em; text-transform: uppercase; }
+.admin-report-details th, .admin-report-details td { padding: 13px 15px; text-align: left; border-bottom: 1px solid #dfe8f5; vertical-align: top; }
+.admin-report-details small { display: block; margin-top: 4px; color: #7184a5; font-weight: 700; }
+
+@media (max-width: 760px) {
+  .admin-report-details { display: block; overflow-x: auto; }
+  .admin-report-details table { min-width: 800px; }
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--white); color: var(--ink); font-family: "Aptos", "Segoe UI", Arial, sans-serif; }
