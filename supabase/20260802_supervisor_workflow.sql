@@ -121,6 +121,16 @@ begin
   where id = submission_id
   returning * into submission;
 
+  -- The department supervisor is the publishing authority for each subject.
+  if decision = 'approved' then
+    update public.weekly_plans
+    set status = 'published',
+        published_by = (select auth.uid()),
+        published_at = coalesce(published_at, now()),
+        updated_at = now()
+    where id = submission.weekly_plan_id;
+  end if;
+
   return submission;
 end;
 $$;

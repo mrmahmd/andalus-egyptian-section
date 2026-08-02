@@ -280,7 +280,16 @@ create policy "Super admin deletes plans" on public.weekly_plans for delete to a
 using (private.is_active_staff(array['super_admin']));
 
 create policy "Public reads published plan entries" on public.plan_entries for select to anon
-using (exists (select 1 from public.weekly_plans p where p.id = weekly_plan_id and p.status = 'published'));
+using (
+  exists (
+    select 1 from public.weekly_plans p
+    join public.plan_submissions s
+      on s.weekly_plan_id = p.id
+     and s.teacher_id = plan_entries.teacher_id
+     and s.subject_id = plan_entries.subject_id
+    where p.id = weekly_plan_id and p.status = 'published' and s.status = 'approved'
+  )
+);
 create policy "Active staff reads plan entries" on public.plan_entries for select to authenticated
 using (private.is_active_staff());
 create policy "Assigned teachers create entries" on public.plan_entries for insert to authenticated
@@ -305,7 +314,16 @@ create policy "Owners or super admin delete entries" on public.plan_entries for 
 using (teacher_id = (select auth.uid()) or private.is_active_staff(array['super_admin']));
 
 create policy "Public reads published quizzes" on public.plan_quizzes for select to anon
-using (exists (select 1 from public.weekly_plans p where p.id = weekly_plan_id and p.status = 'published'));
+using (
+  exists (
+    select 1 from public.weekly_plans p
+    join public.plan_submissions s
+      on s.weekly_plan_id = p.id
+     and s.teacher_id = plan_quizzes.teacher_id
+     and s.subject_id = plan_quizzes.subject_id
+    where p.id = weekly_plan_id and p.status = 'published' and s.status = 'approved'
+  )
+);
 create policy "Active staff reads quizzes" on public.plan_quizzes for select to authenticated using (private.is_active_staff());
 create policy "Teachers create their quizzes" on public.plan_quizzes for insert to authenticated
 with check (teacher_id = (select auth.uid()) and private.is_active_staff());
@@ -316,7 +334,15 @@ create policy "Owners or super admin delete quizzes" on public.plan_quizzes for 
 using (teacher_id = (select auth.uid()) or private.is_active_staff(array['super_admin']));
 
 create policy "Public reads published notes" on public.plan_notes for select to anon
-using (exists (select 1 from public.weekly_plans p where p.id = weekly_plan_id and p.status = 'published'));
+using (
+  exists (
+    select 1 from public.weekly_plans p
+    join public.plan_submissions s
+      on s.weekly_plan_id = p.id
+     and s.teacher_id = plan_notes.teacher_id
+    where p.id = weekly_plan_id and p.status = 'published' and s.status = 'approved'
+  )
+);
 create policy "Active staff reads notes" on public.plan_notes for select to authenticated using (private.is_active_staff());
 create policy "Teachers create their notes" on public.plan_notes for insert to authenticated
 with check (teacher_id = (select auth.uid()) and private.is_active_staff());

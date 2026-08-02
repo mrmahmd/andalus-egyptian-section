@@ -168,3 +168,15 @@ test("stores explicit supervisor-to-teacher links for the approved department gr
   assert.match(linksSql, /is_department_supervisor_for/);
   assert.match(linksSql, /enable row level security/);
 });
+
+test("publishes only supervisor-approved subject content without a Super Admin gate", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const publishingSql = await readFile(new URL("../supabase/20260802_supervisor_approval_publishing.sql", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /Approve & publish/);
+  assert.match(teacherSource, /published for families/);
+  assert.match(publishingSql, /set status = 'published'/);
+  assert.match(publishingSql, /s\.status = 'approved'/);
+  assert.match(publishingSql, /Public reads supervisor-approved plan entries/);
+  assert.match(publishingSql, /Public reads supervisor-approved quizzes/);
+});
