@@ -62,6 +62,9 @@ type ReviewItem = {
 };
 
 type DayDraft = { classwork: string; homework: string; classeraNotes: string };
+type SchoolClass = { id: string; grade: number; section: string };
+type SchoolSubject = { id: string; name_en: string };
+type DepartmentTeacher = { userId: string; name: string; assignments: Assignment[] };
 
 const emptyDayDrafts = () => dayNames.map((): DayDraft => ({ classwork: "", homework: "", classeraNotes: "" }));
 
@@ -92,6 +95,11 @@ export default function TeachersDashboardPage() {
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [reviewStatusFilter, setReviewStatusFilter] = useState<"waiting" | "changes_requested" | "approved">("waiting");
+  const [departmentTeachers, setDepartmentTeachers] = useState<DepartmentTeacher[]>([]);
+  const [schoolClasses, setSchoolClasses] = useState<SchoolClass[]>([]);
+  const [schoolSubjects, setSchoolSubjects] = useState<SchoolSubject[]>([]);
+  const [selectedDepartmentTeacherId, setSelectedDepartmentTeacherId] = useState("");
+  const [departmentAssignmentDraft, setDepartmentAssignmentDraft] = useState({ classId: "", subjectId: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -131,14 +139,18 @@ export default function TeachersDashboardPage() {
       const reviewsPromise = supervisorAccount
         ? supabase.from("plan_submissions").select("id, status, review_note, submitted_at, teacher_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(school_classes(grade, section), academic_weeks(label), plan_entries(day_of_week, classwork, homework, classera_notes))").in("status", ["submitted", "changes_requested", "approved"]).order("submitted_at", { ascending: false })
         : Promise.resolve({ data: [], error: null });
-      const [assignmentsResult, weeksResult, slotsResult, entriesResult, reviewsResult] = await Promise.all([
+      const departmentTeachersPromise = supervisorAccount ? supabase.from("profiles").select("user_id, display_name, teacher_assignments(id, class_id, subject_id, school_classes(grade, section), subjects(name_en))").eq("role", "teacher").eq("status", "active") : Promise.resolve({ data: [], error: null });
+      const [assignmentsResult, weeksResult, slotsResult, entriesResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult] = await Promise.all([
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
         supabase.from("plan_entries").select("id, day_of_week, updated_at, subjects(name_en), weekly_plans(status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         reviewsPromise,
+        departmentTeachersPromise,
+        supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
+        supabase.from("subjects").select("id, name_en").eq("is_active", true).order("name_en"),
       ]);
-      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, reviewsResult.error].find(Boolean);
+      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, reviewsResult.error, departmentTeachersResult.error, classesResult.error, subjectsResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const realAssignments: Assignment[] = (assignmentsResult.data ?? []).map((assignment) => {
@@ -181,6 +193,13 @@ export default function TeachersDashboardPage() {
           entries: (plan?.plan_entries ?? []).sort((a, b) => a.day_of_week - b.day_of_week).map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
         };
       });
+      const realDepartmentTeachers: DepartmentTeacher[] = ((departmentTeachersResult.data ?? []) as unknown as Record<string, unknown>[]).map((item) => ({
+        userId: String(item.user_id), name: String(item.display_name ?? "Teacher"), assignments: ((item.teacher_assignments ?? []) as Record<string, unknown>[]).map((assignment) => {
+          const schoolClass = one(assignment.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
+          const subject = one(assignment.subjects as { name_en: string } | { name_en: string }[] | null);
+          return { id: String(assignment.id), classId: String(assignment.class_id), subjectId: String(assignment.subject_id), grade: Number(schoolClass?.grade ?? 0), section: schoolClass?.section ?? "", subject: subject?.name_en ?? "Subject" };
+        }),
+      }));
 
       const department = one(profile.departments as { name_en: string } | { name_en: string }[] | null);
       const weeks = (weeksResult.data ?? []) as AcademicWeek[];
@@ -193,6 +212,10 @@ export default function TeachersDashboardPage() {
       setTimetableSlots((slotsResult.data ?? []) as TimetableSlot[]);
       setEntries(realEntries);
       setReviewItems(realReviews);
+      setDepartmentTeachers(realDepartmentTeachers);
+      setSchoolClasses((classesResult.data ?? []) as SchoolClass[]);
+      setSchoolSubjects((subjectsResult.data ?? []) as SchoolSubject[]);
+      setSelectedDepartmentTeacherId((current) => realDepartmentTeachers.some((teacher) => teacher.userId === current) ? current : realDepartmentTeachers[0]?.userId ?? "");
       setSelectedAssignmentId((current) => realAssignments.some((assignment) => assignment.id === current) ? current : realAssignments[0]?.id ?? "");
       setSelectedWeekId((current) => weeks.some((week) => week.id === current) ? current : weeks.find((week) => week.is_current)?.id ?? weeks[0]?.id ?? "");
     } catch (error) {
@@ -337,6 +360,32 @@ export default function TeachersDashboardPage() {
     }
   };
 
+  const addDepartmentAssignment = async () => {
+    if (!selectedDepartmentTeacherId || !departmentAssignmentDraft.classId || !departmentAssignmentDraft.subjectId) return;
+    setSaving(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.from("teacher_assignments").insert({ teacher_id: selectedDepartmentTeacherId, class_id: departmentAssignmentDraft.classId, subject_id: departmentAssignmentDraft.subjectId });
+      if (error) throw error;
+      setDepartmentAssignmentDraft((current) => ({ ...current, subjectId: "" }));
+      setMessage("The class and subject were assigned to the teacher.");
+      setMessageTone("success");
+      await loadTeacherDashboard();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "The assignment could not be saved."); setMessageTone("error"); } finally { setSaving(false); }
+  };
+
+  const removeDepartmentAssignment = async (assignmentId: string) => {
+    setSaving(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.from("teacher_assignments").delete().eq("id", assignmentId);
+      if (error) throw error;
+      setMessage("The assignment was removed from the teacher.");
+      setMessageTone("success");
+      await loadTeacherDashboard();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "The assignment could not be removed."); setMessageTone("error"); } finally { setSaving(false); }
+  };
+
   const signOut = async () => {
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
@@ -350,6 +399,7 @@ export default function TeachersDashboardPage() {
   const changeRequestReviews = reviewItems.filter((item) => item.status === "changes_requested");
   const approvedReviews = reviewItems.filter((item) => item.status === "approved");
   const visibleReviewItems = reviewItems.filter((item) => reviewStatusFilter === "waiting" ? item.status === "submitted" : item.status === reviewStatusFilter);
+  const selectedDepartmentTeacher = departmentTeachers.find((teacher) => teacher.userId === selectedDepartmentTeacherId);
 
   return (
     <main className="teacher-portal">
@@ -358,7 +408,7 @@ export default function TeachersDashboardPage() {
         <div className="teacher-school-year"><span>Academic year</span><strong>2026–2027</strong></div>
         <nav className="teacher-nav" aria-label="Teacher workspace navigation">
           <p>Workspace</p>
-          {(isSupervisor ? [...navigation, ["Teacher Reviews", "RV"] as const] : navigation).map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => setActiveNav(label)}><span className="teacher-nav-icon">{icon}</span>{label}{label === "Weekly Plans" && <small>{entries.length}</small>}{label === "Teacher Reviews" && <small>{reviewItems.filter((item) => item.status === "submitted").length}</small>}</button>)}
+          {(isSupervisor ? [...navigation, ["Teacher Reviews", "RV"] as const, ["Department Teachers", "DT"] as const] : navigation).map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => setActiveNav(label)}><span className="teacher-nav-icon">{icon}</span>{label}{label === "Weekly Plans" && <small>{entries.length}</small>}{label === "Teacher Reviews" && <small>{reviewItems.filter((item) => item.status === "submitted").length}</small>}{label === "Department Teachers" && <small>{departmentTeachers.length}</small>}</button>)}
           <p>Account</p>
           <button className={activeNav === "Profile & assignments" ? "active" : ""} onClick={() => setActiveNav("Profile & assignments")}><span className="teacher-nav-icon">PR</span>Profile & assignments</button>
           <button className={activeNav === "Settings" ? "active" : ""} onClick={() => setActiveNav("Settings")}><span className="teacher-nav-icon">ST</span>Settings</button>
@@ -401,6 +451,11 @@ export default function TeachersDashboardPage() {
 
           {activeNav === "Settings" && <section className="teacher-card teacher-live-assignment-panel"><div><h2>Account Settings</h2><p>Your account is authenticated and connected to Supabase.</p></div><div className="teacher-settings-row"><span><small>Name</small><strong>{teacherName}</strong></span><span><small>Department</small><strong>{departmentName}</strong></span><button className="teacher-secondary-button" onClick={() => void signOut()}>Sign out</button></div></section>}
 
+          {isSupervisor && activeNav === "Department Teachers" && <section className="teacher-card department-teachers-card">
+            <div className="teacher-card-heading"><div><p className="teacher-kicker">Department management</p><h2>Department Teachers</h2><p>Manage only the teachers assigned to your supervision group.</p></div><span className="supervisor-review-authority">{departmentTeachers.length} teachers</span></div>
+            <div className="department-teachers-layout"><div className="department-teacher-list">{departmentTeachers.map((teacher) => <button key={teacher.userId} className={selectedDepartmentTeacherId === teacher.userId ? "active" : ""} onClick={() => setSelectedDepartmentTeacherId(teacher.userId)}><span>{initials(teacher.name)}</span><div><strong>{teacher.name}</strong><small>{teacher.assignments.length} class / subject assignments</small></div></button>)}{departmentTeachers.length === 0 && <p className="supervisor-review-empty">No teachers are linked to your department yet.</p>}</div>
+              {selectedDepartmentTeacher && <section className="department-teacher-editor"><div><p className="teacher-kicker">Teacher assignments</p><h3>{selectedDepartmentTeacher.name}</h3><p>Assign classes and subjects, or remove an existing assignment.</p></div><div className="department-assignment-picker"><label>Class<select value={departmentAssignmentDraft.classId} onChange={(event) => setDepartmentAssignmentDraft((current) => ({ ...current, classId: event.target.value }))}><option value="">Select class</option>{schoolClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>Grade {schoolClass.grade} {schoolClass.section}</option>)}</select></label><label>Subject<select value={departmentAssignmentDraft.subjectId} onChange={(event) => setDepartmentAssignmentDraft((current) => ({ ...current, subjectId: event.target.value }))}><option value="">Select subject</option>{schoolSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_en}</option>)}</select></label><button disabled={saving || !departmentAssignmentDraft.classId || !departmentAssignmentDraft.subjectId} type="button" className="teacher-primary-button" onClick={() => void addDepartmentAssignment()}>Assign to teacher</button></div><div className="department-assignment-chips">{selectedDepartmentTeacher.assignments.map((assignment) => <span key={assignment.id}>{`Grade ${assignment.grade} ${assignment.section} · ${assignment.subject}`}<button disabled={saving} type="button" aria-label={`Remove ${assignment.subject}`} onClick={() => void removeDepartmentAssignment(assignment.id)}>×</button></span>)}{selectedDepartmentTeacher.assignments.length === 0 && <small>No classes or subjects assigned yet.</small>}</div></section>}</div>
+          </section>}
           {isSupervisor && activeNav === "Teacher Reviews" && <section className="teacher-card supervisor-review-card">
             <div className="teacher-card-heading supervisor-review-heading">
               <div><p className="teacher-kicker">Supervisor workspace</p><h2>Teacher plans for review</h2><p>Only your assigned teachers appear here. Read every lesson, homework item and Classera note before making a decision.</p></div>

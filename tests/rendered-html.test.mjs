@@ -172,6 +172,18 @@ test("stores explicit supervisor-to-teacher links for the approved department gr
   assert.match(linksSql, /enable row level security/);
 });
 
+test("lets supervisors manage assignments only for their linked department teachers", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const assignmentSql = await readFile(new URL("../supabase/20260802_supervisor_teacher_assignments.sql", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /Department Teachers/);
+  assert.match(teacherSource, /Assign to teacher/);
+  assert.match(teacherSource, /addDepartmentAssignment/);
+  assert.match(assignmentSql, /private\.is_department_supervisor_for\(teacher_id\)/);
+  assert.match(assignmentSql, /for insert to authenticated/);
+  assert.match(assignmentSql, /for delete to authenticated/);
+});
+
 test("publishes only supervisor-approved subject content without a Super Admin gate", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const publishingSql = await readFile(new URL("../supabase/20260802_supervisor_approval_publishing.sql", import.meta.url), "utf8");

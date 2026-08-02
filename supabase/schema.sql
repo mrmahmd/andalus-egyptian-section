@@ -237,8 +237,8 @@ create policy "Public reads active subjects" on public.subjects for select to an
 create policy "Public reads academic weeks" on public.academic_weeks for select to anon, authenticated using (true);
 create policy "Public reads timetable" on public.timetable_slots for select to anon, authenticated using (true);
 
-create policy "Users read their profile" on public.profiles for select to authenticated
-using (user_id = (select auth.uid()) or private.is_active_staff(array['super_admin']));
+create policy "Staff read relevant profiles" on public.profiles for select to authenticated
+using (user_id = (select auth.uid()) or (select private.is_department_supervisor_for(user_id)) or private.is_active_staff(array['super_admin']));
 create policy "Super admin manages profiles" on public.profiles for update to authenticated
 using (private.is_active_staff(array['super_admin']))
 with check (private.is_active_staff(array['super_admin']));
@@ -251,15 +251,15 @@ create policy "Super admin reviews registration requests" on public.registration
 using (private.is_active_staff(array['super_admin']))
 with check (private.is_active_staff(array['super_admin']));
 
-create policy "Staff read assignments" on public.teacher_assignments for select to authenticated
-using (teacher_id = (select auth.uid()) or private.is_active_staff(array['admin','super_admin']));
-create policy "Super admin creates assignments" on public.teacher_assignments for insert to authenticated
-with check (private.is_active_staff(array['super_admin']));
-create policy "Super admin updates assignments" on public.teacher_assignments for update to authenticated
-using (private.is_active_staff(array['super_admin']))
-with check (private.is_active_staff(array['super_admin']));
-create policy "Super admin deletes assignments" on public.teacher_assignments for delete to authenticated
-using (private.is_active_staff(array['super_admin']));
+create policy "Staff read relevant assignments" on public.teacher_assignments for select to authenticated
+using (teacher_id = (select auth.uid()) or (select private.is_department_supervisor_for(teacher_id)) or private.is_active_staff(array['super_admin']));
+create policy "Supervisors and super admin create relevant assignments" on public.teacher_assignments for insert to authenticated
+with check ((select private.is_department_supervisor_for(teacher_id)) or private.is_active_staff(array['super_admin']));
+create policy "Supervisors and super admin update relevant assignments" on public.teacher_assignments for update to authenticated
+using ((select private.is_department_supervisor_for(teacher_id)) or private.is_active_staff(array['super_admin']))
+with check ((select private.is_department_supervisor_for(teacher_id)) or private.is_active_staff(array['super_admin']));
+create policy "Supervisors and super admin delete relevant assignments" on public.teacher_assignments for delete to authenticated
+using ((select private.is_department_supervisor_for(teacher_id)) or private.is_active_staff(array['super_admin']));
 
 create policy "Public reads published plans" on public.weekly_plans for select to anon
 using (status = 'published');
