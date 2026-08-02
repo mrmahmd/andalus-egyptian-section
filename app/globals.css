@@ -19,8 +19,8 @@
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--white); color: var(--ink); font-family: "Aptos", "Segoe UI", Arial, sans-serif; }
 .language-control { position: fixed; z-index: 1000; top: 14px; right: 16px; }
-.language-switcher { width: 36px; height: 36px; padding: 0; border: 1px solid rgba(12,53,106,.18); border-radius: 11px; box-shadow: 0 5px 16px rgba(12,35,69,.11); background: rgba(255,255,255,.96); color: #0c356a; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font: 800 10px "Plus Jakarta Sans", sans-serif; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
-.language-switcher:hover { background: #f0f7fc; box-shadow: 0 8px 18px rgba(12,35,69,.16); transform: translateY(-1px); }
+.language-switcher { width: 36px; height: 36px; padding: 0; border: 1px solid #0c356a; border-radius: 11px; box-shadow: 0 5px 16px rgba(12,35,69,.20), 0 3px 0 #b31b78; background: linear-gradient(135deg, #0c356a, #126eaa); color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font: 800 10px "Plus Jakarta Sans", sans-serif; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.language-switcher:hover { background: linear-gradient(135deg, #b31b78, #0c5d9d); box-shadow: 0 8px 18px rgba(12,35,69,.24), 0 3px 0 #7a104f; transform: translateY(-2px); }
 .language-switcher span { font-size: 15px; line-height: 1; }
 .language-switcher b { font-size: 9px; letter-spacing: .02em; }
 .language-menu { position: absolute; top: 44px; right: 0; min-width: 126px; padding: 8px; border: 1px solid #d9e4ef; border-radius: 12px; background: #fff; box-shadow: 0 14px 30px rgba(12,35,69,.16); display: grid; gap: 6px; }
