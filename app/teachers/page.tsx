@@ -150,7 +150,7 @@ export default function TeachersDashboardPage() {
         supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
         supabase.from("subjects").select("id, name_en").eq("is_active", true).order("name_en"),
       ]);
-      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, reviewsResult.error, departmentTeachersResult.error, classesResult.error, subjectsResult.error].find(Boolean);
+      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, reviewsResult.error, classesResult.error, subjectsResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const realAssignments: Assignment[] = (assignmentsResult.data ?? []).map((assignment) => {
@@ -193,13 +193,16 @@ export default function TeachersDashboardPage() {
           entries: (plan?.plan_entries ?? []).sort((a, b) => a.day_of_week - b.day_of_week).map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
         };
       });
-      const realDepartmentTeachers: DepartmentTeacher[] = ((departmentTeachersResult.data ?? []) as unknown as Record<string, unknown>[]).map((item) => ({
-        userId: String(item.user_id), name: String(item.display_name ?? "Teacher"), assignments: ((item.teacher_assignments ?? []) as Record<string, unknown>[]).map((assignment) => {
+      const realDepartmentTeachers: DepartmentTeacher[] = ((departmentTeachersResult.data ?? []) as unknown as Record<string, unknown>[]).map((item) => {
+        const assignmentRows = Array.isArray(item.teacher_assignments) ? item.teacher_assignments as Record<string, unknown>[] : item.teacher_assignments ? [item.teacher_assignments as Record<string, unknown>] : [];
+        return {
+        userId: String(item.user_id), name: String(item.display_name ?? "Teacher"), assignments: assignmentRows.map((assignment) => {
           const schoolClass = one(assignment.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
           const subject = one(assignment.subjects as { name_en: string } | { name_en: string }[] | null);
           return { id: String(assignment.id), classId: String(assignment.class_id), subjectId: String(assignment.subject_id), grade: Number(schoolClass?.grade ?? 0), section: schoolClass?.section ?? "", subject: subject?.name_en ?? "Subject" };
         }),
-      }));
+      };
+      });
 
       const department = one(profile.departments as { name_en: string } | { name_en: string }[] | null);
       const weeks = (weeksResult.data ?? []) as AcademicWeek[];
@@ -216,10 +219,15 @@ export default function TeachersDashboardPage() {
       setSchoolClasses((classesResult.data ?? []) as SchoolClass[]);
       setSchoolSubjects((subjectsResult.data ?? []) as SchoolSubject[]);
       setSelectedDepartmentTeacherId((current) => realDepartmentTeachers.some((teacher) => teacher.userId === current) ? current : realDepartmentTeachers[0]?.userId ?? "");
+      if (departmentTeachersResult.error) {
+        setMessage("Your dashboard is ready. Department teacher assignments could not be loaded yet; please refresh once.");
+        setMessageTone("info");
+      }
       setSelectedAssignmentId((current) => realAssignments.some((assignment) => assignment.id === current) ? current : realAssignments[0]?.id ?? "");
       setSelectedWeekId((current) => weeks.some((week) => week.id === current) ? current : weeks.find((week) => week.is_current)?.id ?? weeks[0]?.id ?? "");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "The teacher workspace could not be loaded.");
+      const errorMessage = error instanceof Error ? error.message : typeof error === "object" && error && "message" in error ? String(error.message) : "The teacher workspace could not be loaded.";
+      setMessage(errorMessage);
       setMessageTone("error");
     } finally {
       setLoading(false);
