@@ -44,6 +44,20 @@ const staffAr: Record<string, string> = {
 };
 
 Object.assign(staffAr, {
+  "Department Teachers": "معلمو الشعبة",
+  "Department management": "إدارة الشعبة",
+  "Manage only the teachers assigned to your supervision group.": "أدر فقط المعلمين المرتبطين بإشرافك.",
+  "teachers": "معلّمًا",
+  "Manage": "إدارة",
+  "Account not registered yet": "الحساب لم يُسجل بعد",
+  "Teacher assignments": "تكليفات المعلم",
+  "Assign classes and subjects, or remove an existing assignment.": "أضف فصولًا ومواد للمعلم أو احذف أي تكليف موجود.",
+  "This teacher must create and activate a school account before classes and subjects can be assigned.": "يجب أن ينشئ هذا المعلم حساب المدرسة ويُفعّل أولًا قبل إضافة الفصول والمواد.",
+  "Select class": "اختر الفصل",
+  "Select subject": "اختر المادة",
+  "Assign to teacher": "إسناد للمعلم",
+  "No classes or subjects assigned yet.": "لا توجد فصول أو مواد مسندة بعد.",
+  "No teachers are linked to your department yet.": "لا يوجد معلمون مرتبطون بشعبتك حتى الآن.",
   "Supervisor workspace": "مساحة عمل المشرف",
   "Only your assigned teachers appear here. Read every lesson, homework item and Classera note before making a decision.": "تظهر هنا خطط معلميك المكلّفين فقط. راجع كل درس وواجب وملاحظة في كلاسيرا قبل اتخاذ القرار.",
   "Your approval publishes the subject for families": "اعتمادك ينشر المادة لأولياء الأمور",
