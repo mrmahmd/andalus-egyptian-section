@@ -158,3 +158,13 @@ test("adds a department-supervisor review workflow without removing the supervis
   assert.match(workflowSql, /review_plan_submission/);
   assert.match(workflowSql, /enable row level security/);
 });
+
+test("stores explicit supervisor-to-teacher links for the approved department groups", async () => {
+  const linksSql = await readFile(new URL("../supabase/20260802_supervisor_staff_links.sql", import.meta.url), "utf8");
+
+  assert.match(linksSql, /create table if not exists public\.supervisor_staff_links/);
+  assert.match(linksSql, /teacher\.department_id = supervisor\.department_id/);
+  assert.match(linksSql, /administrative_role like '%Supervisor%'/);
+  assert.match(linksSql, /is_department_supervisor_for/);
+  assert.match(linksSql, /enable row level security/);
+});
