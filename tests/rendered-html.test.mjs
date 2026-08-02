@@ -141,3 +141,20 @@ test("saves teacher assignments immediately and enforces English programme grade
   assert.match(programmeSql, /\('hello_plus', 'Hello Plus'.*7, 10\)/);
   assert.match(programmeSql, /\('discover', 'Discover'.*1, 3\)/);
 });
+
+test("adds a department-supervisor review workflow without removing the supervisor teaching workspace", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const loginSource = await readFile(new URL("../app/teachers/login/page.tsx", import.meta.url), "utf8");
+  const workflowSql = await readFile(new URL("../supabase/20260802_supervisor_workflow.sql", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /Teacher Reviews/);
+  assert.match(teacherSource, /plan_submissions/);
+  assert.match(teacherSource, /review_plan_submission/);
+  assert.match(teacherSource, /Submit for review/);
+  assert.match(loginSource, /administrative_role/);
+  assert.match(loginSource, /isSupervisor/);
+  assert.match(workflowSql, /create table if not exists public\.plan_submissions/);
+  assert.match(workflowSql, /is_department_supervisor_for/);
+  assert.match(workflowSql, /review_plan_submission/);
+  assert.match(workflowSql, /enable row level security/);
+});

@@ -49,6 +49,18 @@ type TeacherEntry = {
   updated: string;
 };
 
+type ReviewItem = {
+  id: string;
+  teacherName: string;
+  subject: string;
+  className: string;
+  week: string;
+  status: string;
+  note: string;
+  submittedAt: string;
+  entries: { day: string; classwork: string; homework: string; notes: string }[];
+};
+
 type DayDraft = { classwork: string; homework: string; classeraNotes: string };
 
 const emptyDayDrafts = () => dayNames.map((): DayDraft => ({ classwork: "", homework: "", classeraNotes: "" }));
@@ -76,6 +88,9 @@ export default function TeachersDashboardPage() {
   const [academicWeeks, setAcademicWeeks] = useState<AcademicWeek[]>([]);
   const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>([]);
   const [entries, setEntries] = useState<TeacherEntry[]>([]);
+  const [isSupervisor, setIsSupervisor] = useState(false);
+  const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -100,23 +115,29 @@ export default function TeachersDashboardPage() {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("user_id, display_name, role, status, department_id, departments(name_en)")
+        .select("user_id, display_name, role, status, department_id, departments(name_en), staff_directory(administrative_role)")
         .eq("user_id", userData.user.id)
         .maybeSingle();
       if (profileError) throw profileError;
-      if (!profile || profile.role !== "teacher" || profile.status !== "active") {
+      const staffRecord = one(profile?.staff_directory as { administrative_role: string | null } | { administrative_role: string | null }[] | null);
+      const supervisorAccount = profile?.role === "admin" && String(staffRecord?.administrative_role ?? "").includes("Supervisor");
+      if (!profile || (profile.role !== "teacher" && !supervisorAccount) || profile.status !== "active") {
         const destination = profile?.role === "super_admin" ? "/super-admin/" : profile?.role === "admin" ? "/admin/" : "/teachers/login/";
         window.location.assign(`${basePath}${destination}`);
         return;
       }
 
-      const [assignmentsResult, weeksResult, slotsResult, entriesResult] = await Promise.all([
+      const reviewsPromise = supervisorAccount
+        ? supabase.from("plan_submissions").select("id, status, review_note, submitted_at, teacher_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(school_classes(grade, section), academic_weeks(label), plan_entries(day_of_week, classwork, homework, classera_notes))").in("status", ["submitted", "changes_requested", "approved"]).order("submitted_at", { ascending: false })
+        : Promise.resolve({ data: [], error: null });
+      const [assignmentsResult, weeksResult, slotsResult, entriesResult, reviewsResult] = await Promise.all([
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
         supabase.from("plan_entries").select("id, day_of_week, updated_at, subjects(name_en), weekly_plans(status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
+        reviewsPromise,
       ]);
-      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error].find(Boolean);
+      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, reviewsResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const realAssignments: Assignment[] = (assignmentsResult.data ?? []).map((assignment) => {
@@ -146,15 +167,31 @@ export default function TeachersDashboardPage() {
         };
       });
 
+      const realReviews: ReviewItem[] = ((reviewsResult.data ?? []) as unknown as Record<string, unknown>[]).map((item) => {
+        const subject = one(item.subjects as { name_en: string } | { name_en: string }[] | null);
+        const teacher = one(item.profiles as { display_name: string } | { display_name: string }[] | null);
+        const plan = one(item.weekly_plans as { school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null; plan_entries: { day_of_week: number; classwork: string; homework: string; classera_notes: string }[] | null } | { school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null; plan_entries: { day_of_week: number; classwork: string; homework: string; classera_notes: string }[] | null }[] | null);
+        const schoolClass = one(plan?.school_classes);
+        const week = one(plan?.academic_weeks);
+        return {
+          id: String(item.id), teacherName: teacher?.display_name ?? "Teacher", subject: subject?.name_en ?? "Subject",
+          className: `Grade ${schoolClass?.grade ?? ""} · ${schoolClass?.section ?? ""}`, week: week?.label ?? "Academic week",
+          status: String(item.status), note: String(item.review_note ?? ""), submittedAt: item.submitted_at ? formatDate(String(item.submitted_at)) : "Not submitted",
+          entries: (plan?.plan_entries ?? []).sort((a, b) => a.day_of_week - b.day_of_week).map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
+        };
+      });
+
       const department = one(profile.departments as { name_en: string } | { name_en: string }[] | null);
       const weeks = (weeksResult.data ?? []) as AcademicWeek[];
       setProfileId(userData.user.id);
       setTeacherName(profile.display_name);
       setDepartmentName(department?.name_en ?? "Teacher Department");
+      setIsSupervisor(supervisorAccount);
       setAssignments(realAssignments);
       setAcademicWeeks(weeks);
       setTimetableSlots((slotsResult.data ?? []) as TimetableSlot[]);
       setEntries(realEntries);
+      setReviewItems(realReviews);
       setSelectedAssignmentId((current) => realAssignments.some((assignment) => assignment.id === current) ? current : realAssignments[0]?.id ?? "");
       setSelectedWeekId((current) => weeks.some((week) => week.id === current) ? current : weeks.find((week) => week.is_current)?.id ?? weeks[0]?.id ?? "");
     } catch (error) {
@@ -194,7 +231,7 @@ export default function TeachersDashboardPage() {
     setDayDrafts((current) => current.map((draft, draftIndex) => draftIndex === index ? { ...draft, [field]: value } : draft));
   };
 
-  const saveWholeWeek = async () => {
+  const saveWholeWeek = async (submitForReview = false) => {
     if (!profileId || !selectedAssignment || !selectedWeek) return;
     if (selectedSlots.length === 0) {
       setMessage("This class and subject are not connected to the timetable yet. The Super Admin must import the timetable before you can save the weekly plan.");
@@ -235,6 +272,15 @@ export default function TeachersDashboardPage() {
       const { error: entriesError } = await supabase.from("plan_entries").upsert(entryRows, { onConflict: "weekly_plan_id,day_of_week,period_number" });
       if (entriesError) throw entriesError;
 
+      const { error: submissionError } = await supabase.from("plan_submissions").upsert({
+        weekly_plan_id: weeklyPlanId,
+        teacher_id: profileId,
+        subject_id: selectedAssignment.subjectId,
+        status: submitForReview ? "submitted" : "draft",
+        submitted_at: submitForReview ? new Date().toISOString() : null,
+      }, { onConflict: "weekly_plan_id,teacher_id,subject_id" });
+      if (submissionError) throw submissionError;
+
       const { error: oldQuizError } = await supabase.from("plan_quizzes").delete().eq("weekly_plan_id", weeklyPlanId).eq("teacher_id", profileId).eq("subject_id", selectedAssignment.subjectId);
       if (oldQuizError) throw oldQuizError;
       if (quizDetails.trim()) {
@@ -255,11 +301,35 @@ export default function TeachersDashboardPage() {
       setDayDrafts(emptyDayDrafts());
       setQuizDetails("");
       setWeeklyNote("");
-      setMessage("The whole week was saved successfully to Supabase.");
+      setMessage(submitForReview ? "Your weekly plan was sent to your department supervisor for review." : "The whole week was saved successfully to Supabase.");
       setMessageTone("success");
       await loadTeacherDashboard();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The weekly plan could not be saved.");
+      setMessageTone("error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const reviewSubmission = async (review: ReviewItem, decision: "approved" | "changes_requested") => {
+    const note = reviewNotes[review.id]?.trim() ?? "";
+    if (decision === "changes_requested" && !note) {
+      setMessage("Write a review note before returning this plan to the teacher.");
+      setMessageTone("error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.rpc("review_plan_submission", { submission_id: review.id, decision, note: note || null });
+      if (error) throw error;
+      setMessage(decision === "approved" ? "The teacher submission was approved." : "The plan was returned to the teacher with your note.");
+      setMessageTone("success");
+      setReviewNotes((current) => ({ ...current, [review.id]: "" }));
+      await loadTeacherDashboard();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The review action could not be completed.");
       setMessageTone("error");
     } finally {
       setSaving(false);
@@ -283,7 +353,7 @@ export default function TeachersDashboardPage() {
         <div className="teacher-school-year"><span>Academic year</span><strong>2026–2027</strong></div>
         <nav className="teacher-nav" aria-label="Teacher workspace navigation">
           <p>Workspace</p>
-          {navigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => setActiveNav(label)}><span className="teacher-nav-icon">{icon}</span>{label}{label === "Weekly Plans" && <small>{entries.length}</small>}</button>)}
+          {(isSupervisor ? [...navigation, ["Teacher Reviews", "RV"] as const] : navigation).map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => setActiveNav(label)}><span className="teacher-nav-icon">{icon}</span>{label}{label === "Weekly Plans" && <small>{entries.length}</small>}{label === "Teacher Reviews" && <small>{reviewItems.filter((item) => item.status === "submitted").length}</small>}</button>)}
           <p>Account</p>
           <button className={activeNav === "Profile & assignments" ? "active" : ""} onClick={() => setActiveNav("Profile & assignments")}><span className="teacher-nav-icon">PR</span>Profile & assignments</button>
           <button className={activeNav === "Settings" ? "active" : ""} onClick={() => setActiveNav("Settings")}><span className="teacher-nav-icon">ST</span>Settings</button>
@@ -325,18 +395,20 @@ export default function TeachersDashboardPage() {
           {activeNav === "Calendar" && <section className="teacher-card teacher-live-assignment-panel"><div><h2>Academic Weeks</h2><p>Available weekly-plan periods from Supabase.</p></div><div className="teacher-week-list">{academicWeeks.map((week) => <span key={week.id} className={week.is_current ? "current" : ""}><strong>Week {week.week_number}</strong><small>{week.label}</small><i>{formatDate(week.starts_on)}–{formatDate(week.ends_on)}</i></span>)}{academicWeeks.length === 0 && <p>No academic weeks configured yet.</p>}</div></section>}
 
           {activeNav === "Settings" && <section className="teacher-card teacher-live-assignment-panel"><div><h2>Account Settings</h2><p>Your account is authenticated and connected to Supabase.</p></div><div className="teacher-settings-row"><span><small>Name</small><strong>{teacherName}</strong></span><span><small>Department</small><strong>{departmentName}</strong></span><button className="teacher-secondary-button" onClick={() => void signOut()}>Sign out</button></div></section>}
+
+          {isSupervisor && activeNav === "Teacher Reviews" && <section className="teacher-card supervisor-review-card"><div className="teacher-card-heading"><div><h2>Teacher plans for review</h2><p>Read every lesson, homework item and Classera note before approving a submission.</p></div></div><div className="supervisor-review-list">{reviewItems.map((review) => <article key={review.id}><header><div><span className={`teacher-status ${review.status === "approved" ? "green" : review.status === "changes_requested" ? "amber" : "navy"}`}><i />{review.status.replaceAll("_", " ")}</span><h3>{review.teacherName}</h3><p>{review.subject} · {review.className} · {review.week}</p></div><small>Submitted {review.submittedAt}</small></header><div className="supervisor-entry-grid">{review.entries.map((entry) => <section key={entry.day}><strong>{entry.day}</strong><p><b>Classwork</b>{entry.classwork || "—"}</p><p><b>Homework</b>{entry.homework || "—"}</p><p><b>Classera</b>{entry.notes || "—"}</p></section>)}</div>{review.status !== "approved" && <div className="supervisor-review-actions"><label>Review note<textarea value={reviewNotes[review.id] ?? review.note} onChange={(event) => setReviewNotes((current) => ({ ...current, [review.id]: event.target.value }))} placeholder="Write the required changes for the teacher" rows={3} /></label><div><button disabled={saving} className="teacher-secondary-button" onClick={() => void reviewSubmission(review, "changes_requested")}>Return for changes</button><button disabled={saving} className="teacher-primary-button" onClick={() => void reviewSubmission(review, "approved")}>Approve plan</button></div></div>}</article>)}{reviewItems.length === 0 && <p className="supervisor-review-empty">No teacher plans are waiting for review in your department.</p>}</div></section>}
         </div>
       </section>
 
       {weeklyBuilderOpen && selectedAssignment && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && setWeeklyBuilderOpen(false)}><section className="teacher-editor-modal weekly-builder-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
         <div className="teacher-modal-heading"><div><p>{selectedWeek.label}</p><h2 id="weekly-builder-title">Build the whole week</h2></div><button disabled={saving} aria-label="Close weekly builder" onClick={() => setWeeklyBuilderOpen(false)}>×</button></div>
         <div className="teacher-editor-context"><span>One save for the whole week</span><i />Entries are placed according to your timetable slots.</div>
-        <form onSubmit={(event) => { event.preventDefault(); void saveWholeWeek(); }}>
+        <form onSubmit={(event) => { event.preventDefault(); void saveWholeWeek(true); }}>
           <div className="weekly-builder-toolbar"><label>Class & Subject<select value={selectedAssignmentId} onChange={(event) => setSelectedAssignmentId(event.target.value)}>{assignments.map((assignment) => <option key={assignment.id} value={assignment.id}>Grade {assignment.grade} · {assignment.section} · {assignment.subject}</option>)}</select></label><label>Academic Week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedSlots.length > 0 ? "ready" : "missing"}`}>{selectedSlots.length > 0 ? `${selectedSlots.length} timetable slots ready` : "Timetable connection required"}</span></div>
           <div className="weekly-builder-days">{dayNames.map((day, index) => <article key={day}><header><strong>{day}</strong><small>{selectedAssignment.subject}</small></header><label>Classwork<textarea rows={2} value={dayDrafts[index].classwork} onChange={(event) => updateDayDraft(index, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={2} value={dayDrafts[index].homework} onChange={(event) => updateDayDraft(index, "homework", event.target.value)} placeholder="Homework for this day" /></label><label>Classera notes<textarea rows={2} value={dayDrafts[index].classeraNotes} onChange={(event) => updateDayDraft(index, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>)}</div>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Saved in the separate quiz table below the weekly plan.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>NT</span><div><strong>Weekly notes for families</strong><small>Spelling words, reminders or important announcements.</small></div></div></div><textarea className="weekly-builder-notes" rows={3} value={weeklyNote} onChange={(event) => setWeeklyNote(event.target.value)} placeholder="Weekly notes" /></section>
-          <div className="teacher-editor-footer"><span>{selectedSlots.length > 0 ? "All timetable-linked entries will be saved together." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedSlots.length === 0} className="teacher-primary-button" type="submit">{saving ? "Saving…" : "Save weekly plan"}</button></div></div>
+          <div className="teacher-editor-footer"><span>{selectedSlots.length > 0 ? "All timetable-linked entries will be saved together." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button><button disabled={saving || selectedSlots.length === 0} className="teacher-primary-button" type="submit">{saving ? "Saving…" : "Submit for review"}</button></div></div>
         </form>
       </section></div>}
     </main>

@@ -154,7 +154,7 @@ export default function TeacherLoginPage() {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("role, status")
+        .select("role, status, staff_directory(administrative_role)")
         .eq("user_id", data.user.id)
         .maybeSingle();
       if (profileError) throw profileError;
@@ -174,7 +174,9 @@ export default function TeacherLoginPage() {
         return;
       }
 
-      const destination = profile.role === "super_admin" ? "/super-admin/" : profile.role === "admin" ? "/admin/" : "/teachers/";
+      const staffRecord = Array.isArray(profile.staff_directory) ? profile.staff_directory[0] : profile.staff_directory;
+      const isSupervisor = profile.role === "admin" && String(staffRecord?.administrative_role ?? "").includes("Supervisor");
+      const destination = profile.role === "super_admin" ? "/super-admin/" : isSupervisor ? "/teachers/" : profile.role === "admin" ? "/admin/" : "/teachers/";
       window.location.assign(`${basePath}${destination}`);
     } catch (error) {
       const text = error instanceof Error ? error.message : "Something went wrong. Please try again.";
@@ -286,4 +288,3 @@ export default function TeacherLoginPage() {
     </main>
   );
 }
-

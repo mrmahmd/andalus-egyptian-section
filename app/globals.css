@@ -257,6 +257,28 @@ button, select, input { font: inherit; }
   .support-info { order: 2; }
   .support-form { order: 1; padding: 22px; }
 }
+
+/* Supervisor review workspace */
+.supervisor-review-list { display: grid; gap: 18px; }
+.supervisor-review-list > article { padding: 20px; border: 1px solid #dce7f2; border-radius: 16px; background: #fbfdff; }
+.supervisor-review-list header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.supervisor-review-list h3 { margin: 10px 0 4px; color: #102a53; font-size: 19px; }
+.supervisor-review-list header p { margin: 0; color: #61758f; font-size: 14px; }
+.supervisor-review-list header > small { color: #6d8097; font-size: 12px; font-weight: 700; }
+.supervisor-entry-grid { margin-top: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: 12px; }
+.supervisor-entry-grid section { padding: 14px; border-radius: 11px; background: #eef5fb; }
+.supervisor-entry-grid section > strong { color: #0c4d88; font-size: 14px; }
+.supervisor-entry-grid p { margin: 10px 0 0; display: grid; gap: 4px; color: #405977; font-size: 13px; line-height: 1.5; }
+.supervisor-entry-grid b { color: #122c54; font-size: 12px; }
+.supervisor-review-actions { margin-top: 18px; padding-top: 18px; border-top: 1px solid #dde7f0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: end; }
+.supervisor-review-actions label { display: grid; gap: 7px; color: #263c5b; font-size: 14px; font-weight: 800; }
+.supervisor-review-actions textarea { min-height: 78px; padding: 10px 12px; border: 1px solid #cbd8e7; border-radius: 9px; color: #172d50; font: inherit; resize: vertical; }
+.supervisor-review-actions > div { display: flex; gap: 9px; }
+.supervisor-review-empty { margin: 0; padding: 28px; border-radius: 12px; background: #f2f7fb; color: #66809d; text-align: center; font-weight: 700; }
+.arabic-ui .supervisor-review-list, .arabic-ui .supervisor-review-list * { font-family: "Alexandria", "Cairo", sans-serif !important; direction: rtl; text-align: right; }
+.arabic-ui .supervisor-review-list header, .arabic-ui .supervisor-review-actions > div { flex-direction: row-reverse; }
+.arabic-ui .supervisor-review-actions textarea { direction: rtl; text-align: right; }
+@media (max-width: 760px) { .supervisor-review-list header, .supervisor-review-actions { grid-template-columns: 1fr; flex-direction: column; } .supervisor-review-actions > div { display: grid; grid-template-columns: 1fr; } }
 .compact-header { height: 94px; display: grid; grid-template-columns: minmax(330px, 1fr) auto auto; align-items: center; gap: 28px; padding: 0 max(28px, calc((100vw - 1240px) / 2)); overflow: hidden; background: var(--white); border-bottom: 1px solid var(--line); }
 .compact-header .brand-lockup { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .compact-header .brand-lockup img { display: block; width: 82px; height: 64px; flex: 0 0 82px; object-fit: cover; object-position: center; border-radius: 5px; }
