@@ -151,6 +151,9 @@ test("adds a department-supervisor review workflow without removing the supervis
   assert.match(teacherSource, /plan_submissions/);
   assert.match(teacherSource, /review_plan_submission/);
   assert.match(teacherSource, /Submit for review/);
+  assert.match(teacherSource, /Waiting for review/);
+  assert.match(teacherSource, /Approved & published/);
+  assert.match(teacherSource, /Only your assigned teachers appear here/);
   assert.match(loginSource, /administrative_role/);
   assert.match(loginSource, /isSupervisor/);
   assert.match(workflowSql, /create table if not exists public\.plan_submissions/);

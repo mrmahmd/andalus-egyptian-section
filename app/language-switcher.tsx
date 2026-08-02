@@ -44,6 +44,20 @@ const staffAr: Record<string, string> = {
 };
 
 Object.assign(staffAr, {
+  "Supervisor workspace": "مساحة عمل المشرف",
+  "Only your assigned teachers appear here. Read every lesson, homework item and Classera note before making a decision.": "تظهر هنا خطط معلميك المكلّفين فقط. راجع كل درس وواجب وملاحظة في كلاسيرا قبل اتخاذ القرار.",
+  "Your approval publishes the subject for families": "اعتمادك ينشر المادة لأولياء الأمور",
+  "Waiting for review": "بانتظار المراجعة",
+  "Need your decision": "تحتاج قرارك",
+  "Returned for changes": "أُعيدت للتعديل",
+  "Waiting for teacher update": "بانتظار تعديل المعلم",
+  "Approved & published": "معتمدة ومنشورة",
+  "Visible to families": "ظاهرة لأولياء الأمور",
+  "No plans match this review status yet.": "لا توجد خطط بهذه الحالة حاليًا.",
+  "Your review note": "ملاحظتك للمراجعة",
+  "The teacher has been asked to revise this plan.": "طُلب من المعلم تعديل هذه الخطة.",
+  "Published for families": "منشورة لأولياء الأمور",
+  "This subject was approved and is currently visible in the family weekly plan.": "تم اعتماد هذه المادة وهي ظاهرة حاليًا في الخطة الأسبوعية لأولياء الأمور.",
   "Read every lesson, homework item and Classera note. Your approval publishes that subject for families immediately.": "راجع كل درس وواجب وملاحظة في Classera؛ فاعتمادك ينشر المادة لأولياء الأمور فورًا.",
   "Approve & publish": "اعتماد ونشر",
   "The plan was approved and is now published for families.": "تم اعتماد الخطة ونشرها فورًا لأولياء الأمور.",

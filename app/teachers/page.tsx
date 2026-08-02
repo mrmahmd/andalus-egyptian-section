@@ -91,6 +91,7 @@ export default function TeachersDashboardPage() {
   const [isSupervisor, setIsSupervisor] = useState(false);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [reviewStatusFilter, setReviewStatusFilter] = useState<"waiting" | "changes_requested" | "approved">("waiting");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -345,6 +346,10 @@ export default function TeachersDashboardPage() {
   const currentWeek = academicWeeks.find((week) => week.is_current) ?? academicWeeks[0];
   const publishedCount = entries.filter((entry) => entry.status === "published").length;
   const draftCount = entries.filter((entry) => entry.status === "draft").length;
+  const waitingReviews = reviewItems.filter((item) => item.status === "submitted");
+  const changeRequestReviews = reviewItems.filter((item) => item.status === "changes_requested");
+  const approvedReviews = reviewItems.filter((item) => item.status === "approved");
+  const visibleReviewItems = reviewItems.filter((item) => reviewStatusFilter === "waiting" ? item.status === "submitted" : item.status === reviewStatusFilter);
 
   return (
     <main className="teacher-portal">
@@ -396,7 +401,27 @@ export default function TeachersDashboardPage() {
 
           {activeNav === "Settings" && <section className="teacher-card teacher-live-assignment-panel"><div><h2>Account Settings</h2><p>Your account is authenticated and connected to Supabase.</p></div><div className="teacher-settings-row"><span><small>Name</small><strong>{teacherName}</strong></span><span><small>Department</small><strong>{departmentName}</strong></span><button className="teacher-secondary-button" onClick={() => void signOut()}>Sign out</button></div></section>}
 
-          {isSupervisor && activeNav === "Teacher Reviews" && <section className="teacher-card supervisor-review-card"><div className="teacher-card-heading"><div><h2>Teacher plans for review</h2><p>Read every lesson, homework item and Classera note. Your approval publishes that subject for families immediately.</p></div></div><div className="supervisor-review-list">{reviewItems.map((review) => <article key={review.id}><header><div><span className={`teacher-status ${review.status === "approved" ? "green" : review.status === "changes_requested" ? "amber" : "navy"}`}><i />{review.status.replaceAll("_", " ")}</span><h3>{review.teacherName}</h3><p>{review.subject} · {review.className} · {review.week}</p></div><small>Submitted {review.submittedAt}</small></header><div className="supervisor-entry-grid">{review.entries.map((entry) => <section key={entry.day}><strong>{entry.day}</strong><p><b>Classwork</b>{entry.classwork || "—"}</p><p><b>Homework</b>{entry.homework || "—"}</p><p><b>Classera</b>{entry.notes || "—"}</p></section>)}</div>{review.status !== "approved" && <div className="supervisor-review-actions"><label>Review note<textarea value={reviewNotes[review.id] ?? review.note} onChange={(event) => setReviewNotes((current) => ({ ...current, [review.id]: event.target.value }))} placeholder="Write the required changes for the teacher" rows={3} /></label><div><button disabled={saving} className="teacher-secondary-button" onClick={() => void reviewSubmission(review, "changes_requested")}>Return for changes</button><button disabled={saving} className="teacher-primary-button" onClick={() => void reviewSubmission(review, "approved")}>Approve & publish</button></div></div>}</article>)}{reviewItems.length === 0 && <p className="supervisor-review-empty">No teacher plans are waiting for review in your department.</p>}</div></section>}
+          {isSupervisor && activeNav === "Teacher Reviews" && <section className="teacher-card supervisor-review-card">
+            <div className="teacher-card-heading supervisor-review-heading">
+              <div><p className="teacher-kicker">Supervisor workspace</p><h2>Teacher plans for review</h2><p>Only your assigned teachers appear here. Read every lesson, homework item and Classera note before making a decision.</p></div>
+              <span className="supervisor-review-authority">Your approval publishes the subject for families</span>
+            </div>
+            <div className="supervisor-review-stats" aria-label="Review summary">
+              <button className={reviewStatusFilter === "waiting" ? "active" : ""} onClick={() => setReviewStatusFilter("waiting")}><small>Waiting for review</small><strong>{waitingReviews.length}</strong><span>Need your decision</span></button>
+              <button className={reviewStatusFilter === "changes_requested" ? "active" : ""} onClick={() => setReviewStatusFilter("changes_requested")}><small>Returned for changes</small><strong>{changeRequestReviews.length}</strong><span>Waiting for teacher update</span></button>
+              <button className={reviewStatusFilter === "approved" ? "active" : ""} onClick={() => setReviewStatusFilter("approved")}><small>Approved & published</small><strong>{approvedReviews.length}</strong><span>Visible to families</span></button>
+            </div>
+            <div className="supervisor-review-list">
+              {visibleReviewItems.map((review) => <article key={review.id}>
+                <header><div><span className={`teacher-status ${review.status === "approved" ? "green" : review.status === "changes_requested" ? "amber" : "navy"}`}><i />{review.status.replaceAll("_", " ")}</span><h3>{review.teacherName}</h3><p>{review.subject} · {review.className} · {review.week}</p></div><small>Submitted {review.submittedAt}</small></header>
+                <div className="supervisor-entry-grid">{review.entries.map((entry) => <section key={entry.day}><strong>{entry.day}</strong><p><b>Classwork</b>{entry.classwork || "—"}</p><p><b>Homework</b>{entry.homework || "—"}</p><p><b>Classera</b>{entry.notes || "—"}</p></section>)}</div>
+                {review.status === "submitted" && <div className="supervisor-review-actions"><label>Review note<textarea value={reviewNotes[review.id] ?? review.note} onChange={(event) => setReviewNotes((current) => ({ ...current, [review.id]: event.target.value }))} placeholder="Write the required changes for the teacher" rows={3} /></label><div><button disabled={saving} className="teacher-secondary-button" onClick={() => void reviewSubmission(review, "changes_requested")}>Return for changes</button><button disabled={saving} className="teacher-primary-button" onClick={() => void reviewSubmission(review, "approved")}>Approve & publish</button></div></div>}
+                {review.status === "changes_requested" && <p className="supervisor-review-feedback"><strong>Your review note</strong>{review.note || "The teacher has been asked to revise this plan."}</p>}
+                {review.status === "approved" && <p className="supervisor-review-feedback approved"><strong>Published for families</strong>This subject was approved and is currently visible in the family weekly plan.</p>}
+              </article>)}
+              {visibleReviewItems.length === 0 && <p className="supervisor-review-empty">{reviewStatusFilter === "waiting" ? "No teacher plans are waiting for review in your department." : "No plans match this review status yet."}</p>}
+            </div>
+          </section>}
         </div>
       </section>
 
