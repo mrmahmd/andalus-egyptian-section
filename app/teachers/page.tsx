@@ -75,6 +75,7 @@ type SchoolSubject = { id: string; name_en: string };
 type DepartmentTeacher = { userId: string; name: string; assignments: Assignment[] };
 
 const emptyDayDrafts = () => dayNames.map((): DayDraft => ({ classwork: "", homework: "", classeraNotes: "" }));
+const scienceComponents = ["Chemistry", "Physics", "Biology"];
 
 function one<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
@@ -118,6 +119,7 @@ export default function TeachersDashboardPage() {
   const [quizDay, setQuizDay] = useState("2");
   const [quizDetails, setQuizDetails] = useState("");
   const [weeklyNote, setWeeklyNote] = useState("");
+  const [scienceComponentsByDay, setScienceComponentsByDay] = useState<string[]>(() => dayNames.map(() => ""));
   const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
 
   const loadTeacherDashboard = useCallback(async () => {
@@ -293,6 +295,10 @@ export default function TeachersDashboardPage() {
     setDayDrafts((current) => current.map((draft, draftIndex) => draftIndex === index ? { ...draft, [field]: value } : draft));
   };
 
+  const updateScienceComponent = (index: number, value: string) => {
+    setScienceComponentsByDay((current) => current.map((component, componentIndex) => componentIndex === index ? value : component));
+  };
+
   const saveWholeWeek = async (submitForReview = false) => {
     if (!profileId || !selectedAssignment || !selectedWeek) return;
     if (selectedSlots.length === 0) {
@@ -326,7 +332,9 @@ export default function TeachersDashboardPage() {
         subject_id: selectedAssignment.subjectId,
         day_of_week: slot.day_of_week,
         period_number: slot.period_number,
-        classwork: dayDrafts[slot.day_of_week]?.classwork.trim() ?? "",
+        classwork: selectedAssignment.subject === "Integrated Science" && scienceComponentsByDay[slot.day_of_week]
+          ? `${scienceComponentsByDay[slot.day_of_week]} — ${dayDrafts[slot.day_of_week]?.classwork.trim() ?? ""}`
+          : dayDrafts[slot.day_of_week]?.classwork.trim() ?? "",
         homework: dayDrafts[slot.day_of_week]?.homework.trim() ?? "",
         classera_notes: dayDrafts[slot.day_of_week]?.classeraNotes.trim() ?? "",
         updated_at: new Date().toISOString(),
@@ -361,6 +369,7 @@ export default function TeachersDashboardPage() {
 
       setWeeklyBuilderOpen(false);
       setDayDrafts(emptyDayDrafts());
+      setScienceComponentsByDay(dayNames.map(() => ""));
       setQuizDetails("");
       setWeeklyNote("");
       setMessage(submitForReview ? "Your weekly plan was sent to your department supervisor for review." : "The whole week was saved successfully to Supabase.");
@@ -529,7 +538,7 @@ export default function TeachersDashboardPage() {
         <div className="teacher-editor-context"><span>One save for the whole week</span><i />Entries are placed according to your timetable slots.</div>
         <form onSubmit={(event) => { event.preventDefault(); void saveWholeWeek(true); }}>
           <div className="weekly-builder-toolbar"><label>Class & Subject<select value={selectedAssignmentId} onChange={(event) => setSelectedAssignmentId(event.target.value)}>{assignments.map((assignment) => <option key={assignment.id} value={assignment.id}>Grade {assignment.grade} · {assignment.section} · {assignment.subject}</option>)}</select></label><label>Academic Week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedSlots.length > 0 ? "ready" : "missing"}`}>{selectedSlots.length > 0 ? `${selectedSlots.length} timetable slots ready` : "Timetable connection required"}</span></div>
-          <div className="weekly-builder-days">{dayNames.map((day, index) => <article key={day}><header><strong>{day}</strong><small>{selectedAssignment.subject}</small></header><label>Classwork<textarea rows={2} value={dayDrafts[index].classwork} onChange={(event) => updateDayDraft(index, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={2} value={dayDrafts[index].homework} onChange={(event) => updateDayDraft(index, "homework", event.target.value)} placeholder="Homework for this day" /></label><label>Classera notes<textarea rows={2} value={dayDrafts[index].classeraNotes} onChange={(event) => updateDayDraft(index, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>)}</div>
+          <div className="weekly-builder-days">{dayNames.map((day, index) => <article key={day}><header><strong>{day}</strong><small>{selectedAssignment.subject}</small></header>{selectedAssignment.subject === "Integrated Science" && <label>Science component<select value={scienceComponentsByDay[index]} onChange={(event) => updateScienceComponent(index, event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}<label>Classwork<textarea rows={2} value={dayDrafts[index].classwork} onChange={(event) => updateDayDraft(index, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={2} value={dayDrafts[index].homework} onChange={(event) => updateDayDraft(index, "homework", event.target.value)} placeholder="Homework for this day" /></label><label>Classera notes<textarea rows={2} value={dayDrafts[index].classeraNotes} onChange={(event) => updateDayDraft(index, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>)}</div>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Saved in the separate quiz table below the weekly plan.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>NT</span><div><strong>Weekly notes for families</strong><small>Spelling words, reminders or important announcements.</small></div></div></div><textarea className="weekly-builder-notes" rows={3} value={weeklyNote} onChange={(event) => setWeeklyNote(event.target.value)} placeholder="Weekly notes" /></section>
           <div className="teacher-editor-footer"><span>{selectedSlots.length > 0 ? "All timetable-linked entries will be saved together." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button><button disabled={saving || selectedSlots.length === 0} className="teacher-primary-button" type="submit">{saving ? "Saving…" : "Submit for review"}</button></div></div>
