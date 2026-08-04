@@ -45,6 +45,10 @@ export default function AdminDashboardPage() {
   const [sectionFilter, setSectionFilter] = useState("all");
   const [weekFilter, setWeekFilter] = useState("all");
   const [expandedPlanId, setExpandedPlanId] = useState("");
+  const [canManagePlanAccess, setCanManagePlanAccess] = useState(false);
+  const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
+  const [teacherPlanAccess, setTeacherPlanAccess] = useState<Record<string, boolean>>({});
+  const [teacherNames, setTeacherNames] = useState<{ id: string; name: string }[]>([]);
 
   const loadPublishedReport = useCallback(async () => {
     setLoading(true);
@@ -59,7 +63,7 @@ export default function AdminDashboardPage() {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("display_name, role, status, staff_directory(administrative_role)")
+        .select("display_name, role, status, staff_directory(full_name, administrative_role)")
         .eq("user_id", userData.user.id)
         .maybeSingle();
       if (profileError) throw profileError;
@@ -71,6 +75,8 @@ export default function AdminDashboardPage() {
         return;
       }
       setAdministratorName(profile.display_name || "School Administrator");
+      const accessManager = profile.display_name === "أحمد حجازي";
+      setCanManagePlanAccess(accessManager);
 
       const { data, error } = await supabase
         .from("weekly_plans")
@@ -78,6 +84,16 @@ export default function AdminDashboardPage() {
         .eq("status", "published")
         .order("updated_at", { ascending: false });
       if (error) throw error;
+      if (accessManager) {
+        const [{ data: access }, { data: teacherAccess }, { data: teacherProfiles }] = await Promise.all([
+          supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
+          supabase.from("weekly_plan_teacher_access").select("teacher_id, is_open"),
+          supabase.from("profiles").select("user_id, display_name").eq("role", "teacher").eq("status", "active").order("display_name"),
+        ]);
+        setWeeklyPlanCreationOpen(access?.is_open ?? true);
+        setTeacherPlanAccess(Object.fromEntries((teacherAccess ?? []).map((row) => [String(row.teacher_id), Boolean(row.is_open)])));
+        setTeacherNames((teacherProfiles ?? []).map((row) => ({ id: String(row.user_id), name: String(row.display_name) })));
+      }
 
       const mappedPlans = (data ?? []).map((plan) => {
         const schoolClass = one(plan.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
@@ -117,6 +133,16 @@ export default function AdminDashboardPage() {
     window.location.assign(`${basePath}/teachers/login/`);
   };
 
+  const updatePlanAccess = async (isOpen: boolean) => {
+    const { error } = await getSupabaseBrowserClient().from("weekly_plan_access_control").upsert({ id: 1, is_open: isOpen, updated_at: new Date().toISOString() });
+    if (error) setMessage(error.message); else { setWeeklyPlanCreationOpen(isOpen); setMessage(isOpen ? "Weekly plan creation is open." : "Weekly plan creation is closed."); }
+  };
+
+  const updateTeacherAccess = async (teacherId: string, isOpen: boolean) => {
+    const { error } = await getSupabaseBrowserClient().from("weekly_plan_teacher_access").upsert({ teacher_id: teacherId, is_open: isOpen, updated_at: new Date().toISOString() });
+    if (error) setMessage(error.message); else setTeacherPlanAccess((current) => ({ ...current, [teacherId]: isOpen }));
+  };
+
   return (
     <main className="teacher-portal admin-portal admin-report-portal">
       <aside className="teacher-sidebar admin-sidebar">
@@ -133,6 +159,8 @@ export default function AdminDashboardPage() {
           <div className="teacher-page-heading"><div><p className="teacher-kicker">Administrative workspace</p><h1>Published Weekly Plan Report</h1><span>Review every published weekly plan by grade, class and academic week. This account cannot create, edit or submit plans.</span></div><Link className="teacher-primary-button admin-preview-link" href="/weekly-plan/">Open family plan <span>→</span></Link></div>
           {message && <p className="super-admin-live-message error" role="alert">{message}</p>}
           <section className="teacher-stats" aria-label="Published plan report summary"><article><span className="stat-icon navy">PL</span><div><small>Published plans</small><strong>{plans.length}</strong><p>Across the school</p></div></article><article><span className="stat-icon magenta">CL</span><div><small>Classes in view</small><strong>{new Set(filteredPlans.map((plan) => `${plan.grade}-${plan.section}`)).size}</strong><p>Selected report filters</p></div></article><article><span className="stat-icon cyan">EN</span><div><small>Published lessons</small><strong>{publishedEntries}</strong><p>Visible in these plans</p></div></article><article><span className="stat-icon amber">WK</span><div><small>School weeks</small><strong>{weeks.length}</strong><p>Available in the report</p></div></article></section>
+
+          {canManagePlanAccess && <section className="teacher-card admin-access-control-card"><div><h2>Weekly-plan creation access</h2><p>Open or close plan creation for all teachers, or control an individual teacher.</p></div><button type="button" className="teacher-primary-button" onClick={() => void updatePlanAccess(!weeklyPlanCreationOpen)}>{weeklyPlanCreationOpen ? "Close creation" : "Open creation"}</button><div className="super-teacher-access-list">{teacherNames.map((teacher) => { const isOpen = teacherPlanAccess[teacher.id] ?? weeklyPlanCreationOpen; return <label key={teacher.id}><span>{teacher.name}</span><input type="checkbox" checked={isOpen} onChange={(event) => void updateTeacherAccess(teacher.id, event.target.checked)} /><b>{isOpen ? "Open" : "Closed"}</b></label>; })}</div></section>}
 
           <section className="teacher-card admin-plans-card admin-report-card"><div className="admin-plan-toolbar"><div><h2>Full published-plan directory</h2><p>{loading ? "Loading live reports…" : `${filteredPlans.length} published plans shown`}</p></div><div className="admin-filters"><label>Grade<select value={gradeFilter} onChange={(event) => setGradeFilter(event.target.value)}><option value="all">All Grades</option>{grades.map((grade) => <option key={grade} value={grade}>Grade {grade}</option>)}</select></label><label>Class<select value={sectionFilter} onChange={(event) => setSectionFilter(event.target.value)}><option value="all">All Classes</option>{sections.map((section) => <option key={section} value={section}>Class {section}</option>)}</select></label><label>Week<select value={weekFilter} onChange={(event) => setWeekFilter(event.target.value)}><option value="all">All Weeks</option>{weeks.map(([weekNumber, label]) => <option key={weekNumber} value={weekNumber}>{label}</option>)}</select></label></div></div>
             <div className="admin-plan-table-wrap"><table className="admin-plan-table"><thead><tr><th>Week</th><th>Class</th><th>Published lessons</th><th>Last updated</th><th>Report</th></tr></thead><tbody>{filteredPlans.map((plan) => <><tr key={plan.id}><td><strong>{plan.week}</strong></td><td><span className="admin-class-badge">Grade {plan.grade} · {plan.section}</span></td><td>{plan.entries.length}</td><td>{formatDate(plan.updated_at)}</td><td><button className="edit" onClick={() => setExpandedPlanId((current) => current === plan.id ? "" : plan.id)}>{expandedPlanId === plan.id ? "Close report" : "View full report"}</button></td></tr>{expandedPlanId === plan.id && <tr className="admin-report-details" key={`${plan.id}-details`}><td colSpan={5}><table><thead><tr><th>Day</th><th>Period</th><th>Subject & teacher</th><th>Classwork</th><th>Homework</th><th>Classera notes</th></tr></thead><tbody>{plan.entries.map((entry) => { const subject = one(entry.subjects); const teacher = one(entry.profiles); return <tr key={entry.id}><td>{dayNames[entry.day_of_week] ?? "School day"}</td><td>{entry.period_number}</td><td><strong>{subject?.name_en ?? "Subject"}</strong><small>{teacher?.display_name ?? "Teacher"}</small></td><td>{entry.classwork || "—"}</td><td>{entry.homework || "—"}</td><td>{entry.classera_notes || "—"}</td></tr>; })}</tbody></table></td></tr>}</>)}{!loading && filteredPlans.length === 0 && <tr><td className="admin-empty" colSpan={5}>No published plans match these filters yet.</td></tr>}</tbody></table></div>

@@ -118,6 +118,7 @@ export default function TeachersDashboardPage() {
   const [quizDay, setQuizDay] = useState("2");
   const [quizDetails, setQuizDetails] = useState("");
   const [weeklyNote, setWeeklyNote] = useState("");
+  const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
 
   const loadTeacherDashboard = useCallback(async () => {
     setLoading(true);
@@ -148,7 +149,7 @@ export default function TeachersDashboardPage() {
         ? supabase.from("plan_submissions").select("id, status, review_note, submitted_at, teacher_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(school_classes(grade, section), academic_weeks(label), plan_entries(day_of_week, classwork, homework, classera_notes))").in("status", ["submitted", "changes_requested", "approved"]).order("submitted_at", { ascending: false })
         : Promise.resolve({ data: [], error: null });
       const departmentTeachersPromise = supervisorAccount ? supabase.rpc("get_my_department_teachers") : Promise.resolve({ data: [], error: null });
-      const [assignmentsResult, weeksResult, slotsResult, entriesResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult] = await Promise.all([
+      const [assignmentsResult, weeksResult, slotsResult, entriesResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult] = await Promise.all([
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
@@ -157,6 +158,8 @@ export default function TeachersDashboardPage() {
         departmentTeachersPromise,
         supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
         supabase.from("subjects").select("id, name_en").eq("is_active", true).order("name_en"),
+        supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
+        supabase.from("weekly_plan_teacher_access").select("is_open").eq("teacher_id", userData.user.id).maybeSingle(),
       ]);
       const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, reviewsResult.error, classesResult.error, subjectsResult.error].find(Boolean);
       if (firstError) throw firstError;
@@ -221,6 +224,7 @@ export default function TeachersDashboardPage() {
       setProfileId(userData.user.id);
       setTeacherName(profile.display_name);
       setDepartmentName(department?.name_en ?? "Teacher Department");
+      setWeeklyPlanCreationOpen(teacherAccessResult.data?.is_open ?? accessResult.data?.is_open ?? true);
       setIsSupervisor(supervisorAccount);
       setAssignments(realAssignments);
       setAcademicWeeks(weeks);
@@ -258,6 +262,11 @@ export default function TeachersDashboardPage() {
   const uniqueSubjects = useMemo(() => Array.from(new Set(assignments.map((assignment) => assignment.subject))), [assignments]);
 
   const openWeeklyBuilder = () => {
+    if (!weeklyPlanCreationOpen) {
+      setMessage("Weekly plan creation is currently closed by school administration.");
+      setMessageTone("info");
+      return;
+    }
     if (loading) {
       setMessage("Your teacher data is still loading. Please wait a moment and try again.");
       setMessageTone("info");
@@ -456,7 +465,7 @@ export default function TeachersDashboardPage() {
         {isSupervisor && <nav className="teacher-mobile-supervisor-nav" aria-label="Supervisor workspace navigation">{supervisorNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => setActiveNav(label)}><span>{icon}</span><b>{label}</b>{label === "Teacher Reviews" && reviewItems.filter((item) => item.status === "submitted").length > 0 && <i>{reviewItems.filter((item) => item.status === "submitted").length}</i>}{label === "Department Teachers" && <i>{departmentTeachers.length}</i>}</button>)}</nav>}
 
         <div className="teacher-content">
-          <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentWeek?.label ?? "Teacher workspace"}</p><h1>{activeNav === "Overview" ? `Welcome, ${teacherName}.` : activeNav}</h1><span>{activeNav === "Overview" ? "Your live assignments and weekly-plan progress are shown below." : "This section is connected to your approved school profile."}</span></div><div className="teacher-heading-actions"><button type="button" className="teacher-primary-button" disabled={saving} aria-busy={loading} onClick={openWeeklyBuilder}><span>＋</span> {loading ? "Loading teacher data…" : "Create weekly plan"}</button></div></div>
+          <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentWeek?.label ?? "Teacher workspace"}</p><h1>{activeNav === "Overview" ? `Welcome, ${teacherName}.` : activeNav}</h1><span>{activeNav === "Overview" ? "Your live assignments and weekly-plan progress are shown below." : "This section is connected to your approved school profile."}</span></div><div className="teacher-heading-actions"><button type="button" className="teacher-primary-button" disabled={saving || !weeklyPlanCreationOpen} aria-busy={loading} onClick={openWeeklyBuilder}><span>＋</span> {loading ? "Loading teacher data…" : weeklyPlanCreationOpen ? "Create weekly plan" : "Weekly plan creation closed"}</button></div></div>
 
           {message && <p className={`super-admin-live-message ${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
 

@@ -86,6 +86,8 @@ export default function SuperAdminPage() {
   const [activeSection, setActiveSection] = useState<DashboardSection>("accounts");
   const [reviewAccount, setReviewAccount] = useState<ManagedAccount | null>(null);
   const [assignmentDraft, setAssignmentDraft] = useState({ subjectId: "", classId: "" });
+  const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
+  const [teacherPlanAccess, setTeacherPlanAccess] = useState<Record<string, boolean>>({});
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -113,7 +115,7 @@ export default function SuperAdminPage() {
       setCurrentAdminId(userData.user.id);
       setCurrentAdminName(ownerProfile.display_name || "Mohamed Farid");
 
-      const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult, plansResult] = await Promise.all([
+      const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult, plansResult, accessResult, teacherAccessResult] = await Promise.all([
         supabase.from("staff_directory").select("id, full_name, account_kind, administrative_role, department_id, departments(name_en)").eq("is_active", true).order("full_name"),
         supabase.from("registration_requests").select("id, user_id, staff_id, username, status, requested_at, reviewed_at").order("requested_at", { ascending: false }),
         supabase.from("profiles").select("user_id, staff_id, username, display_name, role, status, approved_at, updated_at"),
@@ -121,6 +123,8 @@ export default function SuperAdminPage() {
         supabase.from("subjects").select("id, name_en, minimum_grade, maximum_grade").eq("is_active", true).eq("include_in_weekly_plan", true).order("name_en"),
         supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
         supabase.from("weekly_plans").select("id, class_teacher_name, status, updated_at, school_classes(grade, section), academic_weeks(week_number, label), plan_entries(count)").order("updated_at", { ascending: false }),
+        supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
+        supabase.from("weekly_plan_teacher_access").select("teacher_id, is_open"),
       ]);
 
       const firstError = [directoryResult.error, requestsResult.error, profilesResult.error, assignmentsResult.error, subjectsResult.error, classesResult.error, plansResult.error].find(Boolean);
@@ -194,6 +198,8 @@ export default function SuperAdminPage() {
       });
 
       setAccounts(realAccounts);
+      setWeeklyPlanCreationOpen(accessResult.data?.is_open ?? true);
+      setTeacherPlanAccess(Object.fromEntries((teacherAccessResult.data ?? []).map((row) => [String(row.teacher_id), Boolean(row.is_open)])));
       setSubjects((subjectsResult.data ?? []) as SubjectOption[]);
       setClasses((classesResult.data ?? []) as ClassOption[]);
       setWeeklyPlans((plansResult.data ?? []).map((plan) => {
@@ -399,6 +405,28 @@ export default function SuperAdminPage() {
     }
   };
 
+  const updateWeeklyPlanAccess = async (isOpen: boolean) => {
+    setBusy(true);
+    try {
+      const { error } = await getSupabaseBrowserClient().from("weekly_plan_access_control").upsert({ id: 1, is_open: isOpen, updated_by: currentAdminId, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      setWeeklyPlanCreationOpen(isOpen);
+      setSuccessMessage(isOpen ? "Weekly plan creation is now open for teachers." : "Weekly plan creation is now closed for teachers.");
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "The weekly-plan access setting could not be saved."); }
+    finally { setBusy(false); }
+  };
+
+  const updateTeacherPlanAccess = async (teacherId: string, isOpen: boolean) => {
+    setBusy(true);
+    try {
+      const { error } = await getSupabaseBrowserClient().from("weekly_plan_teacher_access").upsert({ teacher_id: teacherId, is_open: isOpen, updated_by: currentAdminId, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      setTeacherPlanAccess((current) => ({ ...current, [teacherId]: isOpen }));
+      setSuccessMessage("Teacher weekly-plan access updated.");
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "The teacher access setting could not be saved."); }
+    finally { setBusy(false); }
+  };
+
   const selectedClass = classes.find((item) => item.id === assignmentDraft.classId);
   const compatibleSubjects = subjects.filter((subject) => !selectedClass || (selectedClass.grade >= subject.minimum_grade && selectedClass.grade <= subject.maximum_grade));
 
@@ -482,6 +510,7 @@ export default function SuperAdminPage() {
           {activeSection === "activity" && <section className="teacher-card super-activity-card"><div><h2>Recent Account Activity</h2><p>Registration and approval activity from the live directory.</p></div><ul>{accounts.filter((account) => account.status !== "Not Registered").map((account) => <li key={account.id}><span>{initials(account.name)}</span><div><strong>{account.name}</strong><small>{account.lastAction}</small></div><time>{account.requested}</time></li>)}</ul>{accounts.every((account) => account.status === "Not Registered") && <div className="super-section-empty"><span>LG</span><strong>No staff account activity yet</strong><p>New registration requests and your approval actions will appear here.</p></div>}</section>}
 
           {activeSection === "settings" && <section className="super-admin-section-grid">
+            <article className="teacher-card super-system-card super-access-control-card"><span>WP</span><h2>Weekly-plan creation access</h2><p>Open or close plan creation for all teachers, then set individual exceptions.</p><strong>{weeklyPlanCreationOpen ? "Open for teachers" : "Closed for teachers"}</strong><button type="button" disabled={busy} className="teacher-primary-button" onClick={() => void updateWeeklyPlanAccess(!weeklyPlanCreationOpen)}>{weeklyPlanCreationOpen ? "Close creation" : "Open creation"}</button><div className="super-teacher-access-list">{accounts.filter((account) => account.role === "Teacher" && account.userId).map((account) => { const isOpen = teacherPlanAccess[account.userId as string] ?? weeklyPlanCreationOpen; return <label key={account.userId}><span>{account.name}<small>@{account.username}</small></span><input type="checkbox" checked={isOpen} disabled={busy} onChange={(event) => void updateTeacherPlanAccess(account.userId as string, event.target.checked)} /><b>{isOpen ? "Open" : "Closed"}</b></label>; })}</div></article>
             <article className="teacher-card super-system-card connected"><span>DB</span><h2>Database</h2><p>Supabase is connected and the protected school directory is available.</p><strong>Connected</strong></article>
             <article className="teacher-card super-system-card"><span>AY</span><h2>Academic Year</h2><p>The dashboard and weekly-plan workspace are prepared for the current school year.</p><strong>2026–2027</strong></article>
             <article className="teacher-card super-system-card"><span>RG</span><h2>Grades & Sections</h2><p>Two sections are available for every grade from Grade 1 through Grade 10.</p><strong>{classes.length} active classes</strong></article>
