@@ -1,5 +1,6 @@
 import Link from "next/link";
 import HomeReveal from "./home-reveal";
+import HomePlanFinder from "./home-plan-finder";
 
 const features = [
   {
@@ -63,6 +64,9 @@ export default function Home() {
         <div className="hero-year" aria-hidden="true">EST. 1984</div>
       </section>
 
+      {/* The live selector keeps the chosen class and week when families open the plan library. */}
+      <HomePlanFinder />
+      {/*
       <section id="plan-finder" className="finder-shell page-width" aria-label="Find your weekly plan" data-reveal>
         <div className="finder-heading">
           <span className="finder-icon">W</span>
@@ -96,7 +100,7 @@ export default function Home() {
           </label>
           <Link href="/weekly-plan" className="button button-primary finder-button">View plan <span>→</span></Link>
         </div>
-      </section>
+      </section>*/}
 
       <section id="how-it-works" className="experience-section page-width" data-reveal>
         <div className="section-intro">

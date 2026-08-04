@@ -32,7 +32,18 @@ export default function WeeklyPlanPage() {
   const [classType, setClassType] = useState("Class A");
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
   const [liveLessons, setLiveLessons] = useState<{ day_of_week: number; course: string; classwork: string; homework: string; notes: string }[]>([]);
-  const selectedWeekData = weeks.find((week) => week.number === selectedWeek) ?? weeks[2];
+  const selectedWeekData = weeks.find((week) => week.number === selectedWeek) ?? weeks[0];
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedGrade = params.get("grade");
+    const requestedSection = params.get("section")?.toUpperCase();
+    const requestedWeek = params.get("week")?.padStart(2, "0");
+
+    if (requestedGrade && /^(?:[1-9]|10)$/.test(requestedGrade)) setGrade(`Grade ${requestedGrade}`);
+    if (requestedSection === "A" || requestedSection === "B") setClassType(`Class ${requestedSection}`);
+    if (requestedWeek && weeks.some((week) => week.number === requestedWeek)) setSelectedWeek(requestedWeek);
+  }, []);
 
   useEffect(() => {
     if (!selectedWeek) return;
