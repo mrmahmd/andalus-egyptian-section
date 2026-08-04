@@ -184,6 +184,18 @@ test("lets supervisors manage assignments only for their linked department teach
   assert.match(assignmentSql, /for delete to authenticated/);
 });
 
+test("keeps supervisor teacher assignments scoped to the selected teacher and reachable on mobile", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /const addDepartmentAssignment = async \(teacherId: string\)/);
+  assert.match(teacherSource, /teacher_id: teacherId/);
+  assert.match(teacherSource, /addDepartmentAssignment\(selectedDepartmentTeacher\.userId\)/);
+  assert.match(teacherSource, /teacher-mobile-supervisor-nav/);
+  assert.match(styles, /\.teacher-mobile-supervisor-nav \{ position: sticky/);
+  assert.match(styles, /\.department-teachers-layout, \.department-assignment-picker \{ grid-template-columns: 1fr; \}/);
+});
+
 test("publishes only supervisor-approved subject content without a Super Admin gate", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const publishingSql = await readFile(new URL("../supabase/20260802_supervisor_approval_publishing.sql", import.meta.url), "utf8");
