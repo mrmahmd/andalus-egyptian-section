@@ -376,6 +376,7 @@ select v.full_name, 'teacher', d.id
 from (values
   ('محمد بدر', 'english'), ('محمد فريد', 'english'), ('عمرو رزق', 'english'),
   ('محمد عبد الحميد', 'english'), ('محمود السكري', 'english'),
+  ('محمد النمر', 'english'), ('أسامة حسن', 'english'),
   ('محمد سيد بكر', 'arabic_social'), ('محمد حمد', 'arabic_social'), ('محمد سعيد', 'arabic_social'),
   ('محمد شعبان', 'arabic_social'), ('ماجد موسى', 'arabic_social'), ('أحمد سالم', 'arabic_social'),
   ('أحمد حسن', 'arabic_social'), ('محمد فودة', 'arabic_social'), ('عصام الجزار', 'arabic_social'),
@@ -418,6 +419,7 @@ from (values
   ('hello', 'English Hello', 'اللغة الإنجليزية - Hello', 'English', 'english', 7, 10),
   ('hello_plus', 'Hello Plus', 'هالو بلس', 'English', 'english', 7, 10),
   ('discover', 'Discover', 'Discover', 'Discover', 'english', 1, 3),
+  ('french', 'French', 'اللغة الفرنسية', 'French', 'english', 5, 10),
   ('math', 'Math', 'الرياضيات', 'Math', 'math_science', 1, 10),
   ('science', 'Science', 'العلوم', 'Science', 'math_science', 1, 10),
   ('ict', 'ICT', 'تقنية المعلومات', 'ICT', 'ict', 1, 10),

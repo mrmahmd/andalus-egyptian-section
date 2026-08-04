@@ -195,3 +195,17 @@ test("publishes only supervisor-approved subject content without a Super Admin g
   assert.match(publishingSql, /Public reads supervisor-approved plan entries/);
   assert.match(publishingSql, /Public reads supervisor-approved quizzes/);
 });
+
+test("adds French and the new English-department teachers", async () => {
+  const migration = await readFile(
+    new URL("../supabase/20260804_add_french_and_english_staff.sql", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(migration, /'french',\s*\n\s*'French'/);
+  assert.match(migration, /'اللغة الفرنسية'/);
+  assert.match(migration, /\n\s*5,\s*\n\s*10,/);
+  assert.match(migration, /'محمد النمر'/);
+  assert.match(migration, /'أسامة حسن'/);
+  assert.match(migration, /supervisor\.full_name = 'محمود حلمي'/);
+});
