@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 const weeks = [
   { number: "01", dates: "6–10 September 2026", status: "Available" },
@@ -12,7 +13,7 @@ const weeks = [
   { number: "06", dates: "11–15 October 2026", status: "Coming soon" },
 ];
 
-const days = [
+const defaultDays = [
   { day: "Sunday", lessons: [["Arabic", "Reading and vocabulary", "Complete activity 3", "—"], ["Islamic", "Good manners", "Revise the lesson", "—"], ["English OL", "Unit 2 reading", "Workbook page 9", "Bring reader"], ["English AL", "Guided writing", "Write five sentences", "—"], ["Math", "Multiplication facts", "Worksheet 2A", "Quiz Tuesday"], ["Science", "Butterfly life cycle", "Draw and label", "Bring colours"], ["Social", "Egyptian landmarks", "Research one landmark", "—"], ["ICT", "Safe internet use", "Online task", "Classera task"]] },
   { day: "Monday", lessons: [["Arabic", "Grammar practice", "Book activity", "—"], ["Islamic", "Daily behaviour", "Memorise points", "—"], ["English OL", "Phonics practice", "Workbook page 10", "—"], ["English AL", "Sentence building", "Write six sentences", "—"], ["Math", "Word problems", "Workbook page 12", "—"], ["Science", "Living things", "Label the diagram", "—"], ["Social", "Map skills", "Map activity", "—"], ["ICT", "Digital safety", "Complete online task", "Classera task"]] },
   { day: "Tuesday", lessons: [["Arabic", "Reading comprehension", "Answer questions", "—"], ["Islamic", "Quran revision", "Practise at home", "—"], ["English OL", "Spelling practice", "Learn spelling list", "Spelling quiz"], ["English AL", "Story writing", "Finish paragraph", "—"], ["Math", "Two-step problems", "Worksheet 2B", "—"], ["Science", "Plant growth", "Observe your plant", "—"], ["Social", "Community helpers", "Short research", "—"], ["ICT", "Keyboard skills", "Typing practice", "Computer lab"]] },
@@ -30,12 +31,36 @@ export default function WeeklyPlanPage() {
   const [grade, setGrade] = useState("Grade 4");
   const [classType, setClassType] = useState("Class A");
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
+  const [liveLessons, setLiveLessons] = useState<{ day_of_week: number; course: string; classwork: string; homework: string; notes: string }[]>([]);
   const selectedWeekData = weeks.find((week) => week.number === selectedWeek) ?? weeks[2];
+
+  useEffect(() => {
+    if (!selectedWeek) return;
+    const loadLivePlan = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const gradeNumber = Number(grade.replace("Grade ", ""));
+      const section = classType.replace("Class ", "");
+      const [{ data: classRow }, { data: weekRow }] = await Promise.all([
+        supabase.from("school_classes").select("id").eq("grade", gradeNumber).eq("section", section).maybeSingle(),
+        supabase.from("academic_weeks").select("id").eq("week_number", Number(selectedWeek)).maybeSingle(),
+      ]);
+      if (!classRow?.id || !weekRow?.id) return;
+      const { data } = await supabase.from("weekly_plans").select("plan_entries(day_of_week, period_number, classwork, homework, classera_notes, subjects(name_en))").eq("class_id", classRow.id).eq("week_id", weekRow.id).eq("status", "published").maybeSingle();
+      const entries = (data?.plan_entries ?? []) as unknown as { day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string; subjects: { name_en: string } | { name_en: string }[] | null }[];
+      const one = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] ?? null : value;
+      setLiveLessons(entries.sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number).map((entry) => ({ day_of_week: entry.day_of_week, course: one(entry.subjects)?.name_en ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })));
+    };
+    void loadLivePlan();
+  }, [classType, grade, selectedWeek]);
 
   const openPlan = (week: string) => {
     setSelectedWeek(week);
     window.setTimeout(() => document.getElementById("selected-plan")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
+
+  const days = liveLessons.length > 0
+    ? Array.from(new Set(liveLessons.map((lesson) => lesson.day_of_week))).map((dayIndex) => ({ day: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"][dayIndex], lessons: liveLessons.filter((lesson) => lesson.day_of_week === dayIndex).map((lesson) => [lesson.course, lesson.classwork || "—", lesson.homework || "—", lesson.notes || "—"] as string[]) }))
+    : defaultDays;
 
   return <main className="subpage plan-page">
     <header className="compact-header"><Link href="/" className="brand-lockup"><img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" /><span className="brand-copy"><strong>ALANDALUS PRIVATE SCHOOLS</strong><small>Egyptian Section</small></span></Link><nav><Link href="/">Home</Link><Link className="active" href="/weekly-plan">Weekly Plan</Link><Link href="/timetable">Timetable</Link></nav><Link className="button button-outline" href="/support">Technical Support</Link></header>
