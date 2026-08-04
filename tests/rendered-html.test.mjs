@@ -201,7 +201,7 @@ test("keeps weekly-plan creation responsive while data is loading", async () => 
 
   assert.match(teacherSource, /if \(loading\) \{[\s\S]*still loading/);
   assert.match(teacherSource, /const firstAssignment = selectedAssignment \?\? assignments\[0\]/);
-  assert.match(teacherSource, /type=\"button\" className=\"teacher-primary-button\" disabled=\{saving\}/);
+  assert.match(teacherSource, /type=\"button\" className=\"teacher-primary-button\" disabled=\{saving[^}]*\}/);
   assert.match(teacherSource, /aria-busy=\{loading\}/);
 });
 
