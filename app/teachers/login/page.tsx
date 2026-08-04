@@ -180,7 +180,12 @@ export default function TeacherLoginPage() {
       window.location.assign(`${basePath}${destination}`);
     } catch (error) {
       const text = error instanceof Error ? error.message : "Something went wrong. Please try again.";
-      showMessage(text, "error");
+      const normalized = text.toLowerCase();
+      if (normalized.includes("already registered") || normalized.includes("already been registered") || normalized.includes("already been used") || normalized.includes("duplicate key")) {
+        showMessage("This teacher or username has already been registered.", "info");
+      } else {
+        showMessage(text, "error");
+      }
     } finally {
       setSubmitting(false);
     }
