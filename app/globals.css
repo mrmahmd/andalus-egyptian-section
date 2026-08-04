@@ -1185,6 +1185,17 @@ button, select, input { font: inherit; }
 .admin-access-banner > div { display: grid; gap: 2px; }
 .admin-access-banner strong { color: #6b2852; font-size: 13px; }
 .admin-access-banner small { font-size: 12px; }
+.super-access-control-card { grid-column: 1 / -1; }
+.super-access-control-card > p { max-width: 760px; }
+.super-access-control-card > .teacher-primary-button { margin: 18px 0 8px; }
+.super-teacher-access-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-top: 16px; width: 100%; }
+.super-teacher-access-list label { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 11px 13px; border: 1px solid #dce5f1; border-radius: 12px; background: #f8fbff; color: #0b2149; }
+.super-teacher-access-list label > span { min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow: hidden; font-weight: 800; }
+.super-teacher-access-list label > span small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #71829d; font-size: 11px; font-weight: 600; }
+.super-teacher-access-list input { width: 18px; height: 18px; accent-color: #0b3973; }
+.super-teacher-access-list b { font-size: 12px; color: #16805a; white-space: nowrap; }
+.admin-access-control-card { margin-bottom: 20px; padding: 24px; display: grid; gap: 10px; }
+@media (max-width: 700px) { .super-teacher-access-list { grid-template-columns: 1fr; } .super-access-control-card { grid-column: auto; } }
 .admin-form-row-two { grid-template-columns: 1.3fr .7fr; }
 .admin-delete-modal { width: min(470px, 100%); padding: 32px; border-radius: 19px; background: white; box-shadow: 0 28px 80px rgba(0,0,0,.28); text-align: center; }
 .admin-delete-icon { width: 50px; height: 50px; margin: 0 auto 15px; border-radius: 50%; display: grid; place-items: center; background: #fff0f4; color: #b51f62; font-size: 22px; font-weight: 900; }
