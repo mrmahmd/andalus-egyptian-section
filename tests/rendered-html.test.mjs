@@ -196,6 +196,15 @@ test("keeps supervisor teacher assignments scoped to the selected teacher and re
   assert.match(styles, /\.department-teachers-layout, \.department-assignment-picker \{ grid-template-columns: 1fr; \}/);
 });
 
+test("keeps weekly-plan creation responsive while data is loading", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /if \(loading\) \{[\s\S]*still loading/);
+  assert.match(teacherSource, /const firstAssignment = selectedAssignment \?\? assignments\[0\]/);
+  assert.match(teacherSource, /type=\"button\" className=\"teacher-primary-button\" disabled=\{saving\}/);
+  assert.match(teacherSource, /aria-busy=\{loading\}/);
+});
+
 test("publishes only supervisor-approved subject content without a Super Admin gate", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const publishingSql = await readFile(new URL("../supabase/20260802_supervisor_approval_publishing.sql", import.meta.url), "utf8");

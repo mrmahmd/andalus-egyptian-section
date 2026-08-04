@@ -258,6 +258,11 @@ export default function TeachersDashboardPage() {
   const uniqueSubjects = useMemo(() => Array.from(new Set(assignments.map((assignment) => assignment.subject))), [assignments]);
 
   const openWeeklyBuilder = () => {
+    if (loading) {
+      setMessage("Your teacher data is still loading. Please wait a moment and try again.");
+      setMessageTone("info");
+      return;
+    }
     if (assignments.length === 0) {
       setMessage("No classes or subjects are assigned yet. Ask the Super Admin to complete your assignments.");
       setMessageTone("info");
@@ -268,6 +273,10 @@ export default function TeachersDashboardPage() {
       setMessageTone("info");
       return;
     }
+    const firstAssignment = selectedAssignment ?? assignments[0];
+    const firstWeek = selectedWeek ?? academicWeeks.find((week) => week.is_current) ?? academicWeeks[0];
+    if (!selectedAssignmentId && firstAssignment) setSelectedAssignmentId(firstAssignment.id);
+    if (!selectedWeekId && firstWeek) setSelectedWeekId(firstWeek.id);
     setWeeklyBuilderOpen(true);
   };
 
@@ -447,7 +456,7 @@ export default function TeachersDashboardPage() {
         {isSupervisor && <nav className="teacher-mobile-supervisor-nav" aria-label="Supervisor workspace navigation">{supervisorNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => setActiveNav(label)}><span>{icon}</span><b>{label}</b>{label === "Teacher Reviews" && reviewItems.filter((item) => item.status === "submitted").length > 0 && <i>{reviewItems.filter((item) => item.status === "submitted").length}</i>}{label === "Department Teachers" && <i>{departmentTeachers.length}</i>}</button>)}</nav>}
 
         <div className="teacher-content">
-          <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentWeek?.label ?? "Teacher workspace"}</p><h1>{activeNav === "Overview" ? `Welcome, ${teacherName}.` : activeNav}</h1><span>{activeNav === "Overview" ? "Your live assignments and weekly-plan progress are shown below." : "This section is connected to your approved school profile."}</span></div><div className="teacher-heading-actions"><button className="teacher-primary-button" disabled={loading} onClick={openWeeklyBuilder}><span>＋</span> Create weekly plan</button></div></div>
+          <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentWeek?.label ?? "Teacher workspace"}</p><h1>{activeNav === "Overview" ? `Welcome, ${teacherName}.` : activeNav}</h1><span>{activeNav === "Overview" ? "Your live assignments and weekly-plan progress are shown below." : "This section is connected to your approved school profile."}</span></div><div className="teacher-heading-actions"><button type="button" className="teacher-primary-button" disabled={saving} aria-busy={loading} onClick={openWeeklyBuilder}><span>＋</span> {loading ? "Loading teacher data…" : "Create weekly plan"}</button></div></div>
 
           {message && <p className={`super-admin-live-message ${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
 
