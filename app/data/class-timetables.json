@@ -1,3329 +1,3697 @@
 {
-  "purpose": "Timetable subjects grouped clearly by class name for Codex. No teacher names.",
+  "schemaVersion": "3.0",
+  "purpose": "Independent timetable for every class section. Each class has its own schedule and MUST NOT be merged with another section.",
+  "hardRules": {
+    "separateSchedulePerClass": true,
+    "neverMergeSections": true,
+    "example": "Grade 4A and Grade 4B are two different classes with two independent timetables.",
+    "teacherDataIncluded": false
+  },
   "classes": {
     "Grade 1A": {
+      "classId": "grade-1-a",
       "className": "Grade 1A",
+      "grade": 1,
+      "section": "A",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "سباحة"
-          },
-          {
-            "period": 4,
-            "subject": "سباحة"
-          },
-          {
-            "period": 5,
-            "subject": "OL"
-          },
-          {
-            "period": 6,
-            "subject": "AL"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "AL"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "خ/م"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "دين"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Discover"
-          },
-          {
-            "period": 4,
-            "subject": "Maths"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "Computer"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "بدنية"
-          },
-          {
-            "period": 8,
-            "subject": "دين"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "فنية"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "OL"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "ICT"
-          },
-          {
-            "period": 8,
-            "subject": "Discover"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "سباحة"
+            },
+            {
+              "period": 4,
+              "subject": "سباحة"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "خ/م"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دين"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Discover"
+            },
+            {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Computer"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "بدنية"
+            },
+            {
+              "period": 8,
+              "subject": "دين"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "فنية"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "ICT"
+            },
+            {
+              "period": 8,
+              "subject": "Discover"
+            }
+          ]
+        }
       }
     },
     "Grade 2A": {
+      "classId": "grade-2-a",
       "className": "Grade 2A",
+      "grade": 2,
+      "section": "A",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "دين"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "Discover"
-          },
-          {
-            "period": 5,
-            "subject": "سباحة"
-          },
-          {
-            "period": 6,
-            "subject": "سباحة"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "OL"
-          },
-          {
-            "period": 4,
-            "subject": "ICT"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "Computer"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "خ/م"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "فنية"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "دين"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "OL"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "Discover"
-          },
-          {
-            "period": 5,
-            "subject": "بدنية"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دين"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "Discover"
+            },
+            {
+              "period": 5,
+              "subject": "سباحة"
+            },
+            {
+              "period": 6,
+              "subject": "سباحة"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "ICT"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "Computer"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "خ/م"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "فنية"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "دين"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "Discover"
+            },
+            {
+              "period": 5,
+              "subject": "بدنية"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        }
       }
     },
     "Grade 2B": {
+      "classId": "grade-2-b",
       "className": "Grade 2B",
+      "grade": 2,
+      "section": "B",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "OL"
-          },
-          {
-            "period": 4,
-            "subject": "دين"
-          },
-          {
-            "period": 5,
-            "subject": "سباحة"
-          },
-          {
-            "period": 6,
-            "subject": "سباحة"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "Discover"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "خ/م"
-          },
-          {
-            "period": 6,
-            "subject": "AL"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "OL"
-          },
-          {
-            "period": 4,
-            "subject": "Discover"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "فنية"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "بدنية"
-          },
-          {
-            "period": 4,
-            "subject": "Maths"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "Computer"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "ICT"
-          },
-          {
-            "period": 6,
-            "subject": "دين"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "OL"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "سباحة"
+            },
+            {
+              "period": 6,
+              "subject": "سباحة"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Discover"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "خ/م"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "Discover"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "فنية"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "بدنية"
+            },
+            {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "Computer"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "ICT"
+            },
+            {
+              "period": 6,
+              "subject": "دين"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        }
       }
     },
     "Grade 3A": {
+      "classId": "grade-3-a",
       "className": "Grade 3A",
+      "grade": 3,
+      "section": "A",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "خ/م"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "دين"
-          },
-          {
-            "period": 5,
-            "subject": "Discover"
-          },
-          {
-            "period": 6,
-            "subject": "AL"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "OL"
-          },
-          {
-            "period": 5,
-            "subject": "سباحة"
-          },
-          {
-            "period": 6,
-            "subject": "سباحة"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "فنية"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "ICT"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "بدنية"
-          },
-          {
-            "period": 5,
-            "subject": "Computer"
-          },
-          {
-            "period": 6,
-            "subject": "AL"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "دين"
-          },
-          {
-            "period": 5,
-            "subject": "Discover"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "خ/م"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "Discover"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "OL"
+            },
+            {
+              "period": 5,
+              "subject": "سباحة"
+            },
+            {
+              "period": 6,
+              "subject": "سباحة"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "فنية"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "ICT"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "بدنية"
+            },
+            {
+              "period": 5,
+              "subject": "Computer"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "Discover"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        }
       }
     },
     "Grade 3B": {
+      "classId": "grade-3-b",
       "className": "Grade 3B",
+      "grade": 3,
+      "section": "B",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Discover"
-          },
-          {
-            "period": 4,
-            "subject": "خ/م"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "فنية"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "سباحة"
-          },
-          {
-            "period": 6,
-            "subject": "سباحة"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "Discover"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "OL"
-          },
-          {
-            "period": 5,
-            "subject": "دين"
-          },
-          {
-            "period": 6,
-            "subject": "Computer"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "OL"
-          },
-          {
-            "period": 6,
-            "subject": "دين"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "ICT"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "بدنية"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Discover"
+            },
+            {
+              "period": 4,
+              "subject": "خ/م"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "فنية"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "سباحة"
+            },
+            {
+              "period": 6,
+              "subject": "سباحة"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Discover"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "OL"
+            },
+            {
+              "period": 5,
+              "subject": "دين"
+            },
+            {
+              "period": 6,
+              "subject": "Computer"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "دين"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "ICT"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "بدنية"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        }
       }
     },
     "Grade 4A": {
+      "classId": "grade-4-a",
       "className": "Grade 4A",
+      "grade": 4,
+      "section": "A",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Science"
-          },
-          {
-            "period": 4,
-            "subject": "AI"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "سباحة"
-          },
-          {
-            "period": 8,
-            "subject": "سباحة"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Science"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "فنية"
-          },
-          {
-            "period": 6,
-            "subject": "ICT"
-          },
-          {
-            "period": 7,
-            "subject": "مم"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دراسات"
-          },
-          {
-            "period": 4,
-            "subject": "Science"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "دراسات"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "دين"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "بدنية"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "دين"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "Maths"
-          },
-          {
-            "period": 6,
-            "subject": "AL"
-          },
-          {
-            "period": 7,
-            "subject": "دراسات"
-          },
-          {
-            "period": 8,
-            "subject": "OL"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Science"
+            },
+            {
+              "period": 4,
+              "subject": "AI"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "سباحة"
+            },
+            {
+              "period": 8,
+              "subject": "سباحة"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Science"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "فنية"
+            },
+            {
+              "period": 6,
+              "subject": "ICT"
+            },
+            {
+              "period": 7,
+              "subject": "مهارات مهنية"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دراسات"
+            },
+            {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دراسات"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "بدنية"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دين"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "دراسات"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        }
       }
     },
     "Grade 4B": {
+      "classId": "grade-4-b",
       "className": "Grade 4B",
+      "grade": 4,
+      "section": "B",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "دراسات"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "OL"
-          },
-          {
-            "period": 4,
-            "subject": "Maths"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "سباحة"
-          },
-          {
-            "period": 8,
-            "subject": "سباحة"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "ICT"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "AL"
-          },
-          {
-            "period": 5,
-            "subject": "بدنية"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "Science"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "دين"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "Science"
-          },
-          {
-            "period": 7,
-            "subject": "فنية"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AI"
-          },
-          {
-            "period": 4,
-            "subject": "AL"
-          },
-          {
-            "period": 5,
-            "subject": "Science"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "دراسات"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "AL"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "مم"
-          },
-          {
-            "period": 7,
-            "subject": "دين"
-          },
-          {
-            "period": 8,
-            "subject": "دراسات"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دراسات"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "سباحة"
+            },
+            {
+              "period": 8,
+              "subject": "سباحة"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "ICT"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "بدنية"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "Science"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "Science"
+            },
+            {
+              "period": 7,
+              "subject": "فنية"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AI"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "دراسات"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "مهارات مهنية"
+            },
+            {
+              "period": 7,
+              "subject": "دين"
+            },
+            {
+              "period": 8,
+              "subject": "دراسات"
+            }
+          ]
+        }
       }
     },
     "Grade 5A": {
+      "classId": "grade-5-a",
       "className": "Grade 5A",
+      "grade": 5,
+      "section": "A",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "دين"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "دراسات"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "فنية"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "سباحة"
-          },
-          {
-            "period": 4,
-            "subject": "سباحة"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "مم"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "AI"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "بدنية"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "Maths"
-          },
-          {
-            "period": 5,
-            "subject": "Science"
-          },
-          {
-            "period": 6,
-            "subject": "AL"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Science"
-          },
-          {
-            "period": 4,
-            "subject": "Maths"
-          },
-          {
-            "period": 5,
-            "subject": "French"
-          },
-          {
-            "period": 6,
-            "subject": "دراسات"
-          },
-          {
-            "period": 7,
-            "subject": "دين"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "Science"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "AL"
-          },
-          {
-            "period": 5,
-            "subject": "Maths"
-          },
-          {
-            "period": 6,
-            "subject": "دراسات"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "ICT"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دين"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "دراسات"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "فنية"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "سباحة"
+            },
+            {
+              "period": 4,
+              "subject": "سباحة"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "مهارات مهنية"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "AI"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "بدنية"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Science"
+            },
+            {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "French"
+            },
+            {
+              "period": 6,
+              "subject": "دراسات"
+            },
+            {
+              "period": 7,
+              "subject": "دين"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Science"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "دراسات"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "ICT"
+            }
+          ]
+        }
       }
     },
     "Grade 5B": {
+      "classId": "grade-5-b",
       "className": "Grade 5B",
+      "grade": 5,
+      "section": "B",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دراسات"
-          },
-          {
-            "period": 4,
-            "subject": "Science"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "مم"
-          },
-          {
-            "period": 8,
-            "subject": "OL"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "سباحة"
-          },
-          {
-            "period": 4,
-            "subject": "سباحة"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "دين"
-          },
-          {
-            "period": 8,
-            "subject": "OL"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "دراسات"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "ICT"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "OL"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "Science"
-          },
-          {
-            "period": 8,
-            "subject": "بدنية"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "فنية"
-          },
-          {
-            "period": 4,
-            "subject": "AL"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "دراسات"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AI"
-          },
-          {
-            "period": 4,
-            "subject": "دين"
-          },
-          {
-            "period": 5,
-            "subject": "Science"
-          },
-          {
-            "period": 6,
-            "subject": "French"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دراسات"
+            },
+            {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "مهارات مهنية"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "سباحة"
+            },
+            {
+              "period": 4,
+              "subject": "سباحة"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "دين"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دراسات"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "ICT"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "Science"
+            },
+            {
+              "period": 8,
+              "subject": "بدنية"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "فنية"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "دراسات"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AI"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
+              "period": 6,
+              "subject": "French"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        }
       }
     },
     "Grade 6A": {
+      "classId": "grade-6-a",
       "className": "Grade 6A",
+      "grade": 6,
+      "section": "A",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "دين"
-          },
-          {
-            "period": 5,
-            "subject": "دراسات"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "Science"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "دين"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "ICT"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "OL"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "سباحة"
-          },
-          {
-            "period": 8,
-            "subject": "سباحة"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "French"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "OL"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "دراسات"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دراسات"
-          },
-          {
-            "period": 4,
-            "subject": "AI"
-          },
-          {
-            "period": 5,
-            "subject": "OL"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "فنية"
-          },
-          {
-            "period": 8,
-            "subject": "Science"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "مم"
-          },
-          {
-            "period": 4,
-            "subject": "Maths"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "بدنية"
-          },
-          {
-            "period": 8,
-            "subject": "Science"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "دراسات"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "Science"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دين"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "ICT"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "سباحة"
+            },
+            {
+              "period": 8,
+              "subject": "سباحة"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "French"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "دراسات"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دراسات"
+            },
+            {
+              "period": 4,
+              "subject": "AI"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "فنية"
+            },
+            {
+              "period": 8,
+              "subject": "Science"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "مهارات مهنية"
+            },
+            {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "بدنية"
+            },
+            {
+              "period": 8,
+              "subject": "Science"
+            }
+          ]
+        }
       }
     },
     "Grade 6B": {
+      "classId": "grade-6-b",
       "className": "Grade 6B",
+      "grade": 6,
+      "section": "B",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "مم"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "فنية"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "Science"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "دراسات"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "OL"
-          },
-          {
-            "period": 4,
-            "subject": "Science"
-          },
-          {
-            "period": 5,
-            "subject": "ICT"
-          },
-          {
-            "period": 6,
-            "subject": "AL"
-          },
-          {
-            "period": 7,
-            "subject": "سباحة"
-          },
-          {
-            "period": 8,
-            "subject": "سباحة"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "AI"
-          },
-          {
-            "period": 5,
-            "subject": "Maths"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "دراسات"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "بدنية"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Science"
-          },
-          {
-            "period": 4,
-            "subject": "دين"
-          },
-          {
-            "period": 5,
-            "subject": "Maths"
-          },
-          {
-            "period": 6,
-            "subject": "French"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "OL"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "دراسات"
-          },
-          {
-            "period": 6,
-            "subject": "AL"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "دين"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "مهارات مهنية"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "فنية"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "Science"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دراسات"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
+              "period": 5,
+              "subject": "ICT"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "سباحة"
+            },
+            {
+              "period": 8,
+              "subject": "سباحة"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "AI"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "دراسات"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "بدنية"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Science"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "French"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "دراسات"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "دين"
+            }
+          ]
+        }
       }
     },
     "Grade 7A": {
+      "classId": "grade-7-a",
       "className": "Grade 7A",
+      "grade": 7,
+      "section": "A",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AI"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "دراسات"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "Science"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "دين"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "دراسات"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "Science"
-          },
-          {
-            "period": 8,
-            "subject": "بدنية"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "دين"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "AL"
-          },
-          {
-            "period": 5,
-            "subject": "Maths"
-          },
-          {
-            "period": 6,
-            "subject": "بدنية"
-          },
-          {
-            "period": 7,
-            "subject": "Science"
-          },
-          {
-            "period": 8,
-            "subject": "French"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "فنية"
-          },
-          {
-            "period": 6,
-            "subject": "دراسات"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "French"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "OL"
-          },
-          {
-            "period": 4,
-            "subject": "ICT"
-          },
-          {
-            "period": 5,
-            "subject": "Science"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AI"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "دراسات"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "Science"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دين"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "دراسات"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "Science"
+            },
+            {
+              "period": 8,
+              "subject": "بدنية"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دين"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "بدنية"
+            },
+            {
+              "period": 7,
+              "subject": "Science"
+            },
+            {
+              "period": 8,
+              "subject": "French"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "فنية"
+            },
+            {
+              "period": 6,
+              "subject": "دراسات"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "French"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "ICT"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        }
       }
     },
     "Grade 7B": {
+      "classId": "grade-7-b",
       "className": "Grade 7B",
+      "grade": 7,
+      "section": "B",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "ICT"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "Science"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "بدنية"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "French"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "بدنية"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Science"
-          },
-          {
-            "period": 4,
-            "subject": "دراسات"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "AL"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "فنية"
-          },
-          {
-            "period": 4,
-            "subject": "Science"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "دراسات"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دين"
-          },
-          {
-            "period": 4,
-            "subject": "AL"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "Science"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "French"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دين"
-          },
-          {
-            "period": 4,
-            "subject": "AI"
-          },
-          {
-            "period": 5,
-            "subject": "دراسات"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "OL"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "ICT"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "بدنية"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "French"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "بدنية"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Science"
+            },
+            {
+              "period": 4,
+              "subject": "دراسات"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "فنية"
+            },
+            {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "دراسات"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دين"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "Science"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "French"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دين"
+            },
+            {
+              "period": 4,
+              "subject": "AI"
+            },
+            {
+              "period": 5,
+              "subject": "دراسات"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        }
       }
     },
     "Grade 8A": {
+      "classId": "grade-8-a",
       "className": "Grade 8A",
+      "grade": 8,
+      "section": "A",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "French"
-          },
-          {
-            "period": 4,
-            "subject": "Science"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "AL"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "بدنية"
-          },
-          {
-            "period": 4,
-            "subject": "فنية"
-          },
-          {
-            "period": 5,
-            "subject": "Science"
-          },
-          {
-            "period": 6,
-            "subject": "دراسات"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "OL"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دين"
-          },
-          {
-            "period": 4,
-            "subject": "OL"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "ICT"
-          },
-          {
-            "period": 8,
-            "subject": "Science"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "دراسات"
-          },
-          {
-            "period": 5,
-            "subject": "دين"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "AI"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "دراسات"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "French"
-          },
-          {
-            "period": 4,
-            "subject": "Science"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "French"
+            },
+            {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "بدنية"
+            },
+            {
+              "period": 4,
+              "subject": "فنية"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
+              "period": 6,
+              "subject": "دراسات"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دين"
+            },
+            {
+              "period": 4,
+              "subject": "OL"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "ICT"
+            },
+            {
+              "period": 8,
+              "subject": "Science"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "دراسات"
+            },
+            {
+              "period": 5,
+              "subject": "دين"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "AI"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دراسات"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "French"
+            },
+            {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        }
       }
     },
     "Grade 8B": {
+      "classId": "grade-8-b",
       "className": "Grade 8B",
+      "grade": 8,
+      "section": "B",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "OL"
-          },
-          {
-            "period": 4,
-            "subject": "دراسات"
-          },
-          {
-            "period": 5,
-            "subject": "Maths"
-          },
-          {
-            "period": 6,
-            "subject": "Science"
-          },
-          {
-            "period": 7,
-            "subject": "بدنية"
-          },
-          {
-            "period": 8,
-            "subject": "دين"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "OL"
-          },
-          {
-            "period": 6,
-            "subject": "French"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "Science"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "AI"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "French"
-          },
-          {
-            "period": 5,
-            "subject": "Science"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دراسات"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "OL"
-          },
-          {
-            "period": 7,
-            "subject": "دين"
-          },
-          {
-            "period": 8,
-            "subject": "Science"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "فنية"
-          },
-          {
-            "period": 6,
-            "subject": "ICT"
-          },
-          {
-            "period": 7,
-            "subject": "دراسات"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "دراسات"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "Science"
+            },
+            {
+              "period": 7,
+              "subject": "بدنية"
+            },
+            {
+              "period": 8,
+              "subject": "دين"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "French"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "Science"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AI"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "French"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دراسات"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "دين"
+            },
+            {
+              "period": 8,
+              "subject": "Science"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "فنية"
+            },
+            {
+              "period": 6,
+              "subject": "ICT"
+            },
+            {
+              "period": 7,
+              "subject": "دراسات"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        }
       }
     },
     "Grade 8C": {
+      "classId": "grade-8-c",
       "className": "Grade 8C",
+      "grade": 8,
+      "section": "C",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "دراسات"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Science"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "French"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "دراسات"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "OL"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "French"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "فنية"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "بدنية"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "Science"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "دين"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "دراسات"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دين"
-          },
-          {
-            "period": 4,
-            "subject": "OL"
-          },
-          {
-            "period": 5,
-            "subject": "Maths"
-          },
-          {
-            "period": 6,
-            "subject": "AI"
-          },
-          {
-            "period": 7,
-            "subject": "Science"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "OL"
-          },
-          {
-            "period": 5,
-            "subject": "Science"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "ICT"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دراسات"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Science"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "French"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دراسات"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "OL"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "French"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "فنية"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "بدنية"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "Science"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "دين"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دراسات"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دين"
+            },
+            {
+              "period": 4,
+              "subject": "OL"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "AI"
+            },
+            {
+              "period": 7,
+              "subject": "Science"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "OL"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "ICT"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        }
       }
     },
     "Grade 9A": {
+      "classId": "grade-9-a",
       "className": "Grade 9A",
+      "grade": 9,
+      "section": "A",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دراسات"
-          },
-          {
-            "period": 4,
-            "subject": "بدنية"
-          },
-          {
-            "period": 5,
-            "subject": "ICT"
-          },
-          {
-            "period": 6,
-            "subject": "ICT"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "OL"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "AL"
-          },
-          {
-            "period": 5,
-            "subject": "French"
-          },
-          {
-            "period": 6,
-            "subject": "Science"
-          },
-          {
-            "period": 7,
-            "subject": "بدنية"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "دراسات"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دين"
-          },
-          {
-            "period": 4,
-            "subject": "Maths"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "Science"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "OL"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "Science"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "فنية"
-          },
-          {
-            "period": 5,
-            "subject": "دراسات"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "OL"
-          },
-          {
-            "period": 4,
-            "subject": "Science"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "دين"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "French"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دراسات"
+            },
+            {
+              "period": 4,
+              "subject": "بدنية"
+            },
+            {
+              "period": 5,
+              "subject": "ICT"
+            },
+            {
+              "period": 6,
+              "subject": "ICT"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "French"
+            },
+            {
+              "period": 6,
+              "subject": "Science"
+            },
+            {
+              "period": 7,
+              "subject": "بدنية"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دراسات"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دين"
+            },
+            {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "Science"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Science"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "فنية"
+            },
+            {
+              "period": 5,
+              "subject": "دراسات"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "دين"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "French"
+            }
+          ]
+        }
       }
     },
     "Grade 9B": {
+      "classId": "grade-9-b",
       "className": "Grade 9B",
+      "grade": 9,
+      "section": "B",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "Maths"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Science"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "عربي"
-          },
-          {
-            "period": 6,
-            "subject": "دراسات"
-          },
-          {
-            "period": 7,
-            "subject": "ICT"
-          },
-          {
-            "period": 8,
-            "subject": "ICT"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Maths"
-          },
-          {
-            "period": 4,
-            "subject": "French"
-          },
-          {
-            "period": 5,
-            "subject": "دين"
-          },
-          {
-            "period": 6,
-            "subject": "عربي"
-          },
-          {
-            "period": 7,
-            "subject": "دراسات"
-          },
-          {
-            "period": 8,
-            "subject": "AL"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "عربي"
-          },
-          {
-            "period": 4,
-            "subject": "AL"
-          },
-          {
-            "period": 5,
-            "subject": "French"
-          },
-          {
-            "period": 6,
-            "subject": "دراسات"
-          },
-          {
-            "period": 7,
-            "subject": "Maths"
-          },
-          {
-            "period": 8,
-            "subject": "Science"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "دين"
-          },
-          {
-            "period": 4,
-            "subject": "Science"
-          },
-          {
-            "period": 5,
-            "subject": "Maths"
-          },
-          {
-            "period": 6,
-            "subject": "بدنية"
-          },
-          {
-            "period": 7,
-            "subject": "AL"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "عربي"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "Science"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "بدنية"
-          },
-          {
-            "period": 7,
-            "subject": "OL"
-          },
-          {
-            "period": 8,
-            "subject": "فنية"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Maths"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Science"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "دراسات"
+            },
+            {
+              "period": 7,
+              "subject": "ICT"
+            },
+            {
+              "period": 8,
+              "subject": "ICT"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "French"
+            },
+            {
+              "period": 5,
+              "subject": "دين"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "دراسات"
+            },
+            {
+              "period": 8,
+              "subject": "AL"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "French"
+            },
+            {
+              "period": 6,
+              "subject": "دراسات"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "Science"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دين"
+            },
+            {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "بدنية"
+            },
+            {
+              "period": 7,
+              "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Science"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "بدنية"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "فنية"
+            }
+          ]
+        }
       }
     },
     "Grade 10A": {
+      "classId": "grade-10-a",
       "className": "Grade 10A",
+      "grade": 10,
+      "section": "A",
+      "independentSchedule": true,
       "schedule": {
-        "الأحد": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "OL"
-          },
-          {
-            "period": 4,
-            "subject": "دين"
-          },
-          {
-            "period": 5,
-            "subject": "بدنية"
-          },
-          {
-            "period": 6,
-            "subject": "Maths"
-          },
-          {
-            "period": 7,
-            "subject": "INT Science"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الاثنين": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "French"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "Maths"
-          },
-          {
-            "period": 6,
-            "subject": "فلسفة"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "INT Science"
-          }
-        ],
-        "الثلاثاء": [
-          {
-            "period": 1,
-            "subject": "دين"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "AL"
-          },
-          {
-            "period": 4,
-            "subject": "بدنية"
-          },
-          {
-            "period": 5,
-            "subject": "INT Science"
-          },
-          {
-            "period": 6,
-            "subject": "تاريخ"
-          },
-          {
-            "period": 7,
-            "subject": "وطنية"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ],
-        "الأربعاء": [
-          {
-            "period": 1,
-            "subject": "OL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "French"
-          },
-          {
-            "period": 4,
-            "subject": "عربي"
-          },
-          {
-            "period": 5,
-            "subject": "AL"
-          },
-          {
-            "period": 6,
-            "subject": "INT Science"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "Maths"
-          }
-        ],
-        "الخميس": [
-          {
-            "period": 1,
-            "subject": "AL"
-          },
-          {
-            "period": 2,
-            "subject": "قرأن"
-          },
-          {
-            "period": 3,
-            "subject": "ICT"
-          },
-          {
-            "period": 4,
-            "subject": "Maths"
-          },
-          {
-            "period": 5,
-            "subject": "OL"
-          },
-          {
-            "period": 6,
-            "subject": "INT Science"
-          },
-          {
-            "period": 7,
-            "subject": "عربي"
-          },
-          {
-            "period": 8,
-            "subject": "عربي"
-          }
-        ]
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "بدنية"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
+              "subject": "INT Science"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "French"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "فلسفة"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "INT Science"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دين"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "بدنية"
+            },
+            {
+              "period": 5,
+              "subject": "INT Science"
+            },
+            {
+              "period": 6,
+              "subject": "تاريخ"
+            },
+            {
+              "period": 7,
+              "subject": "وطنية"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "French"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "INT Science"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "ICT"
+            },
+            {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "INT Science"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        }
       }
     }
   }
