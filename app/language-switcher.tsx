@@ -126,7 +126,7 @@ function translatePage(root: HTMLElement) {
   while (walker.nextNode()) nodes.push(walker.currentNode as Text);
   nodes.forEach((node) => {
     // The timetable is intentionally English-only, including on the Arabic platform.
-    if (node.parentElement?.closest(".plan-paper, .super-admin-portal, .timetable-page")) return;
+    if (node.parentElement?.closest(".plan-paper, .super-admin-portal, .timetable-grid")) return;
     const original = node.nodeValue ?? "";
     const value = original.trim();
     const translated = value.startsWith("Welcome, ")
@@ -135,7 +135,7 @@ function translatePage(root: HTMLElement) {
     if (translated) node.nodeValue = original.replace(value, translated);
   });
   root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input[placeholder], textarea[placeholder]").forEach((field) => {
-    if (field.closest(".plan-paper, .super-admin-portal, .timetable-page")) return;
+    if (field.closest(".plan-paper, .super-admin-portal, .timetable-grid")) return;
     const translated = staffAr[normalizedText(field.placeholder.trim())] ?? homeAr[normalizedText(field.placeholder.trim())] ?? ar[field.placeholder.trim()];
     if (translated) field.placeholder = translated;
   });
