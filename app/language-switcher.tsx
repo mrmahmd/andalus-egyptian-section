@@ -142,10 +142,12 @@ function translatePage(root: HTMLElement) {
 }
 
 export default function LanguageSwitcher({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<"en" | "ar">("en");
+  const [language, setLanguage] = useState<"en" | "ar">(() => {
+    if (typeof window === "undefined") return "en";
+    return window.localStorage.getItem("andalus-language") === "ar" ? "ar" : "en";
+  });
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const pathname = usePathname();
-  useEffect(() => { const stored = window.localStorage.getItem("andalus-language") as "en" | "ar" | null; if (stored) setLanguage(stored); }, []);
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
