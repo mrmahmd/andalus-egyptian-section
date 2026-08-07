@@ -120,7 +120,7 @@ export default function TeachersDashboardPage() {
   const [quizDetails, setQuizDetails] = useState("");
   const [weeklyNote, setWeeklyNote] = useState("");
   const [scienceComponentsByDay, setScienceComponentsByDay] = useState<string[]>(() => dayNames.map(() => ""));
-  const [experimentDayIndex, setExperimentDayIndex] = useState(0);
+  const [experimentDayIndex, setExperimentDayIndex] = useState(1);
   const [experimentPeriod, setExperimentPeriod] = useState("");
   const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
 
@@ -351,16 +351,12 @@ export default function TeachersDashboardPage() {
         weekly_plan_id: weeklyPlanId,
         teacher_id: profileId,
         subject_id: selectedAssignment.subjectId,
-        status: submitForReview ? (faridExperiment ? "approved" : "submitted") : "draft",
-        reviewed_by: faridExperiment && submitForReview ? profileId : null,
-        reviewed_at: faridExperiment && submitForReview ? new Date().toISOString() : null,
+        status: submitForReview ? "submitted" : "draft",
+        reviewed_by: null,
+        reviewed_at: null,
         submitted_at: submitForReview ? new Date().toISOString() : null,
       }, { onConflict: "weekly_plan_id,teacher_id,subject_id" });
       if (submissionError) throw submissionError;
-      if (faridExperiment && submitForReview) {
-        const { error: publishError } = await supabase.from("weekly_plans").update({ status: "published", published_by: profileId, published_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", weeklyPlanId);
-        if (publishError) throw publishError;
-      }
 
       const { error: oldQuizError } = await supabase.from("plan_quizzes").delete().eq("weekly_plan_id", weeklyPlanId).eq("teacher_id", profileId).eq("subject_id", selectedAssignment.subjectId);
       if (oldQuizError) throw oldQuizError;
@@ -383,7 +379,7 @@ export default function TeachersDashboardPage() {
       setScienceComponentsByDay(dayNames.map(() => ""));
       setQuizDetails("");
       setWeeklyNote("");
-      setMessage(submitForReview ? (faridExperiment ? "Experimental plan published directly for this class." : "Your weekly plan was sent to your department supervisor for review.") : "The whole week was saved successfully to Supabase.");
+      setMessage(submitForReview ? "Your weekly plan was sent to your department supervisor for review." : "The whole week was saved successfully to Supabase.");
       setMessageTone("success");
       await loadTeacherDashboard();
     } catch (error) {
@@ -552,7 +548,7 @@ export default function TeachersDashboardPage() {
           <div className="weekly-builder-days">{dayNames.map((day, index) => (!faridExperiment || index === experimentDayIndex) && <article key={day}><header><strong>{day}</strong><small>{selectedAssignment.subject}</small></header>{selectedAssignment.subject === "Integrated Science" && <label>Science component<select value={scienceComponentsByDay[index]} onChange={(event) => updateScienceComponent(index, event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}<label>Classwork<textarea rows={2} value={dayDrafts[index].classwork} onChange={(event) => updateDayDraft(index, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={2} value={dayDrafts[index].homework} onChange={(event) => updateDayDraft(index, "homework", event.target.value)} placeholder="Homework for this day" /></label><label>Classera notes<textarea rows={2} value={dayDrafts[index].classeraNotes} onChange={(event) => updateDayDraft(index, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>)}</div>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Saved in the separate quiz table below the weekly plan.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>NT</span><div><strong>Weekly notes for families</strong><small>Spelling words, reminders or important announcements.</small></div></div></div><textarea className="weekly-builder-notes" rows={3} value={weeklyNote} onChange={(event) => setWeeklyNote(event.target.value)} placeholder="Weekly notes" /></section>
-          <div className="teacher-editor-footer"><span>{selectedSlots.length > 0 ? (faridExperiment ? "Experimental mode: this entry will publish directly to the selected class." : "All timetable-linked entries will be saved together.") : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button><button disabled={saving || selectedSlots.length === 0} className="teacher-primary-button" type="submit">{saving ? "Saving…" : faridExperiment ? "Publish experiment" : "Submit for review"}</button></div></div>
+          <div className="teacher-editor-footer"><span>{selectedSlots.length > 0 ? (faridExperiment ? "Experimental mode: this entry will be sent to Mr. Mahmoud Helmy for review." : "All timetable-linked entries will be saved together.") : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button><button disabled={saving || selectedSlots.length === 0} className="teacher-primary-button" type="submit">{saving ? "Saving…" : "Submit for review"}</button></div></div>
         </form>
       </section></div>}
     </main>
