@@ -19,7 +19,7 @@ export default function TimetablePage() {
   const [classType, setClassType] = useState("Class A");
   const gradeNumber = grade.match(/\d+/)?.[0] ?? "4";
   const section = classType.match(/[AB]/i)?.[0]?.toUpperCase() ?? "A";
-  const classes = timetableSource.classes as Record<string, { schedule: Record<string, { period: number; subject: string }[]> }>;
+  const classes = timetableSource.classes as Record<string, { className?: string; schedule: Record<string, { period: number; subject: string }[]> }>;
   const selectedClass = classes[`Grade ${gradeNumber}${section}`] ?? Object.values(classes).find((entry) => entry.className === `Grade ${gradeNumber}${section}`);
   const scheduleValues = selectedClass ? Object.values(selectedClass.schedule) : [];
   const timetable = dayOrder.map((day, dayIndex) => ({ day: dayLabels[day], lessons: (selectedClass?.schedule?.[day] ?? scheduleValues[dayIndex] ?? []).slice().sort((a, b) => a.period - b.period) }));
