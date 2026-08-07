@@ -10,7 +10,7 @@ const subjectLabels: Record<string, string> = {
   OL: "English OL", AL: "English AL", Maths: "Mathematics", Science: "Science", "INT Science": "Integrated Science",
   عربي: "Arabic", دين: "Islamic Studies", قرأن: "Quran", دراسات: "Social Studies", تاريخ: "History", وطنية: "National Studies",
   فنية: "Art", بدنية: "Physical Education", سباحة: "Swimming", ICT: "ICT", Computer: "Computer", AI: "AI", French: "French",
-  Discover: "Discover", فلسفة: "Philosophy", "خ/م": "خ/م", مم: "Vocational Skills"
+  Discover: "Discover", فلسفة: "Philosophy", "خ/م": "خ/م", "مهارات مهنية": "Vocational Skills", مم: "Vocational Skills"
 };
 
 export default function TimetablePage() {
