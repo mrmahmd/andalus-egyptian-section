@@ -61,7 +61,10 @@ Deno.serve(async (request) => {
     if (typeof targetUserId !== "string" || typeof password !== "string" || password.length < 8 || password.length > 128) return json({ error: "A temporary password must be 8 to 128 characters." }, 400, origin);
     if (targetUserId === callerData.user.id) return json({ error: "Use account recovery for the Super Admin account." }, 400, origin);
 
-    const { data: targetProfile, error: targetError } = await adminClient.from("profiles").select("role").eq("user_id", targetUserId).maybeSingle();
+    // The active Super Admin's JWT is RLS-authorized to read the real staff
+    // directory. Keep this check on that trusted session; the admin client is
+    // then used only for Supabase Auth's password update operation.
+    const { data: targetProfile, error: targetError } = await callerClient.from("profiles").select("role").eq("user_id", targetUserId).maybeSingle();
     if (targetError || !targetProfile || !["teacher", "admin"].includes(targetProfile.role)) return json({ error: "This staff account cannot be reset." }, 404, origin);
 
     const { error: updateError } = await adminClient.auth.admin.updateUserById(targetUserId, { password });
