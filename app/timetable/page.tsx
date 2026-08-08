@@ -7,7 +7,7 @@ import timetableSource from "../data/class-timetables.json";
 const dayOrder = ["sunday", "monday", "tuesday", "wednesday", "thursday"];
 const dayLabels: Record<string, string> = { sunday: "Sunday", monday: "Monday", tuesday: "Tuesday", wednesday: "Wednesday", thursday: "Thursday" };
 const subjectLabels: Record<string, string> = {
-  OL: "English OL", AL: "English AL", Maths: "Mathematics", Science: "Science", "INT Science": "Integrated Science",
+  OL: "English", AL: "English", Maths: "Mathematics", Science: "Science", "INT Science": "Integrated Science",
   عربي: "Arabic", دين: "Islamic Studies", قرأن: "Quran", دراسات: "Social Studies", تاريخ: "History", وطنية: "National Studies",
   فنية: "Art", بدنية: "Physical Education", سباحة: "Swimming", ICT: "ICT", Computer: "Computer", AI: "AI", French: "French",
   Discover: "Discover", فلسفة: "Philosophy", "خ/م": "خ/م", "مهارات مهنية": "Vocational Skills", مم: "Vocational Skills"
