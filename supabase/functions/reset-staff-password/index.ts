@@ -14,6 +14,15 @@ function json(body: Record<string, string>, status: number, origin: string | nul
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders(origin), "Content-Type": "application/json" } });
 }
 
+function defaultKeyFromMap(name: string) {
+  try {
+    const keys = JSON.parse(Deno.env.get(name) ?? "{}") as Record<string, string>;
+    return keys.default ?? Object.values(keys)[0] ?? "";
+  } catch {
+    return "";
+  }
+}
+
 Deno.serve(async (request) => {
   const origin = request.headers.get("Origin");
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(origin) });
@@ -26,8 +35,8 @@ Deno.serve(async (request) => {
     const url = Deno.env.get("SUPABASE_URL") ?? "";
     // Supabase projects created with the newer API key model use SB_* names,
     // while older projects expose the SUPABASE_* equivalents.
-    const publishableKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SB_PUBLISHABLE_KEY") ?? "";
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SB_SECRET_KEY") ?? "";
+    const publishableKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SB_PUBLISHABLE_KEY") ?? defaultKeyFromMap("SUPABASE_PUBLISHABLE_KEYS");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SB_SECRET_KEY") ?? defaultKeyFromMap("SUPABASE_SECRET_KEYS");
     if (!url || !publishableKey || !serviceRoleKey) {
       return json({ error: "The password-reset function is missing its secure Supabase configuration." }, 500, origin);
     }
