@@ -1339,6 +1339,8 @@ button, select, input { font: inherit; }
 .super-review-grid small { color: #7b8799; font-size: 11px; }.super-review-grid strong { color: #263852; font-size: 13px; }
 .super-review-note { padding: 12px; border-radius: 10px; display: flex; align-items: flex-start; gap: 9px; background: #f8edf5; color: #754e67; }
 .super-review-note span { width: 27px; height: 27px; flex: 0 0 auto; border-radius: 8px; display: grid; place-items: center; background: #ad1b74; color: white; font-size: 8px; font-weight: 900; }.super-review-note p { margin: 1px 0; font-size: 12px; line-height: 1.5; }
+.super-password-reset { padding: 16px; border: 1px solid #cfe3ed; border-radius: 12px; display: grid; grid-template-columns: 1.15fr minmax(190px, .85fr) auto; align-items: end; gap: 13px; background: linear-gradient(135deg, #f0f9fc, #f9fcff); }
+.super-password-reset small { color: #17647b; font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }.super-password-reset h3 { margin: 4px 0; color: #122b4d; font-size: 17px; }.super-password-reset p { margin: 0; color: #687992; font-size: 12px; line-height: 1.5; }.super-password-reset label { display: grid; gap: 7px; color: #28435f; font-size: 12px; font-weight: 800; }.super-password-reset input { min-height: 44px; padding: 0 11px; border: 1px solid #cbdbe8; border-radius: 9px; background: #fff; color: #142a48; font: inherit; font-size: 14px; }.super-password-reset .teacher-primary-button { min-height: 44px; white-space: nowrap; }
 .super-assignment-help { margin: -7px 0 0; padding: 9px 11px; border-left: 3px solid #1b91ac; background: #f0f9fb; color: #547083; font-size: 12px; line-height: 1.55; }
 .super-assignment-manager { display: grid; gap: 10px; }
 .super-assignment-manager > label { color: #31435d; font-size: 14px; font-weight: 800; }
@@ -1368,6 +1370,7 @@ button, select, input { font: inherit; }
   .super-admin-mobile-search { display: grid; gap: 7px; }
   .super-admin-plans-link { width: 100%; justify-content: center; }
   .super-review-grid { grid-template-columns: 1fr; }
+  .super-password-reset { grid-template-columns: 1fr; }.super-password-reset .teacher-primary-button { width: 100%; }
   .super-admin-section-grid { grid-template-columns: 1fr; }
   .super-class-chip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

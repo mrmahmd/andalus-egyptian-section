@@ -86,6 +86,7 @@ export default function SuperAdminPage() {
   const [activeSection, setActiveSection] = useState<DashboardSection>("accounts");
   const [reviewAccount, setReviewAccount] = useState<ManagedAccount | null>(null);
   const [assignmentDraft, setAssignmentDraft] = useState({ subjectId: "", classId: "" });
+  const [temporaryPassword, setTemporaryPassword] = useState("");
   const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
   const [teacherPlanAccess, setTeacherPlanAccess] = useState<Record<string, boolean>>({});
 
@@ -232,9 +233,34 @@ export default function SuperAdminPage() {
     setErrorMessage("");
     setSuccessMessage("");
     setReviewAccount({ ...account, assignments: account.assignments.map((assignment) => ({ ...assignment })) });
+    setTemporaryPassword("");
     const firstClass = classes[0];
     const firstSubject = subjects.find((subject) => firstClass && firstClass.grade >= subject.minimum_grade && firstClass.grade <= subject.maximum_grade) ?? subjects[0];
     setAssignmentDraft({ classId: firstClass?.id ?? "", subjectId: firstSubject?.id ?? "" });
+  };
+
+  const resetAccountPassword = async () => {
+    if (!reviewAccount?.userId) return;
+    if (temporaryPassword.length < 8) {
+      setErrorMessage("Use a temporary password with at least 8 characters.");
+      return;
+    }
+    setBusy(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.functions.invoke("reset-staff-password", {
+        body: { targetUserId: reviewAccount.userId, password: temporaryPassword },
+      });
+      if (error) throw error;
+      setTemporaryPassword("");
+      setSuccessMessage(`A temporary password was set for ${reviewAccount.name}. Share it privately with the staff member.`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "The password could not be reset.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const addAssignment = async () => {
@@ -532,6 +558,8 @@ export default function SuperAdminPage() {
               {(reviewAccount.status === "Active" || reviewAccount.status === "Suspended") && (reviewAccount.role === "Teacher" || reviewAccount.administrativeRole?.includes("Supervisor")) && <div className="super-assignment-manager"><label>Teaching Classes & Subjects</label><div className="super-assignment-picker"><label>Class<select disabled={busy} value={assignmentDraft.classId} onChange={(event) => { const classId = event.target.value; const schoolClass = classes.find((item) => item.id === classId); const firstCompatible = subjects.find((subject) => schoolClass && schoolClass.grade >= subject.minimum_grade && schoolClass.grade <= subject.maximum_grade); setAssignmentDraft({ classId, subjectId: firstCompatible?.id ?? "" }); }}>{classes.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>Grade {schoolClass.grade} {schoolClass.section}</option>)}</select></label><label>Subject<select disabled={busy} value={assignmentDraft.subjectId} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, subjectId: event.target.value })}>{compatibleSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_en}</option>)}</select></label><button disabled={busy || !assignmentDraft.subjectId} type="button" className="teacher-secondary-button" onClick={() => void addAssignment()}>{busy ? "Saving…" : "Add & save assignment"}</button></div><div className="super-assignment-list">{reviewAccount.assignments.map((assignment, index) => <span key={`${assignment.id ?? "new"}-${assignment.classId}-${assignment.subjectId}`}>{assignment.label}<button disabled={busy} type="button" aria-label={`Remove ${assignment.label}`} onClick={() => void removeAssignment(index)}>×</button></span>)}{reviewAccount.assignments.length === 0 && <small>No classes or subjects assigned yet.</small>}</div><p className="super-assignment-help">Every addition or removal is saved to Supabase immediately. The teacher or supervisor will see it after refreshing their workspace.</p></div>}
 
               {(reviewAccount.status === "Active" || reviewAccount.status === "Suspended") && reviewAccount.role === "Admin" && <div className="super-review-note"><span>AD</span><p>{reviewAccount.administrativeRole ?? "Administrator"} · {reviewAccount.department}. Admin scope is assigned from the approved school directory.</p></div>}
+
+              {(reviewAccount.status === "Active" || reviewAccount.status === "Suspended") && reviewAccount.userId && <section className="super-password-reset"><div><small>Account recovery</small><h3>Set a temporary password</h3><p>Use this only when a staff member cannot sign in. Share the new password privately; it is never stored in this page.</p></div><label>Temporary password<input type="password" value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)} minLength={8} autoComplete="new-password" placeholder="At least 8 characters" /></label><button disabled={busy || temporaryPassword.length < 8} type="button" className="teacher-primary-button" onClick={() => void resetAccountPassword()}>{busy ? "Saving…" : "Reset password"}</button></section>}
 
               <div className="teacher-editor-footer">
                 {reviewAccount.status === "Pending" || reviewAccount.status === "Rejected" ? <button disabled={busy || reviewAccount.status === "Rejected"} type="button" className="super-reject-button" onClick={() => void reviewRequest("rejected")}>Reject request</button> : <button disabled={busy} type="button" className="super-reject-button" onClick={() => void toggleAccountStatus()}>{reviewAccount.status === "Suspended" ? "Reactivate account" : "Suspend account"}</button>}
