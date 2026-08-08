@@ -35,8 +35,10 @@ Deno.serve(async (request) => {
     const url = Deno.env.get("SUPABASE_URL") ?? "";
     // Supabase projects created with the newer API key model use SB_* names,
     // while older projects expose the SUPABASE_* equivalents.
-    const publishableKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SB_PUBLISHABLE_KEY") ?? defaultKeyFromMap("SUPABASE_PUBLISHABLE_KEYS");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SB_SECRET_KEY") ?? defaultKeyFromMap("SUPABASE_SECRET_KEYS");
+    // Prefer the current hosted key maps. A legacy variable can still exist
+    // while being empty or retired in newer Supabase projects.
+    const publishableKey = defaultKeyFromMap("SUPABASE_PUBLISHABLE_KEYS") || Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SB_PUBLISHABLE_KEY") || "";
+    const serviceRoleKey = defaultKeyFromMap("SUPABASE_SECRET_KEYS") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SB_SECRET_KEY") || "";
     if (!url || !publishableKey || !serviceRoleKey) {
       return json({ error: "The password-reset function is missing its secure Supabase configuration." }, 500, origin);
     }
