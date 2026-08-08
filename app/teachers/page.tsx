@@ -85,6 +85,14 @@ function englishProgrammesForGrade(grade: number) {
   return [];
 }
 
+function defaultEnglishProgramme(grade: number, subject: string) {
+  if (subject === "Connect Plus") return "Connect Plus";
+  if (subject === "Hello Plus") return "Hello Plus";
+  if (subject === "Upstream") return "Upstream";
+  if (subject === "English Hello" || subject === "Hello") return "Hello";
+  return englishProgrammesForGrade(grade)[0] ?? "";
+}
+
 function one<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
 }
@@ -100,6 +108,7 @@ function formatDate(value: string) {
 export default function TeachersDashboardPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const [activeNav, setActiveNav] = useState("Overview");
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [weeklyBuilderOpen, setWeeklyBuilderOpen] = useState(false);
   const [profileId, setProfileId] = useState("");
   const [teacherName, setTeacherName] = useState("Teacher");
@@ -308,7 +317,7 @@ export default function TeachersDashboardPage() {
     if (!selectedAssignmentId && firstAssignment) setSelectedAssignmentId(firstAssignment.id);
     if (!selectedWeekId && firstWeek) setSelectedWeekId(firstWeek.id);
     if (firstAssignment && englishSubjectNames.has(firstAssignment.subject)) {
-      setEnglishProgramme(englishProgrammesForGrade(firstAssignment.grade)[0] ?? "");
+      setEnglishProgramme(defaultEnglishProgramme(firstAssignment.grade, firstAssignment.subject));
     }
     setWeeklyBuilderOpen(true);
   };
@@ -483,6 +492,11 @@ export default function TeachersDashboardPage() {
   const approvedReviews = reviewItems.filter((item) => item.status === "approved");
   const visibleReviewItems = reviewItems.filter((item) => reviewStatusFilter === "waiting" ? item.status === "submitted" : item.status === reviewStatusFilter);
   const selectedDepartmentTeacher = departmentTeachers.find((teacher) => teacher.userId === selectedDepartmentTeacherId);
+  const workspaceNavigation = isSupervisor ? [...navigation, ["Teacher Reviews", "RV"] as const, ["Department Teachers", "DT"] as const] : navigation;
+  const openWorkspaceSection = (label: string) => {
+    setActiveNav(label);
+    setMobileNavigationOpen(false);
+  };
 
   return (
     <main className="teacher-portal">
@@ -491,17 +505,31 @@ export default function TeachersDashboardPage() {
         <div className="teacher-school-year"><span>Academic year</span><strong>2026–2027</strong></div>
         <nav className="teacher-nav" aria-label="Teacher workspace navigation">
           <p>Workspace</p>
-          {(isSupervisor ? [...navigation, ["Teacher Reviews", "RV"] as const, ["Department Teachers", "DT"] as const] : navigation).map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => setActiveNav(label)}><span className="teacher-nav-icon">{icon}</span>{label}{label === "Weekly Plans" && <small>{entries.length}</small>}{label === "Teacher Reviews" && <small>{reviewItems.filter((item) => item.status === "submitted").length}</small>}{label === "Department Teachers" && <small>{departmentTeachers.length}</small>}</button>)}
+          {workspaceNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => openWorkspaceSection(label)}><span className="teacher-nav-icon">{icon}</span>{label}{label === "Weekly Plans" && <small>{entries.length}</small>}{label === "Teacher Reviews" && <small>{reviewItems.filter((item) => item.status === "submitted").length}</small>}{label === "Department Teachers" && <small>{departmentTeachers.length}</small>}</button>)}
           <p>Account</p>
-          <button className={activeNav === "Profile & assignments" ? "active" : ""} onClick={() => setActiveNav("Profile & assignments")}><span className="teacher-nav-icon">PR</span>Profile & assignments</button>
-          <button className={activeNav === "Settings" ? "active" : ""} onClick={() => setActiveNav("Settings")}><span className="teacher-nav-icon">ST</span>Settings</button>
+          <button className={activeNav === "Profile & assignments" ? "active" : ""} onClick={() => openWorkspaceSection("Profile & assignments")}><span className="teacher-nav-icon">PR</span>Profile & assignments</button>
+          <button className={activeNav === "Settings" ? "active" : ""} onClick={() => openWorkspaceSection("Settings")}><span className="teacher-nav-icon">ST</span>Settings</button>
         </nav>
         <div className="teacher-help-card"><span>?</span><strong>Need help?</strong><p>Contact the academic coordinator for account or assignment changes.</p><Link href="/support/">Open support</Link></div>
         <div className="teacher-sidebar-profile"><span className="teacher-avatar">{initials(teacherName)}</span><div><strong>{teacherName}</strong><small>Teacher</small></div><button aria-label="Sign out" onClick={() => void signOut()}>↪</button></div>
       </aside>
 
       <section className="teacher-main">
-        <header className="teacher-topbar"><div className="teacher-mobile-brand"><img src={`${basePath}/school-logo.jpeg`} alt="" /><strong>Teacher Workspace</strong></div><label className="teacher-search"><span>⌕</span><input type="search" placeholder="Search plans, classes or subjects" /></label><div className="teacher-top-actions"><span className="teacher-sync"><i /> Supabase connected</span><button className="teacher-profile-chip"><span className="teacher-avatar">{initials(teacherName)}</span><span><strong>{teacherName}</strong><small>{departmentName}</small></span></button></div></header>
+        <div className={`teacher-mobile-menu ${mobileNavigationOpen ? "is-open" : ""}`} aria-hidden={!mobileNavigationOpen}>
+          <button type="button" className="teacher-mobile-menu-backdrop" aria-label="Close workspace menu" onClick={() => setMobileNavigationOpen(false)} />
+          <div className="teacher-mobile-menu-panel" role="dialog" aria-modal="true" aria-label="Teacher workspace menu">
+            <div className="teacher-mobile-menu-heading"><div className="teacher-brand"><img src={`${basePath}/school-logo.jpeg`} alt="" /><div><strong>ALANDALUS</strong><span>Teacher Workspace</span></div></div><button type="button" aria-label="Close menu" onClick={() => setMobileNavigationOpen(false)}>×</button></div>
+            <nav className="teacher-nav" aria-label="Teacher workspace navigation">
+              <p>Workspace</p>
+              {workspaceNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => openWorkspaceSection(label)}><span className="teacher-nav-icon">{icon}</span>{label}{label === "Weekly Plans" && <small>{entries.length}</small>}{label === "Teacher Reviews" && <small>{reviewItems.filter((item) => item.status === "submitted").length}</small>}{label === "Department Teachers" && <small>{departmentTeachers.length}</small>}</button>)}
+              <p>Account</p>
+              <button className={activeNav === "Profile & assignments" ? "active" : ""} onClick={() => openWorkspaceSection("Profile & assignments")}><span className="teacher-nav-icon">PR</span>Profile & assignments</button>
+              <button className={activeNav === "Settings" ? "active" : ""} onClick={() => openWorkspaceSection("Settings")}><span className="teacher-nav-icon">ST</span>Settings</button>
+            </nav>
+            <div className="teacher-sidebar-profile"><span className="teacher-avatar">{initials(teacherName)}</span><div><strong>{teacherName}</strong><small>Teacher</small></div><button aria-label="Sign out" onClick={() => void signOut()}>↪</button></div>
+          </div>
+        </div>
+        <header className="teacher-topbar"><button type="button" className="teacher-mobile-menu-button" aria-label="Open workspace menu" aria-expanded={mobileNavigationOpen} onClick={() => setMobileNavigationOpen(true)}>☰</button><div className="teacher-mobile-brand"><img src={`${basePath}/school-logo.jpeg`} alt="" /><strong>Teacher Workspace</strong></div><label className="teacher-search"><span>⌕</span><input type="search" placeholder="Search plans, classes or subjects" /></label><div className="teacher-top-actions"><span className="teacher-sync"><i /> Supabase connected</span><button className="teacher-profile-chip"><span className="teacher-avatar">{initials(teacherName)}</span><span><strong>{teacherName}</strong><small>{departmentName}</small></span></button></div></header>
         {isSupervisor && <nav className="teacher-mobile-supervisor-nav" aria-label="Supervisor workspace navigation">{supervisorNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => setActiveNav(label)}><span>{icon}</span><b>{label}</b>{label === "Teacher Reviews" && reviewItems.filter((item) => item.status === "submitted").length > 0 && <i>{reviewItems.filter((item) => item.status === "submitted").length}</i>}{label === "Department Teachers" && <i>{departmentTeachers.length}</i>}</button>)}</nav>}
 
         <div className="teacher-content">
@@ -568,7 +596,7 @@ export default function TeachersDashboardPage() {
         <div className="teacher-modal-heading"><div><p>{selectedWeek.label}</p><h2 id="weekly-builder-title">Build the whole week</h2></div><button disabled={saving} aria-label="Close weekly builder" onClick={() => setWeeklyBuilderOpen(false)}>×</button></div>
         <div className="teacher-editor-context"><span>One save for the whole week</span><i />Entries are placed according to your timetable slots.</div>
         <form onSubmit={(event) => { event.preventDefault(); void saveWholeWeek(true); }}>
-          <div className="weekly-builder-toolbar">{faridExperiment && <label>Day<select value={experimentDayIndex} onChange={(event) => { setExperimentDayIndex(Number(event.target.value)); setExperimentPeriod(""); }}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label>}<label>Class & Subject<select value={selectedAssignmentId} onChange={(event) => { const nextAssignment = assignments.find((assignment) => assignment.id === event.target.value); setSelectedAssignmentId(event.target.value); setExperimentPeriod(""); setEnglishProgramme(nextAssignment && englishSubjectNames.has(nextAssignment.subject) ? englishProgrammesForGrade(nextAssignment.grade)[0] ?? "" : ""); }}>{assignments.map((assignment) => <option key={assignment.id} value={assignment.id}>Grade {assignment.grade} · {assignment.section} · {englishSubjectNames.has(assignment.subject) ? "English" : assignment.subject}</option>)}</select></label>{selectedAssignmentIsEnglish && <label>English programme<select value={englishProgramme} onChange={(event) => setEnglishProgramme(event.target.value)}>{selectedEnglishProgrammes.map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{faridExperiment && <label>Period<select value={experimentPeriod} onChange={(event) => setExperimentPeriod(event.target.value)}><option value="">Select period</option>{experimentPeriods.map((slot) => <option key={slot.id} value={slot.period_number}>Period {slot.period_number}</option>)}</select></label>}<label>Academic Week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedSlots.length > 0 ? "ready" : "missing"}`}>{selectedSlots.length > 0 ? `${selectedSlots.length} timetable slot${selectedSlots.length === 1 ? "" : "s"} ready` : "Timetable connection required"}</span></div>
+          <div className="weekly-builder-toolbar">{faridExperiment && <label>Day<select value={experimentDayIndex} onChange={(event) => { setExperimentDayIndex(Number(event.target.value)); setExperimentPeriod(""); }}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label>}<label>Class & Subject<select value={selectedAssignmentId} onChange={(event) => { const nextAssignment = assignments.find((assignment) => assignment.id === event.target.value); setSelectedAssignmentId(event.target.value); setExperimentPeriod(""); setEnglishProgramme(nextAssignment && englishSubjectNames.has(nextAssignment.subject) ? defaultEnglishProgramme(nextAssignment.grade, nextAssignment.subject) : ""); }}>{assignments.map((assignment) => <option key={assignment.id} value={assignment.id}>Grade {assignment.grade} · {assignment.section} · {englishSubjectNames.has(assignment.subject) ? "English" : assignment.subject}</option>)}</select></label>{selectedAssignmentIsEnglish && <label>English programme<select value={englishProgramme} onChange={(event) => setEnglishProgramme(event.target.value)}>{selectedEnglishProgrammes.map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{faridExperiment && <label>Period<select value={experimentPeriod} onChange={(event) => setExperimentPeriod(event.target.value)}><option value="">Select period</option>{experimentPeriods.map((slot) => <option key={slot.id} value={slot.period_number}>Period {slot.period_number}</option>)}</select></label>}<label>Academic Week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedSlots.length > 0 ? "ready" : "missing"}`}>{selectedSlots.length > 0 ? `${selectedSlots.length} timetable slot${selectedSlots.length === 1 ? "" : "s"} ready` : "Timetable connection required"}</span></div>
           <div className="weekly-builder-days">{dayNames.map((day, index) => (!faridExperiment || index === experimentDayIndex) && <article key={day}><header><strong>{day}</strong><small>{selectedAssignmentIsEnglish ? "English · " + englishProgramme : selectedAssignment.subject}</small></header>{selectedAssignment.subject === "Integrated Science" && <label>Science component<select value={scienceComponentsByDay[index]} onChange={(event) => updateScienceComponent(index, event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{selectedAssignmentIsEnglish && <p className="teacher-programme-note"><strong>{englishProgramme}</strong> will be added automatically before your Classwork text.</p>}<label>Classwork<textarea rows={2} value={dayDrafts[index].classwork} onChange={(event) => updateDayDraft(index, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={2} value={dayDrafts[index].homework} onChange={(event) => updateDayDraft(index, "homework", event.target.value)} placeholder="Homework for this day" /></label><label>Classera notes<textarea rows={2} value={dayDrafts[index].classeraNotes} onChange={(event) => updateDayDraft(index, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>)}</div>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Saved in the separate quiz table below the weekly plan.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>NT</span><div><strong>Weekly notes for families</strong><small>Spelling words, reminders or important announcements.</small></div></div></div><textarea className="weekly-builder-notes" rows={3} value={weeklyNote} onChange={(event) => setWeeklyNote(event.target.value)} placeholder="Weekly notes" /></section>
