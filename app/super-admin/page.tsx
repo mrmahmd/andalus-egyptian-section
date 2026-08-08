@@ -87,6 +87,8 @@ export default function SuperAdminPage() {
   const [reviewAccount, setReviewAccount] = useState<ManagedAccount | null>(null);
   const [assignmentDraft, setAssignmentDraft] = useState({ subjectId: "", classId: "" });
   const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [passwordResetMessage, setPasswordResetMessage] = useState("");
+  const [passwordResetTone, setPasswordResetTone] = useState<"success" | "error" | "info">("info");
   const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
   const [teacherPlanAccess, setTeacherPlanAccess] = useState<Record<string, boolean>>({});
 
@@ -234,6 +236,7 @@ export default function SuperAdminPage() {
     setSuccessMessage("");
     setReviewAccount({ ...account, assignments: account.assignments.map((assignment) => ({ ...assignment })) });
     setTemporaryPassword("");
+    setPasswordResetMessage("");
     const firstClass = classes[0];
     const firstSubject = subjects.find((subject) => firstClass && firstClass.grade >= subject.minimum_grade && firstClass.grade <= subject.maximum_grade) ?? subjects[0];
     setAssignmentDraft({ classId: firstClass?.id ?? "", subjectId: firstSubject?.id ?? "" });
@@ -242,12 +245,15 @@ export default function SuperAdminPage() {
   const resetAccountPassword = async () => {
     if (!reviewAccount?.userId) return;
     if (temporaryPassword.length < 8) {
-      setErrorMessage("Use a temporary password with at least 8 characters.");
+      setPasswordResetTone("error");
+      setPasswordResetMessage("Use a temporary password with at least 8 characters.");
       return;
     }
     setBusy(true);
     setErrorMessage("");
     setSuccessMessage("");
+    setPasswordResetTone("info");
+    setPasswordResetMessage("Updating the staff password securely…");
     try {
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.functions.invoke("reset-staff-password", {
@@ -255,9 +261,16 @@ export default function SuperAdminPage() {
       });
       if (error) throw error;
       setTemporaryPassword("");
+      setPasswordResetTone("success");
+      setPasswordResetMessage("Temporary password updated successfully. Share it privately with the staff member.");
       setSuccessMessage(`A temporary password was set for ${reviewAccount.name}. Share it privately with the staff member.`);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "The password could not be reset.");
+      const response = (error as { context?: Response }).context;
+      const detail = response ? await response.json().catch(() => null) : null;
+      const text = detail && typeof detail.error === "string" ? detail.error : error instanceof Error ? error.message : "The password could not be reset.";
+      setPasswordResetTone("error");
+      setPasswordResetMessage(text);
+      setErrorMessage(text);
     } finally {
       setBusy(false);
     }
@@ -559,7 +572,7 @@ export default function SuperAdminPage() {
 
               {(reviewAccount.status === "Active" || reviewAccount.status === "Suspended") && reviewAccount.role === "Admin" && <div className="super-review-note"><span>AD</span><p>{reviewAccount.administrativeRole ?? "Administrator"} · {reviewAccount.department}. Admin scope is assigned from the approved school directory.</p></div>}
 
-              {(reviewAccount.status === "Active" || reviewAccount.status === "Suspended") && reviewAccount.userId && <section className="super-password-reset"><div><small>Account recovery</small><h3>Set a temporary password</h3><p>Use this only when a staff member cannot sign in. Share the new password privately; it is never stored in this page.</p></div><label>Temporary password<input type="password" value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)} minLength={8} autoComplete="new-password" placeholder="At least 8 characters" /></label><button disabled={busy || temporaryPassword.length < 8} type="button" className="teacher-primary-button" onClick={() => void resetAccountPassword()}>{busy ? "Saving…" : "Reset password"}</button></section>}
+              {(reviewAccount.status === "Active" || reviewAccount.status === "Suspended") && reviewAccount.userId && <section className="super-password-reset"><div><small>Account recovery</small><h3>Set a temporary password</h3><p>Use this only when a staff member cannot sign in. Share the new password privately; it is never stored in this page.</p></div><label>Temporary password<input type="password" value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)} minLength={8} autoComplete="new-password" placeholder="At least 8 characters" /></label><button disabled={busy || temporaryPassword.length < 8} type="button" className="teacher-primary-button" onClick={() => void resetAccountPassword()}>{busy ? "Saving…" : "Reset password"}</button>{passwordResetMessage && <p className={`super-password-reset-message ${passwordResetTone}`} role={passwordResetTone === "error" ? "alert" : "status"}>{passwordResetMessage}</p>}</section>}
 
               <div className="teacher-editor-footer">
                 {reviewAccount.status === "Pending" || reviewAccount.status === "Rejected" ? <button disabled={busy || reviewAccount.status === "Rejected"} type="button" className="super-reject-button" onClick={() => void reviewRequest("rejected")}>Reject request</button> : <button disabled={busy} type="button" className="super-reject-button" onClick={() => void toggleAccountStatus()}>{reviewAccount.status === "Suspended" ? "Reactivate account" : "Suspend account"}</button>}
