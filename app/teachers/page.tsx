@@ -154,14 +154,14 @@ export default function TeachersDashboardPage() {
         : Promise.resolve({ data: [], error: null });
       const departmentTeachersPromise = supervisorAccount ? supabase.rpc("get_my_department_teachers") : Promise.resolve({ data: [], error: null });
       const [assignmentsResult, weeksResult, slotsResult, entriesResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult] = await Promise.all([
-        supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en)").eq("teacher_id", userData.user.id),
+        supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en, include_in_weekly_plan)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
         supabase.from("plan_entries").select("id, day_of_week, updated_at, subjects(name_en), weekly_plans(status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         reviewsPromise,
         departmentTeachersPromise,
         supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
-        supabase.from("subjects").select("id, name_en").eq("is_active", true).order("name_en"),
+        supabase.from("subjects").select("id, name_en").eq("is_active", true).eq("include_in_weekly_plan", true).order("name_en"),
         supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
         supabase.from("weekly_plan_teacher_access").select("is_open").eq("teacher_id", userData.user.id).maybeSingle(),
       ]);
@@ -170,7 +170,8 @@ export default function TeachersDashboardPage() {
 
       const realAssignments: Assignment[] = (assignmentsResult.data ?? []).map((assignment) => {
         const schoolClass = one(assignment.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
-        const subject = one(assignment.subjects as { name_en: string } | { name_en: string }[] | null);
+        const subject = one(assignment.subjects as { name_en: string; include_in_weekly_plan: boolean } | { name_en: string; include_in_weekly_plan: boolean }[] | null);
+        if (!subject?.include_in_weekly_plan) return null;
         return {
           id: String(assignment.id),
           classId: String(assignment.class_id),
@@ -179,7 +180,7 @@ export default function TeachersDashboardPage() {
           section: schoolClass?.section ?? "",
           subject: subject?.name_en ?? "Subject",
         };
-      });
+      }).filter((assignment): assignment is Assignment => assignment !== null);
 
       const realEntries: TeacherEntry[] = (entriesResult.data ?? []).map((entry) => {
         const subject = one(entry.subjects as { name_en: string } | { name_en: string }[] | null);
