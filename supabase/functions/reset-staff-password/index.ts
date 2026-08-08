@@ -31,16 +31,21 @@ Deno.serve(async (request) => {
     if (!url || !publishableKey || !serviceRoleKey) {
       return json({ error: "The password-reset function is missing its secure Supabase configuration." }, 500, origin);
     }
-    const callerClient = createClient(url, publishableKey);
+    // Use the caller's own JWT for the permission check. This follows the
+    // same RLS-protected profile lookup that the Super Admin dashboard uses.
+    const callerClient = createClient(url, publishableKey, {
+      global: { headers: { Authorization: authorization } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
     const { data: callerData, error: callerError } = await callerClient.auth.getUser(authorization.slice("Bearer ".length));
     if (callerError || !callerData.user) return json({ error: "Unauthorized" }, 401, origin);
 
-    const adminClient = createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
-    const { data: callerProfile, error: callerProfileError } = await adminClient.from("profiles").select("role, status").eq("user_id", callerData.user.id).maybeSingle();
+    const { data: callerProfile, error: callerProfileError } = await callerClient.from("profiles").select("role, status").eq("user_id", callerData.user.id).maybeSingle();
     if (callerProfileError) return json({ error: "The Super Admin profile could not be verified. Please try again." }, 500, origin);
     if (!callerProfile) return json({ error: "Your signed-in account does not have a school profile." }, 403, origin);
     if (callerProfile.role !== "super_admin" || callerProfile.status !== "active") return json({ error: "Only the active Super Admin can reset staff passwords." }, 403, origin);
 
+    const adminClient = createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const { targetUserId, password } = await request.json();
     if (typeof targetUserId !== "string" || typeof password !== "string" || password.length < 8 || password.length > 128) return json({ error: "A temporary password must be 8 to 128 characters." }, 400, origin);
     if (targetUserId === callerData.user.id) return json({ error: "Use account recovery for the Super Admin account." }, 400, origin);
