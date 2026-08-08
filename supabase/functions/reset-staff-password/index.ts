@@ -24,15 +24,22 @@ Deno.serve(async (request) => {
 
   try {
     const url = Deno.env.get("SUPABASE_URL") ?? "";
-    const publishableKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    // Supabase projects created with the newer API key model use SB_* names,
+    // while older projects expose the SUPABASE_* equivalents.
+    const publishableKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SB_PUBLISHABLE_KEY") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SB_SECRET_KEY") ?? "";
+    if (!url || !publishableKey || !serviceRoleKey) {
+      return json({ error: "The password-reset function is missing its secure Supabase configuration." }, 500, origin);
+    }
     const callerClient = createClient(url, publishableKey);
     const { data: callerData, error: callerError } = await callerClient.auth.getUser(authorization.slice("Bearer ".length));
     if (callerError || !callerData.user) return json({ error: "Unauthorized" }, 401, origin);
 
     const adminClient = createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const { data: callerProfile, error: callerProfileError } = await adminClient.from("profiles").select("role, status").eq("user_id", callerData.user.id).maybeSingle();
-    if (callerProfileError || callerProfile?.role !== "super_admin" || callerProfile.status !== "active") return json({ error: "Only the active Super Admin can reset staff passwords." }, 403, origin);
+    if (callerProfileError) return json({ error: "The Super Admin profile could not be verified. Please try again." }, 500, origin);
+    if (!callerProfile) return json({ error: "Your signed-in account does not have a school profile." }, 403, origin);
+    if (callerProfile.role !== "super_admin" || callerProfile.status !== "active") return json({ error: "Only the active Super Admin can reset staff passwords." }, 403, origin);
 
     const { targetUserId, password } = await request.json();
     if (typeof targetUserId !== "string" || typeof password !== "string" || password.length < 8 || password.length > 128) return json({ error: "A temporary password must be 8 to 128 characters." }, 400, origin);
