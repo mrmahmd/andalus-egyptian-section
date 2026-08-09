@@ -59,6 +59,8 @@ type TeacherEntry = {
 
 type ReviewItem = {
   id: string;
+  teacherId: string;
+  weekId: string;
   teacherName: string;
   subject: string;
   className: string;
@@ -120,7 +122,8 @@ export default function TeachersDashboardPage() {
   const [isSupervisor, setIsSupervisor] = useState(false);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
-  const [reviewStatusFilter, setReviewStatusFilter] = useState<"waiting" | "changes_requested" | "approved">("waiting");
+  const [selectedReviewWeekId, setSelectedReviewWeekId] = useState("");
+  const [selectedReviewTeacherId, setSelectedReviewTeacherId] = useState("");
   const [departmentTeachers, setDepartmentTeachers] = useState<DepartmentTeacher[]>([]);
   const [schoolClasses, setSchoolClasses] = useState<SchoolClass[]>([]);
   const [schoolSubjects, setSchoolSubjects] = useState<SchoolSubject[]>([]);
@@ -212,7 +215,7 @@ export default function TeachersDashboardPage() {
       const departmentTeacherIds = departmentTeacherRows.map((item) => String(item.user_id ?? "")).filter(Boolean);
       const { data: supervisorReviewRows = [], error: supervisorReviewsError } = supervisorAccount && departmentTeacherIds.length
         ? await supabase.from("plan_submissions")
-          .select("id, status, review_note, submitted_at, teacher_id, subject_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(school_classes(grade, section), academic_weeks(label), plan_entries(day_of_week, period_number, teacher_id, subject_id, classwork, homework, classera_notes))")
+          .select("id, status, review_note, submitted_at, teacher_id, subject_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(school_classes(grade, section), academic_weeks(id, label), plan_entries(day_of_week, period_number, teacher_id, subject_id, classwork, homework, classera_notes))")
           .in("teacher_id", departmentTeacherIds)
           .in("status", ["submitted", "changes_requested", "approved"])
           .order("submitted_at", { ascending: false })
@@ -222,14 +225,14 @@ export default function TeachersDashboardPage() {
       const realReviews: ReviewItem[] = ((supervisorReviewRows ?? []) as unknown as Record<string, unknown>[]).map((item) => {
         const subject = one(item.subjects as { name_en: string } | { name_en: string }[] | null);
         const teacher = one(item.profiles as { display_name: string } | { display_name: string }[] | null);
-        const plan = one(item.weekly_plans as { school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null; plan_entries: { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[] | null } | { school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null; plan_entries: { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[] | null }[] | null);
+        const plan = one(item.weekly_plans as { school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { id: string; label: string } | { id: string; label: string }[] | null; plan_entries: { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[] | null } | { school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { id: string; label: string } | { id: string; label: string }[] | null; plan_entries: { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[] | null }[] | null);
         const schoolClass = one(plan?.school_classes);
         const week = one(plan?.academic_weeks);
         const matchingEntries = (plan?.plan_entries ?? [])
           .filter((entry) => String(entry.teacher_id) === String(item.teacher_id) && String(entry.subject_id) === String(item.subject_id))
           .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
         return {
-          id: String(item.id), teacherName: teacher?.display_name ?? "Teacher", subject: subject?.name_en ?? "Subject",
+          id: String(item.id), teacherId: String(item.teacher_id), weekId: String(week?.id ?? ""), teacherName: teacher?.display_name ?? "Teacher", subject: subject?.name_en ?? "Subject",
           className: `Grade ${schoolClass?.grade ?? ""} · ${schoolClass?.section ?? ""}`, week: week?.label ?? "Academic week",
           status: String(item.status), note: String(item.review_note ?? ""), submittedAt: item.submitted_at ? formatDate(String(item.submitted_at)) : "Not submitted",
           entries: matchingEntries.map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", period: entry.period_number, classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
@@ -264,6 +267,8 @@ export default function TeachersDashboardPage() {
       setSchoolClasses((classesResult.data ?? []) as SchoolClass[]);
       setSchoolSubjects((subjectsResult.data ?? []) as SchoolSubject[]);
       setSelectedDepartmentTeacherId((current) => realDepartmentTeachers.some((teacher) => teacher.userId === current) ? current : realDepartmentTeachers[0]?.userId ?? "");
+      setSelectedReviewTeacherId((current) => realDepartmentTeachers.some((teacher) => teacher.userId === current) ? current : realDepartmentTeachers[0]?.userId ?? "");
+      setSelectedReviewWeekId((current) => weeks.some((week) => week.id === current) ? current : weeks.find((week) => week.is_current)?.id ?? weeks[0]?.id ?? "");
       if (departmentTeachersResult.error) {
         setMessage("Your dashboard is ready. Department teacher assignments could not be loaded yet; please refresh once.");
         setMessageTone("info");
@@ -426,7 +431,7 @@ export default function TeachersDashboardPage() {
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.rpc("review_plan_submission", { submission_id: review.id, decision, note: note || null });
       if (error) throw error;
-      setMessage(decision === "approved" ? "The plan was approved and is now published for families." : "The plan was returned to the teacher with your note.");
+      setMessage(decision === "approved" ? "The submission was approved. It becomes visible to families when every required subject for this class and week is approved." : "The plan was returned to the teacher with your note.");
       setMessageTone("success");
       setReviewNotes((current) => ({ ...current, [review.id]: "" }));
       await loadTeacherDashboard();
@@ -479,9 +484,13 @@ export default function TeachersDashboardPage() {
   const publishedCount = entries.filter((entry) => entry.status === "published").length;
   const draftCount = entries.filter((entry) => entry.status === "draft").length;
   const waitingReviews = reviewItems.filter((item) => item.status === "submitted");
-  const changeRequestReviews = reviewItems.filter((item) => item.status === "changes_requested");
-  const approvedReviews = reviewItems.filter((item) => item.status === "approved");
-  const visibleReviewItems = reviewItems.filter((item) => reviewStatusFilter === "waiting" ? item.status === "submitted" : item.status === reviewStatusFilter);
+  const selectedReviewTeacher = departmentTeachers.find((teacher) => teacher.userId === selectedReviewTeacherId);
+  const selectedReviewWeek = academicWeeks.find((week) => week.id === selectedReviewWeekId);
+  const selectedTeacherReviewItems = reviewItems.filter((item) => item.teacherId === selectedReviewTeacherId && item.weekId === selectedReviewWeekId);
+  const selectedTeacherReviewClasses = Array.from(new Set(selectedTeacherReviewItems.map((item) => item.className))).map((className) => ({
+    className,
+    reviews: selectedTeacherReviewItems.filter((item) => item.className === className),
+  }));
   const selectedDepartmentTeacher = departmentTeachers.find((teacher) => teacher.userId === selectedDepartmentTeacherId);
   const workspaceNavigation = isSupervisor ? [...navigation, ["Teacher Reviews", "RV"] as const, ["Department Teachers", "DT"] as const] : navigation;
   const openWorkspaceSection = (label: string) => {
@@ -561,23 +570,23 @@ export default function TeachersDashboardPage() {
           </section>}
           {isSupervisor && activeNav === "Teacher Reviews" && <section className="teacher-card supervisor-review-card">
             <div className="teacher-card-heading supervisor-review-heading">
-              <div><p className="teacher-kicker">Supervisor workspace</p><h2>Teacher plans for review</h2><p>Only your assigned teachers appear here. Read every lesson, homework item and Classera note before making a decision.</p></div>
-              <span className="supervisor-review-authority">Your approval publishes the subject for families</span>
+              <div><p className="teacher-kicker">Supervisor workspace</p><h2>Weekly plan review</h2><p>Choose a school week and one teacher. Their submitted class plans are shown in a clean review view.</p></div>
+              <span className="supervisor-review-authority">{waitingReviews.length} submissions waiting for review</span>
             </div>
-            <div className="supervisor-review-stats" aria-label="Review summary">
-              <button className={reviewStatusFilter === "waiting" ? "active" : ""} onClick={() => setReviewStatusFilter("waiting")}><small>Waiting for review</small><strong>{waitingReviews.length}</strong><span>Need your decision</span></button>
-              <button className={reviewStatusFilter === "changes_requested" ? "active" : ""} onClick={() => setReviewStatusFilter("changes_requested")}><small>Returned for changes</small><strong>{changeRequestReviews.length}</strong><span>Waiting for teacher update</span></button>
-              <button className={reviewStatusFilter === "approved" ? "active" : ""} onClick={() => setReviewStatusFilter("approved")}><small>Approved & published</small><strong>{approvedReviews.length}</strong><span>Visible to families</span></button>
+            <div className="supervisor-review-selector">
+              <label>1. School week<select value={selectedReviewWeekId} onChange={(event) => setSelectedReviewWeekId(event.target.value)}><option value="">Select week</option>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label>
+              <label>2. Teacher<select value={selectedReviewTeacherId} onChange={(event) => setSelectedReviewTeacherId(event.target.value)}><option value="">Select teacher</option>{departmentTeachers.filter((teacher) => teacher.userId).map((teacher) => <option key={teacher.userId} value={teacher.userId}>{teacher.name}</option>)}</select></label>
+              <span>{selectedTeacherReviewClasses.length} class plan{selectedTeacherReviewClasses.length === 1 ? "" : "s"} found</span>
             </div>
             <div className="supervisor-review-list">
-              {visibleReviewItems.map((review) => <article key={review.id}>
+              {!selectedReviewWeek || !selectedReviewTeacher ? <p className="supervisor-review-empty">Select the school week and teacher to open their weekly-plan review.</p> : selectedTeacherReviewItems.map((review) => <article key={review.id}>
                 <header><div><span className={`teacher-status ${review.status === "approved" ? "green" : review.status === "changes_requested" ? "amber" : "navy"}`}><i />{review.status.replaceAll("_", " ")}</span><h3>{review.teacherName}</h3><p>{review.subject} · {review.className} · {review.week}</p></div><small>Submitted {review.submittedAt}</small></header>
                 <div className="supervisor-entry-grid">{review.entries.map((entry) => <section key={`${entry.day}-${entry.period}`}><strong>{entry.day} · Period {entry.period}</strong><p><b>Classwork</b>{entry.classwork || "—"}</p><p><b>Homework</b>{entry.homework || "—"}</p><p><b>Classera</b>{entry.notes || "—"}</p></section>)}</div>
                 {review.status === "submitted" && <div className="supervisor-review-actions"><label>Review note<textarea value={reviewNotes[review.id] ?? review.note} onChange={(event) => setReviewNotes((current) => ({ ...current, [review.id]: event.target.value }))} placeholder="Write the required changes for the teacher" rows={3} /></label><div><button disabled={saving} className="teacher-secondary-button" onClick={() => void reviewSubmission(review, "changes_requested")}>Return for changes</button><button disabled={saving} className="teacher-primary-button" onClick={() => void reviewSubmission(review, "approved")}>Approve & publish</button></div></div>}
                 {review.status === "changes_requested" && <p className="supervisor-review-feedback"><strong>Your review note</strong>{review.note || "The teacher has been asked to revise this plan."}</p>}
                 {review.status === "approved" && <p className="supervisor-review-feedback approved"><strong>Published for families</strong>This subject was approved and is currently visible in the family weekly plan.</p>}
               </article>)}
-              {visibleReviewItems.length === 0 && <p className="supervisor-review-empty">{reviewStatusFilter === "waiting" ? "No teacher plans are waiting for review in your department." : "No plans match this review status yet."}</p>}
+              {selectedReviewWeek && selectedReviewTeacher && selectedTeacherReviewItems.length === 0 && <p className="supervisor-review-empty"><strong>{selectedReviewTeacher.name}</strong> has not sent a weekly plan for {selectedReviewWeek.label} yet.</p>}
             </div>
           </section>}
         </div>
