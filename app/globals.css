@@ -692,7 +692,18 @@ button, select, input { font: inherit; }
 .teacher-settings-row small { color: #78869a; font-size: 11px; }.teacher-settings-row strong { color: #273c59; font-size: 13px; }
 .teacher-timetable-ready { min-height: 42px; padding: 0 12px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 850; white-space: nowrap; }
 .teacher-timetable-ready.ready { background: #e7f7f0; color: #24755a; }.teacher-timetable-ready.missing { background: #fff1e5; color: #9a5d19; }
-@media (max-width: 760px) { .weekly-builder-toolbar { grid-template-columns: 1fr; }.weekly-builder-days { grid-template-columns: 1fr; overflow-x: visible; }.weekly-builder-days article { min-width: 0; } }
+@media (max-width: 760px) {
+  .weekly-builder-modal { width: 100vw; max-height: 100dvh; border-radius: 0; }
+  .weekly-builder-toolbar { grid-template-columns: 1fr; }
+  .weekly-builder-days,
+  .weekly-builder-days.days-1,
+  .weekly-builder-days.days-2,
+  .weekly-builder-days.days-3,
+  .weekly-builder-days.days-4,
+  .weekly-builder-days.days-5 { grid-template-columns: minmax(0, 1fr); overflow-x: visible; }
+  .weekly-builder-day { padding: 10px; }
+  .weekly-builder-days article { min-width: 0; padding: 14px; }
+}
 @media (max-width: 760px) { .weekly-builder-quiz-row { grid-template-columns: 1fr; }.weekly-builder-section-heading { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 760px) { .teacher-live-assignment-grid, .teacher-week-list, .teacher-settings-row { grid-template-columns: 1fr; } }
 .teacher-editor-footer { margin: 4px -25px -25px; padding: 17px 25px; border-top: 1px solid #e8edf3; background: #fafbfd; display: flex; align-items: center; justify-content: space-between; gap: 16px; }.teacher-editor-footer > span { color: #8a96a8; font-size: 8px; }.teacher-editor-footer > div { display: flex; gap: 8px; }
