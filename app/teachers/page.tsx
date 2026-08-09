@@ -57,6 +57,18 @@ type TeacherEntry = {
   updated: string;
 };
 
+type MySubmission = {
+  id: string;
+  weeklyPlanId: string;
+  classId: string;
+  weekId: string;
+  className: string;
+  week: string;
+  subject: string;
+  status: "draft" | "submitted" | "changes_requested" | "approved";
+  reviewNote: string;
+};
+
 type ReviewItem = {
   id: string;
   teacherId: string;
@@ -119,6 +131,7 @@ export default function TeachersDashboardPage() {
   const [academicWeeks, setAcademicWeeks] = useState<AcademicWeek[]>([]);
   const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>([]);
   const [entries, setEntries] = useState<TeacherEntry[]>([]);
+  const [mySubmissions, setMySubmissions] = useState<MySubmission[]>([]);
   const [isSupervisor, setIsSupervisor] = useState(false);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
@@ -141,6 +154,10 @@ export default function TeachersDashboardPage() {
   const [quizSubjectId, setQuizSubjectId] = useState("");
   const [weeklyNote, setWeeklyNote] = useState("");
   const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
+  const [savedPlanId, setSavedPlanId] = useState("");
+  const [copyPanelOpen, setCopyPanelOpen] = useState(false);
+  const [copySubjectId, setCopySubjectId] = useState("");
+  const [copyTargetClassIds, setCopyTargetClassIds] = useState<string[]>([]);
 
   const loadTeacherDashboard = useCallback(async () => {
     setLoading(true);
@@ -168,11 +185,12 @@ export default function TeachersDashboardPage() {
       }
 
       const departmentTeachersPromise = supervisorAccount ? supabase.rpc("get_my_department_teachers") : Promise.resolve({ data: [], error: null });
-      const [assignmentsResult, weeksResult, slotsResult, entriesResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult] = await Promise.all([
+      const [assignmentsResult, weeksResult, slotsResult, entriesResult, mySubmissionsResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult] = await Promise.all([
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en, include_in_weekly_plan)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
         supabase.from("plan_entries").select("id, day_of_week, updated_at, subjects(name_en), weekly_plans(status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
+        supabase.from("plan_submissions").select("id, weekly_plan_id, status, review_note, weekly_plans(class_id, week_id, school_classes(grade, section), academic_weeks(label)), subjects(name_en)").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         Promise.resolve({ data: [], error: null }),
         departmentTeachersPromise,
         supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
@@ -180,7 +198,7 @@ export default function TeachersDashboardPage() {
         supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
         supabase.from("weekly_plan_teacher_access").select("is_open").eq("teacher_id", userData.user.id).maybeSingle(),
       ]);
-      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, reviewsResult.error, classesResult.error, subjectsResult.error].find(Boolean);
+      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, mySubmissionsResult.error, reviewsResult.error, classesResult.error, subjectsResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const realAssignments: Assignment[] = (assignmentsResult.data ?? []).map((assignment) => {
@@ -208,6 +226,18 @@ export default function TeachersDashboardPage() {
           subject: subject?.name_en ?? "Subject",
           status: weeklyPlan?.status ?? "draft",
           updated: formatDate(String(entry.updated_at)),
+        };
+      });
+
+      const realMySubmissions: MySubmission[] = (mySubmissionsResult.data ?? []).map((submission) => {
+        const plan = one(submission.weekly_plans as unknown as { class_id: string; week_id: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null } | { class_id: string; week_id: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null }[] | null);
+        const schoolClass = one(plan?.school_classes);
+        const week = one(plan?.academic_weeks);
+        const subject = one(submission.subjects as { name_en: string } | { name_en: string }[] | null);
+        return {
+          id: String(submission.id), weeklyPlanId: String(submission.weekly_plan_id), classId: String(plan?.class_id ?? ""), weekId: String(plan?.week_id ?? ""),
+          className: `Grade ${schoolClass?.grade ?? ""} · ${schoolClass?.section ?? ""}`, week: week?.label ?? "Academic week", subject: subject?.name_en ?? "Subject",
+          status: String(submission.status) as MySubmission["status"], reviewNote: String(submission.review_note ?? ""),
         };
       });
 
@@ -262,6 +292,7 @@ export default function TeachersDashboardPage() {
       setAcademicWeeks(weeks);
       setTimetableSlots((slotsResult.data ?? []) as TimetableSlot[]);
       setEntries(realEntries);
+      setMySubmissions(realMySubmissions);
       setReviewItems(realReviews);
       setDepartmentTeachers(realDepartmentTeachers);
       setSchoolClasses((classesResult.data ?? []) as SchoolClass[]);
@@ -290,16 +321,80 @@ export default function TeachersDashboardPage() {
   }, [loadTeacherDashboard]);
 
   const selectedWeek = academicWeeks.find((week) => week.id === selectedWeekId);
-  const selectedClassAssignments = assignments.filter((assignment) => assignment.classId === selectedClassId);
+  const selectedClassAssignments = useMemo(() => assignments.filter((assignment) => assignment.classId === selectedClassId), [assignments, selectedClassId]);
   const selectedClass = selectedClassAssignments[0];
-  const selectedClassSlots = timetableSlots
+  const selectedClassSlots = useMemo(() => timetableSlots
     .filter((slot) => slot.class_id === selectedClassId && selectedClassAssignments.some((assignment) => assignment.subjectId === slot.subject_id))
-    .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
+    .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number), [timetableSlots, selectedClassAssignments, selectedClassId]);
   const activeDayIndexes = dayNames.map((_, index) => index).filter((index) => selectedClassSlots.some((slot) => slot.day_of_week === index));
   const assignmentForSlot = (slot: TimetableSlot) => selectedClassAssignments.find((assignment) => assignment.subjectId === slot.subject_id);
   const slotDraftFor = (slot: TimetableSlot) => slotDrafts[slot.id] ?? emptySlotDraft();
   const uniqueClasses = useMemo(() => Array.from(new Map(assignments.map((assignment) => [assignment.classId, `Grade ${assignment.grade} · ${assignment.section}`])).values()), [assignments]);
   const uniqueSubjects = useMemo(() => Array.from(new Set(assignments.map((assignment) => assignment.subject))), [assignments]);
+
+  const sourceSubjectAssignments = selectedClassAssignments.filter((assignment) => selectedClassSlots.some((slot) => slot.subject_id === assignment.subjectId));
+  const copyTargetClasses = useMemo(() => {
+    const sourceSubject = selectedClassAssignments.find((assignment) => assignment.subjectId === copySubjectId);
+    if (!sourceSubject) return [];
+    return Array.from(new Map(assignments
+      .filter((assignment) => assignment.classId !== selectedClassId && assignment.grade === sourceSubject.grade && assignment.subjectId === sourceSubject.subjectId)
+      .map((assignment) => [assignment.classId, assignment])).values())
+      .map((assignment) => ({ ...assignment, lessonCount: timetableSlots.filter((slot) => slot.class_id === assignment.classId && slot.subject_id === copySubjectId).length }));
+  }, [assignments, copySubjectId, selectedClassAssignments, selectedClassId, timetableSlots]);
+
+  const builderStatus = useMemo(() => {
+    const statuses = mySubmissions.filter((submission) => submission.classId === selectedClassId && submission.weekId === selectedWeekId);
+    if (statuses.some((submission) => submission.status === "submitted")) return "submitted";
+    if (statuses.some((submission) => submission.status === "changes_requested")) return "changes_requested";
+    if (statuses.some((submission) => submission.status === "approved")) return "approved";
+    return savedPlanId ? "draft" : "new";
+  }, [mySubmissions, savedPlanId, selectedClassId, selectedWeekId]);
+
+  const loadPlanIntoBuilder = useCallback(async () => {
+    if (!weeklyBuilderOpen || !profileId || !selectedClassId || !selectedWeekId) return;
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: plan, error: planError } = await supabase.from("weekly_plans")
+        .select("id, plan_entries(timetable_slot_id, subject_id, day_of_week, period_number, classwork, homework, classera_notes), plan_quizzes(subject_id, quiz_date, details), plan_notes(note_text, teacher_id)")
+        .eq("class_id", selectedClassId).eq("week_id", selectedWeekId).maybeSingle();
+      if (planError) throw planError;
+      setSavedPlanId(plan?.id ? String(plan.id) : "");
+      const rows = (plan?.plan_entries ?? []) as Array<{ timetable_slot_id: string | null; subject_id: string; day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string }>;
+      const nextDrafts: Record<string, SlotDraft> = {};
+      selectedClassSlots.forEach((slot) => {
+        const row = rows.find((entry) => entry.timetable_slot_id === slot.id) ?? rows.find((entry) => entry.day_of_week === slot.day_of_week && entry.period_number === slot.period_number && entry.subject_id === slot.subject_id);
+        if (!row) return;
+        const assignment = assignmentForSlot(slot);
+        let classwork = row.classwork ?? "";
+        let englishProgramme = "";
+        let scienceComponent = "";
+        if (englishSubjectNames.has(assignment?.subject ?? "")) {
+          englishProgramme = englishProgrammesForGrade(assignment?.grade ?? 0).find((programme) => classwork.startsWith(`${programme} — `)) ?? "";
+          if (englishProgramme) classwork = classwork.slice(englishProgramme.length + 3);
+        }
+        if (assignment?.subject === "Integrated Science") {
+          scienceComponent = scienceComponents.find((component) => classwork.startsWith(`${component} — `)) ?? "";
+          if (scienceComponent) classwork = classwork.slice(scienceComponent.length + 3);
+        }
+        nextDrafts[slot.id] = { classwork, homework: row.homework ?? "", classeraNotes: row.classera_notes ?? "", englishProgramme, scienceComponent };
+      });
+      setSlotDrafts(nextDrafts);
+      const quiz = ((plan?.plan_quizzes ?? []) as Array<{ subject_id: string; quiz_date: string | null; details: string }>).find((row) => Boolean(row.details));
+      setQuizSubjectId(quiz?.subject_id ?? "");
+      setQuizDetails(quiz?.details ?? "");
+      if (quiz?.quiz_date && selectedWeek) {
+        const offset = Math.max(0, Math.min(4, Math.round((new Date(`${quiz.quiz_date}T12:00:00`).getTime() - new Date(`${selectedWeek.starts_on}T12:00:00`).getTime()) / 86400000)));
+        setQuizDay(String(offset));
+      }
+      const note = ((plan?.plan_notes ?? []) as Array<{ note_text: string; teacher_id: string }>).find((row) => row.teacher_id === profileId);
+      setWeeklyNote(note?.note_text ?? "");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The saved plan could not be opened.");
+      setMessageTone("error");
+    }
+  }, [profileId, selectedClassId, selectedWeekId, selectedClassSlots, weeklyBuilderOpen, selectedWeek]);
+
+  useEffect(() => { void loadPlanIntoBuilder(); }, [loadPlanIntoBuilder]);
 
   const openWeeklyBuilder = () => {
     if (!weeklyPlanCreationOpen) {
@@ -403,16 +498,89 @@ export default function TeachersDashboardPage() {
         if (noteError) throw noteError;
       }
 
-      setWeeklyBuilderOpen(false);
-      setSlotDrafts({});
-      setQuizDetails("");
-      setQuizSubjectId("");
-      setWeeklyNote("");
+      setSavedPlanId(weeklyPlanId);
+      setCopyPanelOpen(false);
       setMessage(submitForReview ? "Your weekly plan was sent to your department supervisor for review." : "The whole week was saved successfully to Supabase.");
       setMessageTone("success");
       await loadTeacherDashboard();
+      if (submitForReview) setWeeklyBuilderOpen(false);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The weekly plan could not be saved.");
+      setMessageTone("error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const withdrawSubmissionForEditing = async (submission: MySubmission) => {
+    if (submission.status !== "submitted") return;
+    setSaving(true);
+    try {
+      const { error } = await getSupabaseBrowserClient().from("plan_submissions").update({ status: "draft", submitted_at: null, review_note: null, reviewed_by: null, reviewed_at: null, updated_at: new Date().toISOString() }).eq("id", submission.id).eq("teacher_id", profileId);
+      if (error) throw error;
+      setMessage("The plan was withdrawn from review and is ready to edit again.");
+      setMessageTone("success");
+      await loadTeacherDashboard();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The plan could not be withdrawn from review.");
+      setMessageTone("error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openSavedPlan = (submission: MySubmission) => {
+    setSelectedClassId(submission.classId);
+    setSelectedWeekId(submission.weekId);
+    setCopyPanelOpen(false);
+    setWeeklyBuilderOpen(true);
+  };
+
+  const toggleCopyTarget = (classId: string) => setCopyTargetClassIds((current) => current.includes(classId) ? current.filter((id) => id !== classId) : [...current, classId]);
+
+  const copyPlanToOtherClasses = async () => {
+    if (!savedPlanId || !copySubjectId || copyTargetClassIds.length === 0 || !selectedWeek) return;
+    const sourceSlots = selectedClassSlots.filter((slot) => slot.subject_id === copySubjectId).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
+    if (sourceSlots.length === 0) return;
+    setSaving(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: sourceRows, error: sourceError } = await supabase.from("plan_entries")
+        .select("classwork, homework, classera_notes").eq("weekly_plan_id", savedPlanId).eq("teacher_id", profileId).eq("subject_id", copySubjectId).order("day_of_week").order("period_number");
+      if (sourceError) throw sourceError;
+      if (!sourceRows?.length) throw new Error("Save the source class plan before copying it.");
+
+      const copied: string[] = [];
+      const skipped: string[] = [];
+      for (const targetClassId of copyTargetClassIds) {
+        const target = copyTargetClasses.find((item) => item.classId === targetClassId);
+        if (!target || target.lessonCount === 0) { if (target) skipped.push(`Grade ${target.grade} ${target.section}`); continue; }
+        const { data: existingPlan, error: existingPlanError } = await supabase.from("weekly_plans").select("id").eq("class_id", target.classId).eq("week_id", selectedWeek.id).maybeSingle();
+        if (existingPlanError) throw existingPlanError;
+        let targetPlanId = existingPlan?.id ? String(existingPlan.id) : "";
+        if (!targetPlanId) {
+          const { data: createdPlan, error: createdPlanError } = await supabase.from("weekly_plans").insert({ class_id: target.classId, week_id: selectedWeek.id, class_teacher_name: teacherName, status: "draft" }).select("id").single();
+          if (createdPlanError) throw createdPlanError;
+          targetPlanId = String(createdPlan.id);
+        }
+        const { data: targetExistingEntries, error: targetEntriesError } = await supabase.from("plan_entries").select("id").eq("weekly_plan_id", targetPlanId).eq("teacher_id", profileId).eq("subject_id", copySubjectId);
+        if (targetEntriesError) throw targetEntriesError;
+        if ((targetExistingEntries?.length ?? 0) > 0) { skipped.push(`Grade ${target.grade} ${target.section}`); continue; }
+        const targetSlots = timetableSlots.filter((slot) => slot.class_id === target.classId && slot.subject_id === copySubjectId).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
+        const rowsToCopy = targetSlots.slice(0, sourceRows.length).map((slot, index) => ({ weekly_plan_id: targetPlanId, timetable_slot_id: slot.id, teacher_id: profileId, subject_id: copySubjectId, day_of_week: slot.day_of_week, period_number: slot.period_number, classwork: sourceRows[index].classwork, homework: sourceRows[index].homework, classera_notes: sourceRows[index].classera_notes, updated_at: new Date().toISOString() }));
+        const { error: insertError } = await supabase.from("plan_entries").insert(rowsToCopy);
+        if (insertError) throw insertError;
+        const { error: submissionError } = await supabase.from("plan_submissions").upsert({ weekly_plan_id: targetPlanId, teacher_id: profileId, subject_id: copySubjectId, status: "draft", submitted_at: null, reviewed_by: null, reviewed_at: null, review_note: null }, { onConflict: "weekly_plan_id,teacher_id,subject_id" });
+        if (submissionError) throw submissionError;
+        copied.push(`Grade ${target.grade} ${target.section} (${rowsToCopy.length} lessons)`);
+      }
+      setCopyTargetClassIds([]);
+      setCopyPanelOpen(false);
+      setMessage(`Copied as drafts: ${copied.join(", ") || "no eligible classes"}.${skipped.length ? ` Skipped because a plan already exists or has no slots: ${skipped.join(", ")}.` : ""}`);
+      setMessageTone(copied.length ? "success" : "info");
+      await loadTeacherDashboard();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The plan could not be copied.");
       setMessageTone("error");
     } finally {
       setSaving(false);
@@ -552,6 +720,17 @@ export default function TeachersDashboardPage() {
                 {!loading && entries.length === 0 && <tr><td className="super-empty" colSpan={5}>No weekly-plan entries saved yet.</td></tr>}
               </tbody></table></div>
             </section>
+
+            <section className="teacher-card teacher-review-status-card">
+              <div className="teacher-card-heading"><div><p className="teacher-kicker">Plan follow-up</p><h2>My submitted plans</h2><p>Plans remain editable until the supervisor starts reviewing them. A returned plan includes the supervisor&apos;s note.</p></div></div>
+              <div className="teacher-review-status-list">
+                {mySubmissions.filter((submission) => submission.status !== "draft").map((submission) => <article key={submission.id}>
+                  <div><span className={`teacher-status ${submission.status === "approved" ? "green" : submission.status === "changes_requested" ? "amber" : "navy"}`}><i />{submission.status.replaceAll("_", " ")}</span><strong>{submission.subject}</strong><small>{submission.className} · {submission.week}</small>{submission.reviewNote && <p><b>Supervisor note:</b> {submission.reviewNote}</p>}</div>
+                  <div className="teacher-review-status-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => openSavedPlan(submission)}>Preview & edit</button>{submission.status === "submitted" && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => void withdrawSubmissionForEditing(submission)}>Withdraw for editing</button>}</div>
+                </article>)}
+                {mySubmissions.filter((submission) => submission.status !== "draft").length === 0 && <p className="supervisor-review-empty">No plans are currently waiting for review. Save a draft when you are ready to continue later.</p>}
+              </div>
+            </section>
           </>}
 
           {(activeNav === "My Classes" || activeNav === "My Subjects" || activeNav === "Profile & assignments") && <section className="teacher-card teacher-live-assignment-panel"><div><h2>{activeNav}</h2><p>Only the Super Admin can change these assignments.</p></div><div className="teacher-live-assignment-grid">
@@ -596,11 +775,13 @@ export default function TeachersDashboardPage() {
         <div className="teacher-modal-heading"><div><p>{selectedWeek.label}</p><h2 id="weekly-builder-title">Build the whole week</h2></div><button disabled={saving} aria-label="Close weekly builder" onClick={() => setWeeklyBuilderOpen(false)}>×</button></div>
         <div className="teacher-editor-context"><span>One save for the whole week</span><i />Entries are placed according to your timetable slots.</div>
         <form onSubmit={(event) => { event.preventDefault(); void saveWholeWeek(true); }}>
+          {builderStatus !== "new" && <div className={`weekly-builder-review-state ${builderStatus}`}><strong>{builderStatus === "submitted" ? "Under supervisor review" : builderStatus === "changes_requested" ? "Changes requested by supervisor" : builderStatus === "approved" ? "Approved" : "Saved as draft"}</strong><span>{builderStatus === "submitted" ? "You can preview it, or withdraw it to make changes before the supervisor decides." : builderStatus === "changes_requested" ? "Update the required items, then submit the plan for review again." : builderStatus === "approved" ? "This subject has already been approved. Contact your supervisor if a correction is needed." : "This plan is saved privately and has not been sent for review."}</span></div>}
           <div className="weekly-builder-toolbar"><label>1. Academic week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><label>2. Class<select value={selectedClassId} onChange={(event) => { setSelectedClassId(event.target.value); setSlotDrafts({}); setQuizSubjectId(""); }}>{Array.from(new Map(assignments.map((assignment) => [assignment.classId, assignment])).values()).map((assignment) => <option key={assignment.classId} value={assignment.classId}>Grade {assignment.grade} · {assignment.section}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedClassSlots.length > 0 ? "ready" : "missing"}`}>{selectedClassSlots.length > 0 ? `${selectedClassSlots.length} lessons ready for this week` : "Timetable connection required"}</span></div>
           <div className={`weekly-builder-days days-${activeDayIndexes.length}`}>{activeDayIndexes.map((index) => { const day = dayNames[index]; const daySlots = selectedClassSlots.filter((slot) => slot.day_of_week === index); return <section className="weekly-builder-day" key={day}><header><strong>{day}</strong><small>{daySlots.length} lesson{daySlots.length === 1 ? "" : "s"}</small></header>{daySlots.map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = englishSubjectNames.has(assignment?.subject ?? ""); return <article key={slot.id}><header><span>Period {slot.period_number}</span><strong>{assignment?.subject ?? "Subject"}</strong></header>{assignment?.subject === "Integrated Science" && <label>Science component<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>English programme<select value={draft.englishProgramme || defaultEnglishProgramme(assignment?.grade ?? 0, assignment?.subject ?? "")} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}>{englishProgrammesForGrade(assignment?.grade ?? 0).map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">The programme name is added automatically before Classwork.</p>}<label>Classwork<textarea rows={3} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={3} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder="Homework for this lesson" /></label><label>Classera notes<textarea rows={3} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>})}</section>})}</div>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Choose the subject, then add the quiz for this class.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Subject<select value={quizSubjectId} onChange={(event) => setQuizSubjectId(event.target.value)}><option value="">Select subject</option>{selectedClassAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>NT</span><div><strong>Weekly notes for families</strong><small>Spelling words, reminders or important announcements.</small></div></div></div><textarea className="weekly-builder-notes" rows={3} value={weeklyNote} onChange={(event) => setWeeklyNote(event.target.value)} placeholder="Weekly notes" /></section>
-          <div className="teacher-editor-footer"><span>{selectedClassSlots.length > 0 ? "Every card is one of your real timetable lessons. Save once when the whole class week is ready." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button><button disabled={saving || selectedClassSlots.length === 0} className="teacher-primary-button" type="submit">{saving ? "Saving…" : "Submit for review"}</button></div></div>
+          {savedPlanId && builderStatus !== "approved" && <section className="weekly-copy-panel"><div><strong>Copy this subject plan to other classes</strong><p>Only classes in the same grade where you teach the same subject appear here. The copied plans are saved as drafts; quizzes and weekly notes stay with the original class.</p></div><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => { setCopyPanelOpen((open) => !open); setCopySubjectId((current) => current || sourceSubjectAssignments[0]?.subjectId || ""); }}>Copy plan</button>{copyPanelOpen && <div className="weekly-copy-controls"><label>Subject to copy<select value={copySubjectId} onChange={(event) => { setCopySubjectId(event.target.value); setCopyTargetClassIds([]); }}><option value="">Select subject</option>{sourceSubjectAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><div className="weekly-copy-targets">{copyTargetClasses.map((target) => <label key={target.classId}><input type="checkbox" checked={copyTargetClassIds.includes(target.classId)} onChange={() => toggleCopyTarget(target.classId)} /><span><strong>Grade {target.grade} · {target.section}</strong><small>{target.lessonCount} matching timetable lesson{target.lessonCount === 1 ? "" : "s"}</small></span></label>)}{copySubjectId && copyTargetClasses.length === 0 && <p>No other eligible class is assigned to you for this subject and grade.</p>}</div><div className="weekly-copy-actions"><small>Different lesson dates or periods are matched by lesson order: first lesson to first lesson, second to second, and so on.</small><button type="button" className="teacher-primary-button" disabled={saving || !copySubjectId || copyTargetClassIds.length === 0} onClick={() => void copyPlanToOtherClasses()}>Save copied drafts</button></div></div>}</section>}
+          <div className="teacher-editor-footer"><span>{selectedClassSlots.length > 0 ? "Every card is one of your real timetable lessons. Save once when the whole class week is ready." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "approved"} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button>{builderStatus === "submitted" && <button disabled={saving} type="button" className="teacher-secondary-button warning" onClick={() => { const submission = mySubmissions.find((item) => item.classId === selectedClassId && item.weekId === selectedWeekId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}<button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "approved"} className="teacher-primary-button" type="submit">{saving ? "Saving…" : builderStatus === "changes_requested" ? "Resubmit for review" : "Submit for review"}</button></div></div>
         </form>
       </section></div>}
     </main>
