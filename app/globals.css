@@ -653,6 +653,13 @@ button, select, input { font: inherit; }
 .weekly-builder-days article header { display: grid; gap: 3px; margin-bottom: 11px; padding: 10px; border-radius: 9px; background: #0d376b; color: #fff; }
 .weekly-builder-days article header small { color: #a5e4ed; font-size: 10px; font-weight: 800; }
 .weekly-builder-days article label { margin-top: 9px; }
+.weekly-builder-day { min-width: 220px; display: grid; align-content: start; gap: 10px; padding: 10px; border: 1px solid #d9e5f0; border-radius: 14px; background: #f5f8fc; }
+.weekly-builder-day > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 11px; border-radius: 10px; background: linear-gradient(135deg, #082954, #116f95); color: #fff; }
+.weekly-builder-day > header strong { font-size: 15px; }.weekly-builder-day > header small { color: #b9eff4; font-size: 10px; font-weight: 800; }
+.weekly-builder-day article { min-width: 0; box-shadow: 0 4px 12px rgba(13,55,107,.06); }
+.weekly-builder-day article header { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #103b70; }
+.weekly-builder-day article header span { color: #8ce7f1; font-size: 10px; font-weight: 900; text-transform: uppercase; }.weekly-builder-day article header strong { font-size: 12px; }
+.weekly-builder-empty-day { margin: 0; padding: 18px 10px; color: #718096; text-align: center; font-size: 11px; font-weight: 700; }
 .teacher-programme-note { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: #edf7ff; color: #155487; font-size: 11px; font-weight: 700; line-height: 1.45; }
 .weekly-builder-extra { padding: 15px; border: 1px solid #dfe6ee; border-radius: 12px; background: #fbfcfe; }
 .weekly-builder-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 13px; }

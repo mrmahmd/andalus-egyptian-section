@@ -69,12 +69,12 @@ type ReviewItem = {
   entries: { day: string; classwork: string; homework: string; notes: string }[];
 };
 
-type DayDraft = { classwork: string; homework: string; classeraNotes: string };
+type SlotDraft = { classwork: string; homework: string; classeraNotes: string; englishProgramme: string; scienceComponent: string };
 type SchoolClass = { id: string; grade: number; section: string };
 type SchoolSubject = { id: string; name_en: string };
 type DepartmentTeacher = { userId: string; name: string; assignments: Assignment[] };
 
-const emptyDayDrafts = () => dayNames.map((): DayDraft => ({ classwork: "", homework: "", classeraNotes: "" }));
+const emptySlotDraft = (): SlotDraft => ({ classwork: "", homework: "", classeraNotes: "", englishProgramme: "", scienceComponent: "" });
 const scienceComponents = ["Chemistry", "Physics", "Biology"];
 const englishSubjectNames = new Set(["English", "Connect Plus", "English Hello", "Hello Plus", "Hello", "Upstream"]);
 
@@ -130,16 +130,13 @@ export default function TeachersDashboardPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"success" | "error" | "info">("info");
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState("");
   const [selectedWeekId, setSelectedWeekId] = useState("");
-  const [dayDrafts, setDayDrafts] = useState<DayDraft[]>(emptyDayDrafts);
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const [slotDrafts, setSlotDrafts] = useState<Record<string, SlotDraft>>({});
   const [quizDay, setQuizDay] = useState("2");
   const [quizDetails, setQuizDetails] = useState("");
+  const [quizSubjectId, setQuizSubjectId] = useState("");
   const [weeklyNote, setWeeklyNote] = useState("");
-  const [scienceComponentsByDay, setScienceComponentsByDay] = useState<string[]>(() => dayNames.map(() => ""));
-  const [englishProgramme, setEnglishProgramme] = useState("");
-  const [experimentDayIndex, setExperimentDayIndex] = useState(1);
-  const [experimentPeriod, setExperimentPeriod] = useState("");
   const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
 
   const loadTeacherDashboard = useCallback(async () => {
@@ -262,7 +259,7 @@ export default function TeachersDashboardPage() {
         setMessage("Your dashboard is ready. Department teacher assignments could not be loaded yet; please refresh once.");
         setMessageTone("info");
       }
-      setSelectedAssignmentId((current) => realAssignments.some((assignment) => assignment.id === current) ? current : realAssignments[0]?.id ?? "");
+      setSelectedClassId((current) => realAssignments.some((assignment) => assignment.classId === current) ? current : realAssignments[0]?.classId ?? "");
       setSelectedWeekId((current) => weeks.some((week) => week.id === current) ? current : weeks.find((week) => week.is_current)?.id ?? weeks[0]?.id ?? "");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : typeof error === "object" && error && "message" in error ? String(error.message) : "The teacher workspace could not be loaded.";
@@ -278,16 +275,14 @@ export default function TeachersDashboardPage() {
     return () => window.clearTimeout(timer);
   }, [loadTeacherDashboard]);
 
-  const selectedAssignment = assignments.find((assignment) => assignment.id === selectedAssignmentId);
   const selectedWeek = academicWeeks.find((week) => week.id === selectedWeekId);
-  const selectedEnglishProgrammes = selectedAssignment && englishSubjectNames.has(selectedAssignment.subject)
-    ? englishProgrammesForGrade(selectedAssignment.grade)
-    : [];
-  const selectedAssignmentIsEnglish = selectedEnglishProgrammes.length > 0;
-  const faridExperiment = teacherName === "محمد فريد";
-  const assignmentSlots = timetableSlots.filter((slot) => slot.class_id === selectedAssignment?.classId && slot.subject_id === selectedAssignment?.subjectId);
-  const selectedSlots = assignmentSlots.filter((slot) => !faridExperiment || (slot.day_of_week === experimentDayIndex && (!experimentPeriod || String(slot.period_number) === experimentPeriod)));
-  const experimentPeriods = assignmentSlots.filter((slot) => slot.day_of_week === experimentDayIndex).sort((a, b) => a.period_number - b.period_number);
+  const selectedClassAssignments = assignments.filter((assignment) => assignment.classId === selectedClassId);
+  const selectedClass = selectedClassAssignments[0];
+  const selectedClassSlots = timetableSlots
+    .filter((slot) => slot.class_id === selectedClassId && selectedClassAssignments.some((assignment) => assignment.subjectId === slot.subject_id))
+    .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
+  const assignmentForSlot = (slot: TimetableSlot) => selectedClassAssignments.find((assignment) => assignment.subjectId === slot.subject_id);
+  const slotDraftFor = (slot: TimetableSlot) => slotDrafts[slot.id] ?? emptySlotDraft();
   const uniqueClasses = useMemo(() => Array.from(new Map(assignments.map((assignment) => [assignment.classId, `Grade ${assignment.grade} · ${assignment.section}`])).values()), [assignments]);
   const uniqueSubjects = useMemo(() => Array.from(new Set(assignments.map((assignment) => assignment.subject))), [assignments]);
 
@@ -312,42 +307,34 @@ export default function TeachersDashboardPage() {
       setMessageTone("info");
       return;
     }
-    const firstAssignment = selectedAssignment ?? assignments[0];
+    const firstAssignment = selectedClass ?? assignments[0];
     const firstWeek = selectedWeek ?? academicWeeks.find((week) => week.is_current) ?? academicWeeks[0];
-    if (!selectedAssignmentId && firstAssignment) setSelectedAssignmentId(firstAssignment.id);
+    if (!selectedClassId && firstAssignment) setSelectedClassId(firstAssignment.classId);
     if (!selectedWeekId && firstWeek) setSelectedWeekId(firstWeek.id);
-    if (firstAssignment && englishSubjectNames.has(firstAssignment.subject)) {
-      setEnglishProgramme(defaultEnglishProgramme(firstAssignment.grade, firstAssignment.subject));
-    }
     setWeeklyBuilderOpen(true);
   };
 
-  const updateDayDraft = (index: number, field: keyof DayDraft, value: string) => {
-    setDayDrafts((current) => current.map((draft, draftIndex) => draftIndex === index ? { ...draft, [field]: value } : draft));
-  };
-
-  const updateScienceComponent = (index: number, value: string) => {
-    setScienceComponentsByDay((current) => current.map((component, componentIndex) => componentIndex === index ? value : component));
+  const updateSlotDraft = (slotId: string, field: keyof SlotDraft, value: string) => {
+    setSlotDrafts((current) => ({ ...current, [slotId]: { ...(current[slotId] ?? emptySlotDraft()), [field]: value } }));
   };
 
   const saveWholeWeek = async (submitForReview = false) => {
-    if (!profileId || !selectedAssignment || !selectedWeek) return;
-    if (selectedSlots.length === 0) {
-      setMessage("This class and subject are not connected to the timetable yet. The Super Admin must import the timetable before you can save the weekly plan.");
+    if (!profileId || !selectedClass || !selectedWeek) return;
+    if (selectedClassSlots.length === 0) {
+      setMessage("No timetable lessons are linked to this class yet. Ask the Super Admin to review the timetable connection.");
       setMessageTone("error");
-      setWeeklyBuilderOpen(false);
       return;
     }
 
     setSaving(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      const { data: existingPlan, error: planReadError } = await supabase.from("weekly_plans").select("id").eq("class_id", selectedAssignment.classId).eq("week_id", selectedWeek.id).maybeSingle();
+      const { data: existingPlan, error: planReadError } = await supabase.from("weekly_plans").select("id").eq("class_id", selectedClassId).eq("week_id", selectedWeek.id).maybeSingle();
       if (planReadError) throw planReadError;
       let weeklyPlanId = existingPlan?.id ? String(existingPlan.id) : "";
       if (!weeklyPlanId) {
         const { data: createdPlan, error: createPlanError } = await supabase.from("weekly_plans").insert({
-          class_id: selectedAssignment.classId,
+          class_id: selectedClassId,
           week_id: selectedWeek.id,
           class_teacher_name: teacherName,
           status: "draft",
@@ -356,47 +343,41 @@ export default function TeachersDashboardPage() {
         weeklyPlanId = String(createdPlan.id);
       }
 
-      const entryRows = selectedSlots.map((slot) => ({
-        weekly_plan_id: weeklyPlanId,
-        timetable_slot_id: slot.id,
-        teacher_id: profileId,
-        subject_id: selectedAssignment.subjectId,
-        day_of_week: slot.day_of_week,
-        period_number: slot.period_number,
-        classwork: (() => {
-          const classwork = dayDrafts[slot.day_of_week]?.classwork.trim() ?? "";
-          if (selectedAssignment.subject === "Integrated Science" && scienceComponentsByDay[slot.day_of_week]) {
-            return scienceComponentsByDay[slot.day_of_week] + " — " + classwork;
-          }
-          if (selectedAssignmentIsEnglish && englishProgramme && classwork) {
-            return englishProgramme + " — " + classwork;
-          }
-          return classwork;
-        })(),
-        homework: dayDrafts[slot.day_of_week]?.homework.trim() ?? "",
-        classera_notes: dayDrafts[slot.day_of_week]?.classeraNotes.trim() ?? "",
-        updated_at: new Date().toISOString(),
-      }));
+      const entryRows = selectedClassSlots.map((slot) => {
+        const assignment = assignmentForSlot(slot);
+        const draft = slotDraftFor(slot);
+        const classwork = draft.classwork.trim();
+        const prefix = assignment?.subject === "Integrated Science" ? draft.scienceComponent : englishSubjectNames.has(assignment?.subject ?? "") ? draft.englishProgramme || defaultEnglishProgramme(assignment?.grade ?? 0, assignment?.subject ?? "") : "";
+        return {
+          weekly_plan_id: weeklyPlanId,
+          timetable_slot_id: slot.id,
+          teacher_id: profileId,
+          subject_id: slot.subject_id,
+          day_of_week: slot.day_of_week,
+          period_number: slot.period_number,
+          classwork: prefix && classwork ? `${prefix} — ${classwork}` : classwork,
+          homework: draft.homework.trim(),
+          classera_notes: draft.classeraNotes.trim(),
+          updated_at: new Date().toISOString(),
+        };
+      });
       const { error: entriesError } = await supabase.from("plan_entries").upsert(entryRows, { onConflict: "weekly_plan_id,day_of_week,period_number" });
       if (entriesError) throw entriesError;
 
-      const { error: submissionError } = await supabase.from("plan_submissions").upsert({
-        weekly_plan_id: weeklyPlanId,
-        teacher_id: profileId,
-        subject_id: selectedAssignment.subjectId,
-        status: submitForReview ? "submitted" : "draft",
-        reviewed_by: null,
-        reviewed_at: null,
+      const submissionRows = Array.from(new Set(selectedClassSlots.map((slot) => slot.subject_id))).map((subjectId) => ({
+        weekly_plan_id: weeklyPlanId, teacher_id: profileId, subject_id: subjectId,
+        status: submitForReview ? "submitted" : "draft", reviewed_by: null, reviewed_at: null,
         submitted_at: submitForReview ? new Date().toISOString() : null,
-      }, { onConflict: "weekly_plan_id,teacher_id,subject_id" });
+      }));
+      const { error: submissionError } = await supabase.from("plan_submissions").upsert(submissionRows, { onConflict: "weekly_plan_id,teacher_id,subject_id" });
       if (submissionError) throw submissionError;
 
-      const { error: oldQuizError } = await supabase.from("plan_quizzes").delete().eq("weekly_plan_id", weeklyPlanId).eq("teacher_id", profileId).eq("subject_id", selectedAssignment.subjectId);
-      if (oldQuizError) throw oldQuizError;
-      if (quizDetails.trim()) {
+      if (quizDetails.trim() && quizSubjectId) {
+        const { error: oldQuizError } = await supabase.from("plan_quizzes").delete().eq("weekly_plan_id", weeklyPlanId).eq("teacher_id", profileId).eq("subject_id", quizSubjectId);
+        if (oldQuizError) throw oldQuizError;
         const quizDate = new Date(`${selectedWeek.starts_on}T12:00:00`);
         quizDate.setDate(quizDate.getDate() + Number(quizDay));
-        const { error: quizError } = await supabase.from("plan_quizzes").insert({ weekly_plan_id: weeklyPlanId, teacher_id: profileId, subject_id: selectedAssignment.subjectId, quiz_date: quizDate.toISOString().slice(0, 10), details: quizDetails.trim() });
+        const { error: quizError } = await supabase.from("plan_quizzes").insert({ weekly_plan_id: weeklyPlanId, teacher_id: profileId, subject_id: quizSubjectId, quiz_date: quizDate.toISOString().slice(0, 10), details: quizDetails.trim() });
         if (quizError) throw quizError;
       }
 
@@ -408,9 +389,9 @@ export default function TeachersDashboardPage() {
       }
 
       setWeeklyBuilderOpen(false);
-      setDayDrafts(emptyDayDrafts());
-      setScienceComponentsByDay(dayNames.map(() => ""));
+      setSlotDrafts({});
       setQuizDetails("");
+      setQuizSubjectId("");
       setWeeklyNote("");
       setMessage(submitForReview ? "Your weekly plan was sent to your department supervisor for review." : "The whole week was saved successfully to Supabase.");
       setMessageTone("success");
@@ -592,15 +573,15 @@ export default function TeachersDashboardPage() {
         </div>
       </section>
 
-      {weeklyBuilderOpen && selectedAssignment && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && setWeeklyBuilderOpen(false)}><section className="teacher-editor-modal weekly-builder-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
+      {weeklyBuilderOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && setWeeklyBuilderOpen(false)}><section className="teacher-editor-modal weekly-builder-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
         <div className="teacher-modal-heading"><div><p>{selectedWeek.label}</p><h2 id="weekly-builder-title">Build the whole week</h2></div><button disabled={saving} aria-label="Close weekly builder" onClick={() => setWeeklyBuilderOpen(false)}>×</button></div>
         <div className="teacher-editor-context"><span>One save for the whole week</span><i />Entries are placed according to your timetable slots.</div>
         <form onSubmit={(event) => { event.preventDefault(); void saveWholeWeek(true); }}>
-          <div className="weekly-builder-toolbar">{faridExperiment && <label>Day<select value={experimentDayIndex} onChange={(event) => { setExperimentDayIndex(Number(event.target.value)); setExperimentPeriod(""); }}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label>}<label>Class & Subject<select value={selectedAssignmentId} onChange={(event) => { const nextAssignment = assignments.find((assignment) => assignment.id === event.target.value); setSelectedAssignmentId(event.target.value); setExperimentPeriod(""); setEnglishProgramme(nextAssignment && englishSubjectNames.has(nextAssignment.subject) ? defaultEnglishProgramme(nextAssignment.grade, nextAssignment.subject) : ""); }}>{assignments.map((assignment) => <option key={assignment.id} value={assignment.id}>Grade {assignment.grade} · {assignment.section} · {englishSubjectNames.has(assignment.subject) ? "English" : assignment.subject}</option>)}</select></label>{selectedAssignmentIsEnglish && <label>English programme<select value={englishProgramme} onChange={(event) => setEnglishProgramme(event.target.value)}>{selectedEnglishProgrammes.map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{faridExperiment && <label>Period<select value={experimentPeriod} onChange={(event) => setExperimentPeriod(event.target.value)}><option value="">Select period</option>{experimentPeriods.map((slot) => <option key={slot.id} value={slot.period_number}>Period {slot.period_number}</option>)}</select></label>}<label>Academic Week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedSlots.length > 0 ? "ready" : "missing"}`}>{selectedSlots.length > 0 ? `${selectedSlots.length} timetable slot${selectedSlots.length === 1 ? "" : "s"} ready` : "Timetable connection required"}</span></div>
-          <div className="weekly-builder-days">{dayNames.map((day, index) => (!faridExperiment || index === experimentDayIndex) && <article key={day}><header><strong>{day}</strong><small>{selectedAssignmentIsEnglish ? "English · " + englishProgramme : selectedAssignment.subject}</small></header>{selectedAssignment.subject === "Integrated Science" && <label>Science component<select value={scienceComponentsByDay[index]} onChange={(event) => updateScienceComponent(index, event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{selectedAssignmentIsEnglish && <p className="teacher-programme-note"><strong>{englishProgramme}</strong> will be added automatically before your Classwork text.</p>}<label>Classwork<textarea rows={2} value={dayDrafts[index].classwork} onChange={(event) => updateDayDraft(index, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={2} value={dayDrafts[index].homework} onChange={(event) => updateDayDraft(index, "homework", event.target.value)} placeholder="Homework for this day" /></label><label>Classera notes<textarea rows={2} value={dayDrafts[index].classeraNotes} onChange={(event) => updateDayDraft(index, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>)}</div>
-          <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Saved in the separate quiz table below the weekly plan.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
+          <div className="weekly-builder-toolbar"><label>1. Academic week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><label>2. Class<select value={selectedClassId} onChange={(event) => { setSelectedClassId(event.target.value); setSlotDrafts({}); setQuizSubjectId(""); }}>{Array.from(new Map(assignments.map((assignment) => [assignment.classId, assignment])).values()).map((assignment) => <option key={assignment.classId} value={assignment.classId}>Grade {assignment.grade} · {assignment.section}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedClassSlots.length > 0 ? "ready" : "missing"}`}>{selectedClassSlots.length > 0 ? `${selectedClassSlots.length} lessons ready for this week` : "Timetable connection required"}</span></div>
+          <div className="weekly-builder-days">{dayNames.map((day, index) => <section className="weekly-builder-day" key={day}><header><strong>{day}</strong><small>{selectedClassSlots.filter((slot) => slot.day_of_week === index).length} lesson(s)</small></header>{selectedClassSlots.filter((slot) => slot.day_of_week === index).map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = englishSubjectNames.has(assignment?.subject ?? ""); return <article key={slot.id}><header><span>Period {slot.period_number}</span><strong>{assignment?.subject ?? "Subject"}</strong></header>{assignment?.subject === "Integrated Science" && <label>Science component<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>English programme<select value={draft.englishProgramme || defaultEnglishProgramme(assignment?.grade ?? 0, assignment?.subject ?? "")} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}>{englishProgrammesForGrade(assignment?.grade ?? 0).map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">The programme name is added automatically before Classwork.</p>}<label>Classwork<textarea rows={2} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={2} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder="Homework for this lesson" /></label><label>Classera notes<textarea rows={2} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>})}{selectedClassSlots.filter((slot) => slot.day_of_week === index).length === 0 && <p className="weekly-builder-empty-day">No lessons assigned to you on this day.</p>}</section>)}</div>
+          <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Choose the subject, then add the quiz for this class.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Subject<select value={quizSubjectId} onChange={(event) => setQuizSubjectId(event.target.value)}><option value="">Select subject</option>{selectedClassAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>NT</span><div><strong>Weekly notes for families</strong><small>Spelling words, reminders or important announcements.</small></div></div></div><textarea className="weekly-builder-notes" rows={3} value={weeklyNote} onChange={(event) => setWeeklyNote(event.target.value)} placeholder="Weekly notes" /></section>
-          <div className="teacher-editor-footer"><span>{selectedSlots.length > 0 ? (faridExperiment ? "Experimental mode: this entry will be sent to Mr. Mahmoud Helmy for review." : "All timetable-linked entries will be saved together.") : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button><button disabled={saving || selectedSlots.length === 0} className="teacher-primary-button" type="submit">{saving ? "Saving…" : "Submit for review"}</button></div></div>
+          <div className="teacher-editor-footer"><span>{selectedClassSlots.length > 0 ? "Every card is one of your real timetable lessons. Save once when the whole class week is ready." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button><button disabled={saving || selectedClassSlots.length === 0} className="teacher-primary-button" type="submit">{saving ? "Saving…" : "Submit for review"}</button></div></div>
         </form>
       </section></div>}
     </main>
