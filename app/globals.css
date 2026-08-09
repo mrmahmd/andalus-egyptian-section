@@ -642,10 +642,11 @@ button, select, input { font: inherit; }
 .teacher-plan-table tbody tr:hover { background: #fbfcfe; }
 .teacher-plan-table td strong { color: #1d2c48; font-size: 9px; }
 .teacher-plan-table td:first-child { color: #24334f; font-weight: 700; white-space: nowrap; }
+.teacher-plan-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }.teacher-plan-actions .teacher-secondary-button { min-height: 34px; padding: 0 10px; font-size: 11px; white-space: nowrap; }.teacher-plan-actions .teacher-secondary-button.danger { border-color: #e6becb; background: #fff4f7; color: #9e2755; }
 .teacher-day-badge { width: 27px; height: 27px; margin-right: 8px; display: inline-grid; place-items: center; border-radius: 7px; background: #eef3f9; color: #21436e; font-size: 7px; font-weight: 900; }
 .teacher-status { width: fit-content; padding: 5px 8px; border-radius: 999px; display: flex; align-items: center; gap: 5px; font-size: 7px; font-weight: 800; white-space: nowrap; }
 .teacher-status i { width: 5px; height: 5px; border-radius: 50%; }.teacher-status.green { background: #e9f7f1; color: #237a5d; }.teacher-status.green i { background: #2aa57b; }.teacher-status.amber { background: #fff4df; color: #9d641e; }.teacher-status.amber i { background: #dda43e; }.teacher-status.gray { background: #f0f2f5; color: #6e798a; }.teacher-status.gray i { background: #939dad; }
-.teacher-plan-table td:last-child button { border: 0; background: transparent; color: #a2156d; font: inherit; font-size: 8px; font-weight: 800; cursor: pointer; }
+.teacher-plan-table td:last-child > button { border: 0; background: transparent; color: #a2156d; font: inherit; font-size: 8px; font-weight: 800; cursor: pointer; }
 .teacher-view-all { width: 100%; min-height: 45px; border: 0; border-top: 1px solid #edf0f4; background: transparent; color: #284670; font: inherit; font-size: 9px; font-weight: 800; cursor: pointer; }
 .teacher-view-all span { margin-left: 5px; }
 .teacher-dashboard-side { display: grid; gap: 17px; }

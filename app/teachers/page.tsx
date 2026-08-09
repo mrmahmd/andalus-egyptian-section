@@ -50,6 +50,10 @@ type TimetableSlot = {
 
 type TeacherEntry = {
   id: string;
+  weeklyPlanId: string;
+  classId: string;
+  weekId: string;
+  subjectId: string;
   day: string;
   className: string;
   subject: string;
@@ -190,7 +194,7 @@ export default function TeachersDashboardPage() {
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en, include_in_weekly_plan)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
-        supabase.from("plan_entries").select("id, day_of_week, updated_at, subjects(name_en), weekly_plans(status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
+        supabase.from("plan_entries").select("id, weekly_plan_id, subject_id, day_of_week, updated_at, subjects(name_en), weekly_plans(class_id, week_id, status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         supabase.from("plan_submissions").select("id, weekly_plan_id, subject_id, status, review_note, weekly_plans(class_id, week_id, school_classes(grade, section), academic_weeks(label)), subjects(name_en)").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         Promise.resolve({ data: [], error: null }),
         departmentTeachersPromise,
@@ -218,10 +222,10 @@ export default function TeachersDashboardPage() {
 
       const realEntries: TeacherEntry[] = (entriesResult.data ?? []).map((entry) => {
         const subject = one(entry.subjects as { name_en: string } | { name_en: string }[] | null);
-        const weeklyPlan = one(entry.weekly_plans as unknown as { status: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null } | { status: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null }[] | null);
+        const weeklyPlan = one(entry.weekly_plans as unknown as { class_id: string; week_id: string; status: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null } | { class_id: string; week_id: string; status: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null }[] | null);
         const schoolClass = one(weeklyPlan?.school_classes);
         return {
-          id: String(entry.id),
+          id: String(entry.id), weeklyPlanId: String(entry.weekly_plan_id), classId: String(weeklyPlan?.class_id ?? ""), weekId: String(weeklyPlan?.week_id ?? ""), subjectId: String(entry.subject_id),
           day: dayNames[Number(entry.day_of_week)] ?? "School day",
           className: `Grade ${schoolClass?.grade ?? "—"} · ${schoolClass?.section ?? ""}`,
           subject: subject?.name_en ?? "Subject",
@@ -546,6 +550,46 @@ export default function TeachersDashboardPage() {
     setWeeklyBuilderOpen(true);
   };
 
+  const openEntryEditor = (entry: TeacherEntry) => {
+    setSelectedClassId(entry.classId);
+    setSelectedWeekId(entry.weekId);
+    setCopyPanelOpen(false);
+    setWeeklyBuilderOpen(true);
+  };
+
+  const entryReviewStatus = (entry: TeacherEntry) => mySubmissions.find((submission) => submission.classId === entry.classId && submission.weekId === entry.weekId && submission.subjectId === entry.subjectId)?.status ?? entry.status;
+
+  const deleteDraftEntry = async (entry: TeacherEntry) => {
+    const status = entryReviewStatus(entry);
+    if (status !== "draft" && status !== "changes_requested") {
+      setMessage("Only a draft or a returned plan can be deleted. Withdraw a submitted plan first.");
+      setMessageTone("info");
+      return;
+    }
+    if (!window.confirm(`Delete this ${entry.day} ${entry.subject} lesson? This removes only this lesson, not the other subjects or the whole class plan.`)) return;
+    setSaving(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: deletedRows, error } = await supabase.from("plan_entries").delete().eq("id", entry.id).eq("teacher_id", profileId).select("id");
+      if (error) throw error;
+      if (!deletedRows?.length) throw new Error("This lesson could not be deleted. Please refresh and try again.");
+      const { data: remainingRows, error: remainingError } = await supabase.from("plan_entries").select("id").eq("weekly_plan_id", entry.weeklyPlanId).eq("teacher_id", profileId).eq("subject_id", entry.subjectId).limit(1);
+      if (remainingError) throw remainingError;
+      if (!remainingRows?.length) {
+        const { error: draftError } = await supabase.from("plan_submissions").update({ status: "draft", submitted_at: null, review_note: null, reviewed_by: null, reviewed_at: null, updated_at: new Date().toISOString() }).eq("weekly_plan_id", entry.weeklyPlanId).eq("teacher_id", profileId).eq("subject_id", entry.subjectId);
+        if (draftError) throw draftError;
+      }
+      setMessage("The lesson was deleted. Other lessons and subjects were not changed.");
+      setMessageTone("success");
+      await loadTeacherDashboard();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The lesson could not be deleted.");
+      setMessageTone("error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const toggleCopyTarget = (classId: string) => setCopyTargetClassIds((current) => current.includes(classId) ? current.filter((id) => id !== classId) : [...current, classId]);
 
   const copyPlanToOtherClasses = async () => {
@@ -725,9 +769,9 @@ export default function TeachersDashboardPage() {
 
             <section className="teacher-card teacher-plans-card teacher-live-plans-card">
               <div className="teacher-card-heading"><div><h2>{activeNav === "Overview" ? "Recent weekly entries" : "All my weekly entries"}</h2><p>{currentWeek ? `${formatDate(currentWeek.starts_on)}–${formatDate(currentWeek.ends_on)} · ${currentWeek.label}` : "Academic weeks are not configured yet"}</p></div></div>
-              <div className="teacher-plan-table-wrap"><table className="teacher-plan-table"><thead><tr><th>Day</th><th>Class</th><th>Course</th><th>Status</th><th>Last updated</th></tr></thead><tbody>
-                {entries.map((entry) => <tr key={entry.id}><td><span className="teacher-day-badge">{entry.day.slice(0, 3)}</span>{entry.day}</td><td><strong>{entry.className}</strong></td><td>{entry.subject}</td><td><span className={`teacher-status ${entry.status === "published" ? "green" : "amber"}`}><i />{entry.status}</span></td><td>{entry.updated}</td></tr>)}
-                {!loading && entries.length === 0 && <tr><td className="super-empty" colSpan={5}>No weekly-plan entries saved yet.</td></tr>}
+              <div className="teacher-plan-table-wrap"><table className="teacher-plan-table"><thead><tr><th>Day</th><th>Class</th><th>Course</th><th>Status</th><th>Last updated</th><th>Actions</th></tr></thead><tbody>
+                {entries.map((entry) => { const reviewStatus = entryReviewStatus(entry); const statusLabel = entry.status === "published" ? "Published for families" : reviewStatus === "submitted" ? "Sent to supervisor" : reviewStatus === "changes_requested" ? "Changes requested" : reviewStatus === "approved" ? "Approved" : "Draft"; const editable = reviewStatus === "draft" || reviewStatus === "changes_requested"; return <tr key={entry.id}><td><span className="teacher-day-badge">{entry.day.slice(0, 3)}</span>{entry.day}</td><td><strong>{entry.className}</strong></td><td>{entry.subject}</td><td><span className={`teacher-status ${entry.status === "published" || reviewStatus === "approved" ? "green" : reviewStatus === "submitted" ? "navy" : "amber"}`}><i />{statusLabel}</span></td><td>{entry.updated}</td><td><div className="teacher-plan-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => openEntryEditor(entry)}>{editable ? "Edit" : "Preview"}</button>{reviewStatus === "submitted" && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => { const submission = mySubmissions.find((item) => item.classId === entry.classId && item.weekId === entry.weekId && item.subjectId === entry.subjectId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}{editable && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void deleteDraftEntry(entry)}>Delete</button>}</div></td></tr>; })}
+                {!loading && entries.length === 0 && <tr><td className="super-empty" colSpan={6}>No weekly-plan entries saved yet.</td></tr>}
               </tbody></table></div>
             </section>
 
