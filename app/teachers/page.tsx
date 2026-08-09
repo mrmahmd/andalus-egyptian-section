@@ -62,6 +62,7 @@ type MySubmission = {
   weeklyPlanId: string;
   classId: string;
   weekId: string;
+  subjectId: string;
   className: string;
   week: string;
   subject: string;
@@ -190,7 +191,7 @@ export default function TeachersDashboardPage() {
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
         supabase.from("plan_entries").select("id, day_of_week, updated_at, subjects(name_en), weekly_plans(status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
-        supabase.from("plan_submissions").select("id, weekly_plan_id, status, review_note, weekly_plans(class_id, week_id, school_classes(grade, section), academic_weeks(label)), subjects(name_en)").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
+        supabase.from("plan_submissions").select("id, weekly_plan_id, subject_id, status, review_note, weekly_plans(class_id, week_id, school_classes(grade, section), academic_weeks(label)), subjects(name_en)").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         Promise.resolve({ data: [], error: null }),
         departmentTeachersPromise,
         supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
@@ -235,7 +236,7 @@ export default function TeachersDashboardPage() {
         const week = one(plan?.academic_weeks);
         const subject = one(submission.subjects as { name_en: string } | { name_en: string }[] | null);
         return {
-          id: String(submission.id), weeklyPlanId: String(submission.weekly_plan_id), classId: String(plan?.class_id ?? ""), weekId: String(plan?.week_id ?? ""),
+          id: String(submission.id), weeklyPlanId: String(submission.weekly_plan_id), classId: String(plan?.class_id ?? ""), weekId: String(plan?.week_id ?? ""), subjectId: String(submission.subject_id),
           className: `Grade ${schoolClass?.grade ?? ""} · ${schoolClass?.section ?? ""}`, week: week?.label ?? "Academic week", subject: subject?.name_en ?? "Subject",
           status: String(submission.status) as MySubmission["status"], reviewNote: String(submission.review_note ?? ""),
         };
@@ -332,7 +333,10 @@ export default function TeachersDashboardPage() {
   const uniqueClasses = useMemo(() => Array.from(new Map(assignments.map((assignment) => [assignment.classId, `Grade ${assignment.grade} · ${assignment.section}`])).values()), [assignments]);
   const uniqueSubjects = useMemo(() => Array.from(new Set(assignments.map((assignment) => assignment.subject))), [assignments]);
 
-  const sourceSubjectAssignments = selectedClassAssignments.filter((assignment) => selectedClassSlots.some((slot) => slot.subject_id === assignment.subjectId));
+  const approvedSubjectIds = useMemo(() => new Set(mySubmissions
+    .filter((submission) => submission.classId === selectedClassId && submission.weekId === selectedWeekId && submission.status === "approved")
+    .map((submission) => submission.subjectId)), [mySubmissions, selectedClassId, selectedWeekId]);
+  const sourceSubjectAssignments = selectedClassAssignments.filter((assignment) => selectedClassSlots.some((slot) => slot.subject_id === assignment.subjectId) && !approvedSubjectIds.has(assignment.subject));
   const copyTargetClasses = useMemo(() => {
     const sourceSubject = selectedClassAssignments.find((assignment) => assignment.subjectId === copySubjectId);
     if (!sourceSubject) return [];
@@ -343,12 +347,14 @@ export default function TeachersDashboardPage() {
   }, [assignments, copySubjectId, selectedClassAssignments, selectedClassId, timetableSlots]);
 
   const builderStatus = useMemo(() => {
-    const statuses = mySubmissions.filter((submission) => submission.classId === selectedClassId && submission.weekId === selectedWeekId);
+    const subjectIds = new Set(selectedClassSlots.map((slot) => slot.subject_id));
+    const statuses = mySubmissions.filter((submission) => submission.classId === selectedClassId && submission.weekId === selectedWeekId && subjectIds.has(submission.subjectId));
+    const approvedCount = statuses.filter((submission) => submission.status === "approved").length;
     if (statuses.some((submission) => submission.status === "submitted")) return "submitted";
     if (statuses.some((submission) => submission.status === "changes_requested")) return "changes_requested";
-    if (statuses.some((submission) => submission.status === "approved")) return "approved";
+    if (subjectIds.size > 0 && approvedCount === subjectIds.size) return "approved";
     return savedPlanId ? "draft" : "new";
-  }, [mySubmissions, savedPlanId, selectedClassId, selectedWeekId]);
+  }, [mySubmissions, savedPlanId, selectedClassId, selectedWeekId, selectedClassSlots, selectedClassAssignments]);
 
   const loadPlanIntoBuilder = useCallback(async () => {
     if (!weeklyBuilderOpen || !profileId || !selectedClassId || !selectedWeekId) return;
@@ -453,7 +459,7 @@ export default function TeachersDashboardPage() {
         weeklyPlanId = String(createdPlan.id);
       }
 
-      const entryRows = selectedClassSlots.map((slot) => {
+      const entryRows = selectedClassSlots.filter((slot) => !approvedSubjectIds.has(slot.subject_id)).map((slot) => {
         const assignment = assignmentForSlot(slot);
         const draft = slotDraftFor(slot);
         const classwork = draft.classwork.trim();
@@ -471,16 +477,20 @@ export default function TeachersDashboardPage() {
           updated_at: new Date().toISOString(),
         };
       });
-      const { error: entriesError } = await supabase.from("plan_entries").upsert(entryRows, { onConflict: "weekly_plan_id,day_of_week,period_number" });
-      if (entriesError) throw entriesError;
+      if (entryRows.length) {
+        const { error: entriesError } = await supabase.from("plan_entries").upsert(entryRows, { onConflict: "weekly_plan_id,day_of_week,period_number" });
+        if (entriesError) throw entriesError;
+      }
 
-      const submissionRows = Array.from(new Set(selectedClassSlots.map((slot) => slot.subject_id))).map((subjectId) => ({
+      const submissionRows = Array.from(new Set(selectedClassSlots.filter((slot) => !approvedSubjectIds.has(slot.subject_id)).map((slot) => slot.subject_id))).map((subjectId) => ({
         weekly_plan_id: weeklyPlanId, teacher_id: profileId, subject_id: subjectId,
         status: submitForReview ? "submitted" : "draft", reviewed_by: null, reviewed_at: null,
         submitted_at: submitForReview ? new Date().toISOString() : null,
       }));
-      const { error: submissionError } = await supabase.from("plan_submissions").upsert(submissionRows, { onConflict: "weekly_plan_id,teacher_id,subject_id" });
-      if (submissionError) throw submissionError;
+      if (submissionRows.length) {
+        const { error: submissionError } = await supabase.from("plan_submissions").upsert(submissionRows, { onConflict: "weekly_plan_id,teacher_id,subject_id" });
+        if (submissionError) throw submissionError;
+      }
 
       if (quizDetails.trim() && quizSubjectId) {
         const { error: oldQuizError } = await supabase.from("plan_quizzes").delete().eq("weekly_plan_id", weeklyPlanId).eq("teacher_id", profileId).eq("subject_id", quizSubjectId);
@@ -780,7 +790,7 @@ export default function TeachersDashboardPage() {
           <div className={`weekly-builder-days days-${activeDayIndexes.length}`}>{activeDayIndexes.map((index) => { const day = dayNames[index]; const daySlots = selectedClassSlots.filter((slot) => slot.day_of_week === index); return <section className="weekly-builder-day" key={day}><header><strong>{day}</strong><small>{daySlots.length} lesson{daySlots.length === 1 ? "" : "s"}</small></header>{daySlots.map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = englishSubjectNames.has(assignment?.subject ?? ""); return <article key={slot.id}><header><span>Period {slot.period_number}</span><strong>{assignment?.subject ?? "Subject"}</strong></header>{assignment?.subject === "Integrated Science" && <label>Science component<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>English programme<select value={draft.englishProgramme || defaultEnglishProgramme(assignment?.grade ?? 0, assignment?.subject ?? "")} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}>{englishProgrammesForGrade(assignment?.grade ?? 0).map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">The programme name is added automatically before Classwork.</p>}<label>Classwork<textarea rows={3} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={3} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder="Homework for this lesson" /></label><label>Classera notes<textarea rows={3} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>})}</section>})}</div>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Choose the subject, then add the quiz for this class.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Subject<select value={quizSubjectId} onChange={(event) => setQuizSubjectId(event.target.value)}><option value="">Select subject</option>{selectedClassAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>NT</span><div><strong>Weekly notes for families</strong><small>Spelling words, reminders or important announcements.</small></div></div></div><textarea className="weekly-builder-notes" rows={3} value={weeklyNote} onChange={(event) => setWeeklyNote(event.target.value)} placeholder="Weekly notes" /></section>
-          {savedPlanId && builderStatus !== "approved" && <section className="weekly-copy-panel"><div><strong>Copy this subject plan to other classes</strong><p>Only classes in the same grade where you teach the same subject appear here. The copied plans are saved as drafts; quizzes and weekly notes stay with the original class.</p></div><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => { setCopyPanelOpen((open) => !open); setCopySubjectId((current) => current || sourceSubjectAssignments[0]?.subjectId || ""); }}>Copy plan</button>{copyPanelOpen && <div className="weekly-copy-controls"><label>Subject to copy<select value={copySubjectId} onChange={(event) => { setCopySubjectId(event.target.value); setCopyTargetClassIds([]); }}><option value="">Select subject</option>{sourceSubjectAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><div className="weekly-copy-targets">{copyTargetClasses.map((target) => <label key={target.classId}><input type="checkbox" checked={copyTargetClassIds.includes(target.classId)} onChange={() => toggleCopyTarget(target.classId)} /><span><strong>Grade {target.grade} · {target.section}</strong><small>{target.lessonCount} matching timetable lesson{target.lessonCount === 1 ? "" : "s"}</small></span></label>)}{copySubjectId && copyTargetClasses.length === 0 && <p>No other eligible class is assigned to you for this subject and grade.</p>}</div><div className="weekly-copy-actions"><small>Different lesson dates or periods are matched by lesson order: first lesson to first lesson, second to second, and so on.</small><button type="button" className="teacher-primary-button" disabled={saving || !copySubjectId || copyTargetClassIds.length === 0} onClick={() => void copyPlanToOtherClasses()}>Save copied drafts</button></div></div>}</section>}
+          <section className="weekly-copy-panel"><div><strong>Copy this subject plan to other classes</strong><p>{savedPlanId ? "Only classes in the same grade where you teach the same subject appear here. The copied plans are saved as drafts; quizzes and weekly notes stay with the original class." : "Save this class as a draft first, then you can copy one subject plan to your other eligible classes."}</p></div><button type="button" className="teacher-secondary-button" disabled={saving || !savedPlanId || builderStatus === "approved"} onClick={() => { setCopyPanelOpen((open) => !open); setCopySubjectId((current) => current || sourceSubjectAssignments[0]?.subjectId || ""); }}>Copy plan</button>{savedPlanId && copyPanelOpen && <div className="weekly-copy-controls"><label>Subject to copy<select value={copySubjectId} onChange={(event) => { setCopySubjectId(event.target.value); setCopyTargetClassIds([]); }}><option value="">Select subject</option>{sourceSubjectAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><div className="weekly-copy-targets">{copyTargetClasses.map((target) => <label key={target.classId}><input type="checkbox" checked={copyTargetClassIds.includes(target.classId)} onChange={() => toggleCopyTarget(target.classId)} /><span><strong>Grade {target.grade} · {target.section}</strong><small>{target.lessonCount} matching timetable lesson{target.lessonCount === 1 ? "" : "s"}</small></span></label>)}{copySubjectId && copyTargetClasses.length === 0 && <p>No other eligible class is assigned to you for this subject and grade.</p>}</div><div className="weekly-copy-actions"><small>Different lesson dates or periods are matched by lesson order: first lesson to first lesson, second to second, and so on.</small><button type="button" className="teacher-primary-button" disabled={saving || !copySubjectId || copyTargetClassIds.length === 0} onClick={() => void copyPlanToOtherClasses()}>Save copied drafts</button></div></div>}</section>
           <div className="teacher-editor-footer"><span>{selectedClassSlots.length > 0 ? "Every card is one of your real timetable lessons. Save once when the whole class week is ready." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "approved"} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button>{builderStatus === "submitted" && <button disabled={saving} type="button" className="teacher-secondary-button warning" onClick={() => { const submission = mySubmissions.find((item) => item.classId === selectedClassId && item.weekId === selectedWeekId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}<button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "approved"} className="teacher-primary-button" type="submit">{saving ? "Saving…" : builderStatus === "changes_requested" ? "Resubmit for review" : "Submit for review"}</button></div></div>
         </form>
       </section></div>}
