@@ -1,97 +1,86 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
-const weeks = [
-  { number: "01", dates: "6–10 September 2026", status: "Available" },
-  { number: "02", dates: "13–17 September 2026", status: "Available" },
-  { number: "03", dates: "20–24 September 2026", status: "Latest" },
-  { number: "04", dates: "27 September–1 October 2026", status: "Available" },
-  { number: "05", dates: "4–8 October 2026", status: "Coming soon" },
-  { number: "06", dates: "11–15 October 2026", status: "Coming soon" },
-];
+type PublishedPlan = { id: string; grade: number; section: string; weekNumber: number; weekLabel: string; startsOn: string; endsOn: string };
+type LiveLesson = { day_of_week: number; period_number: number; course: string; classwork: string; homework: string; notes: string };
 
-const normaliseEnglishLesson = (lesson: string[]) => {
-  if (lesson[0] === "English OL") return ["English", "English — " + lesson[1], lesson[2], lesson[3]];
-  if (lesson[0] === "English AL") return ["English", "Connect Plus — " + lesson[1], lesson[2], lesson[3]];
-  return lesson;
-};
-
-const defaultDays = [
-  { day: "Sunday", lessons: [["Arabic", "Reading and vocabulary", "Complete activity 3", "—"], ["Islamic", "Good manners", "Revise the lesson", "—"], ["English OL", "Unit 2 reading", "Workbook page 9", "Bring reader"], ["English AL", "Guided writing", "Write five sentences", "—"], ["Math", "Multiplication facts", "Worksheet 2A", "Quiz Tuesday"], ["Science", "Butterfly life cycle", "Draw and label", "Bring colours"], ["Social", "Egyptian landmarks", "Research one landmark", "—"], ["ICT", "Safe internet use", "Online task", "Classera task"]] },
-  { day: "Monday", lessons: [["Arabic", "Grammar practice", "Book activity", "—"], ["Islamic", "Daily behaviour", "Memorise points", "—"], ["English OL", "Phonics practice", "Workbook page 10", "—"], ["English AL", "Sentence building", "Write six sentences", "—"], ["Math", "Word problems", "Workbook page 12", "—"], ["Science", "Living things", "Label the diagram", "—"], ["Social", "Map skills", "Map activity", "—"], ["ICT", "Digital safety", "Complete online task", "Classera task"]] },
-  { day: "Tuesday", lessons: [["Arabic", "Reading comprehension", "Answer questions", "—"], ["Islamic", "Quran revision", "Practise at home", "—"], ["English OL", "Spelling practice", "Learn spelling list", "Spelling quiz"], ["English AL", "Story writing", "Finish paragraph", "—"], ["Math", "Two-step problems", "Worksheet 2B", "—"], ["Science", "Plant growth", "Observe your plant", "—"], ["Social", "Community helpers", "Short research", "—"], ["ICT", "Keyboard skills", "Typing practice", "Computer lab"]] },
-  { day: "Wednesday", lessons: [["Arabic", "Writing skills", "Copy the paragraph", "—"], ["Islamic", "Values lesson", "Review lesson", "—"], ["English OL", "Listening activity", "Workbook page 11", "—"], ["English AL", "Speaking practice", "Prepare dialogue", "—"], ["Math", "Mental maths", "Complete challenge", "—"], ["Science", "Materials", "Sort materials task", "—"], ["Social", "Local history", "Read the notes", "—"], ["ICT", "Presentation basics", "Finish slides", "Classera upload"]] },
-  { day: "Thursday", lessons: [["Arabic", "Weekly review", "Revise vocabulary", "—"], ["Islamic", "Weekly review", "Memorise lesson", "—"], ["English OL", "Unit review", "Reader page 20", "—"], ["English AL", "Writing review", "Improve draft", "—"], ["Math", "Weekly assessment", "Practise facts", "—"], ["Science", "Unit review", "Prepare for next week", "—"], ["Social", "Review activity", "Complete worksheet", "—"], ["ICT", "Digital project", "Save your work", "Have a lovely weekend"]] },
-];
-
-const quizzes = [
-  { day: "Tuesday", course: "English", assessment: "Spelling Quiz", scope: "animal · habitat · butterfly · grow · change", notes: "Revise the spelling list on Classera" },
-  { day: "Wednesday", course: "Mathematics", assessment: "Quick Check", scope: "Multiplication facts ×2 and ×5", notes: "10-minute classroom assessment" },
-];
+const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
+const one = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] ?? null : value;
+const formatDates = (startsOn: string, endsOn: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${startsOn}T00:00:00`)) + " – " + new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${endsOn}T00:00:00`));
 
 export default function WeeklyPlanPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const [grade, setGrade] = useState("Grade 4");
   const [classType, setClassType] = useState("Class A");
-  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
-  const [liveLessons, setLiveLessons] = useState<{ day_of_week: number; course: string; classwork: string; homework: string; notes: string }[]>([]);
-  const selectedWeekData = weeks.find((week) => week.number === selectedWeek) ?? weeks[0];
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+  const [publishedPlans, setPublishedPlans] = useState<PublishedPlan[]>([]);
+  const [liveLessons, setLiveLessons] = useState<LiveLesson[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const requestedGrade = params.get("grade");
-    const requestedSection = params.get("section")?.toUpperCase();
-    const requestedWeek = params.get("week")?.padStart(2, "0");
-
+    const requested = new URLSearchParams(window.location.search);
+    const requestedGrade = requested.get("grade");
+    const requestedSection = requested.get("section")?.toUpperCase();
+    const requestedWeek = Number(requested.get("week"));
     if (requestedGrade && /^(?:[1-9]|10)$/.test(requestedGrade)) setGrade(`Grade ${requestedGrade}`);
     if (requestedSection === "A" || requestedSection === "B") setClassType(`Class ${requestedSection}`);
-    if (requestedWeek && weeks.some((week) => week.number === requestedWeek)) setSelectedWeek(requestedWeek);
+
+    const loadPublishedPlans = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase
+        .from("weekly_plans")
+        .select("id, school_classes(grade, section), academic_weeks(week_number, label, starts_on, ends_on)")
+        .eq("status", "published");
+      const plans = ((data ?? []) as unknown as Record<string, unknown>[]).map((item) => {
+        const schoolClass = one(item.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
+        const week = one(item.academic_weeks as { week_number: number; label: string; starts_on: string; ends_on: string } | { week_number: number; label: string; starts_on: string; ends_on: string }[] | null);
+        return schoolClass && week ? { id: String(item.id), grade: schoolClass.grade, section: schoolClass.section, weekNumber: week.week_number, weekLabel: week.label, startsOn: week.starts_on, endsOn: week.ends_on } : null;
+      }).filter((plan): plan is PublishedPlan => plan !== null).sort((a, b) => b.weekNumber - a.weekNumber);
+      setPublishedPlans(plans);
+      setLoadingPlans(false);
+      const target = plans.find((plan) => plan.grade === Number(requestedGrade ?? 4) && plan.section === (requestedSection ?? "A") && plan.weekNumber === requestedWeek);
+      if (target) setSelectedWeek(target.weekNumber);
+    };
+    void loadPublishedPlans();
   }, []);
 
+  const plansForClass = useMemo(() => publishedPlans.filter((plan) => plan.grade === Number(grade.replace("Grade ", "")) && plan.section === classType.replace("Class ", "")), [classType, grade, publishedPlans]);
+  const selectedPlan = plansForClass.find((plan) => plan.weekNumber === selectedWeek) ?? null;
+
   useEffect(() => {
-    if (!selectedWeek) return;
+    if (!selectedPlan) {
+      setLiveLessons([]);
+      return;
+    }
     const loadLivePlan = async () => {
-      const supabase = getSupabaseBrowserClient();
-      const gradeNumber = Number(grade.replace("Grade ", ""));
-      const section = classType.replace("Class ", "");
-      const [{ data: classRow }, { data: weekRow }] = await Promise.all([
-        supabase.from("school_classes").select("id").eq("grade", gradeNumber).eq("section", section).maybeSingle(),
-        supabase.from("academic_weeks").select("id").eq("week_number", Number(selectedWeek)).maybeSingle(),
-      ]);
-      if (!classRow?.id || !weekRow?.id) return;
-      const { data } = await supabase.from("weekly_plans").select("plan_entries(day_of_week, period_number, classwork, homework, classera_notes, subjects(parent_plan_name))").eq("class_id", classRow.id).eq("week_id", weekRow.id).eq("status", "published").maybeSingle();
+      const { data } = await getSupabaseBrowserClient().from("weekly_plans")
+        .select("plan_entries(day_of_week, period_number, classwork, homework, classera_notes, subjects(parent_plan_name))")
+        .eq("id", selectedPlan.id).eq("status", "published").maybeSingle();
       const entries = (data?.plan_entries ?? []) as unknown as { day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string; subjects: { parent_plan_name: string } | { parent_plan_name: string }[] | null }[];
-      const one = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] ?? null : value;
-      setLiveLessons(entries.sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number).map((entry) => ({ day_of_week: entry.day_of_week, course: one(entry.subjects)?.parent_plan_name ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })));
+      setLiveLessons(entries.sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number).map((entry) => ({ day_of_week: entry.day_of_week, period_number: entry.period_number, course: one(entry.subjects)?.parent_plan_name ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })));
     };
     void loadLivePlan();
-  }, [classType, grade, selectedWeek]);
+  }, [selectedPlan]);
 
-  const openPlan = (week: string) => {
-    setSelectedWeek(week);
+  const days = dayNames.map((day, dayIndex) => ({ day, lessons: liveLessons.filter((lesson) => lesson.day_of_week === dayIndex) })).filter((item) => item.lessons.length > 0);
+  const openPlan = (weekNumber: number) => {
+    setSelectedWeek(weekNumber);
     window.setTimeout(() => document.getElementById("selected-plan")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
 
-  const days = liveLessons.length > 0
-    ? Array.from(new Set(liveLessons.map((lesson) => lesson.day_of_week))).map((dayIndex) => ({ day: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"][dayIndex], lessons: liveLessons.filter((lesson) => lesson.day_of_week === dayIndex).map((lesson) => [lesson.course, lesson.classwork || "—", lesson.homework || "—", lesson.notes || "—"] as string[]) }))
-    : defaultDays.map(({ day, lessons }) => ({ day, lessons: lessons.map(normaliseEnglishLesson) }));
-
   return <main className="subpage plan-page">
     <header className="compact-header"><Link href="/" className="brand-lockup"><img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" /><span className="brand-copy"><strong>ALANDALUS PRIVATE SCHOOLS</strong><small>Egyptian Section</small></span></Link><nav><Link href="/">Home</Link><Link className="active" href="/weekly-plan">Weekly Plan</Link><Link href="/timetable">Timetable</Link></nav><Link className="button button-outline" href="/support">Technical Support</Link></header>
-
-    <section className="plan-directory-hero"><div className="page-width"><p className="eyebrow">FAMILY ACCESS</p><h1>Weekly Plan Library</h1><span>Select a class to view every weekly plan published by the school.</span></div></section>
-
+    <section className="plan-directory-hero"><div className="page-width"><p className="eyebrow">FAMILY ACCESS</p><h1>Weekly Plan Library</h1><span>Choose your child’s grade and class to see approved weekly plans published by the school.</span></div></section>
     <section className="plan-directory page-width" aria-label="Weekly plan selector">
-      <div className="plan-directory-heading"><div><span className="directory-icon">WP</span><div><p className="eyebrow">PLAN FINDER</p><h2>Choose your child’s class</h2></div></div><p>Plans remain available here for families to revisit whenever needed.</p></div>
-      <div className="plan-directory-filters"><label>Grade<select value={grade} onChange={(event) => setGrade(event.target.value)}>{Array.from({ length: 10 }, (_, index) => <option key={index}>Grade {index + 1}</option>)}</select></label><label>Class<select value={classType} onChange={(event) => setClassType(event.target.value)}><option>Class A</option><option>Class B</option></select></label><div className="plan-directory-selection"><small>Showing plans for</small><strong>{grade} · {classType}</strong></div></div>
-      <div className="week-library"><div className="week-library-heading"><div><h2>Available weekly plans</h2><p>Academic Year 2026–2027</p></div><span>{weeks.filter((week) => week.status !== "Coming soon").length} plans available</span></div><div className="week-library-list">{weeks.map((week) => <article className={`week-library-item ${week.status === "Coming soon" ? "upcoming" : ""}`} key={week.number}><span className="week-number">{week.number}</span><div className="week-details"><strong>Week {week.number}</strong><small>{week.dates}</small></div><span className={`week-status ${week.status.toLowerCase().replace(" ", "-")}`}>{week.status}</span><div className="week-actions"><button type="button" className="week-view-button" disabled={week.status === "Coming soon"} onClick={() => openPlan(week.number)}>View <span>→</span></button><button type="button" className="week-download-button" disabled={week.status === "Coming soon"} onClick={() => { setSelectedWeek(week.number); window.setTimeout(() => window.print(), 0); }}>Print / Download</button></div></article>)}</div></div>
+      <div className="plan-directory-heading"><div><span className="directory-icon">WP</span><div><p className="eyebrow">PLAN FINDER</p><h2>Choose your child’s class</h2></div></div><p>Only supervisor-approved plans are shown here. Previous plans remain available for families to revisit.</p></div>
+      <div className="plan-directory-filters"><label>Grade<select value={grade} onChange={(event) => { setGrade(event.target.value); setSelectedWeek(null); }}>{Array.from({ length: 10 }, (_, index) => <option key={index}>Grade {index + 1}</option>)}</select></label><label>Class<select value={classType} onChange={(event) => { setClassType(event.target.value); setSelectedWeek(null); }}><option>Class A</option><option>Class B</option></select></label><div className="plan-directory-selection"><small>Published plans for</small><strong>{grade} · {classType}</strong></div></div>
+      <div className="week-library"><div className="week-library-heading"><div><h2>Available weekly plans</h2><p>Academic Year 2026–2027</p></div><span>{plansForClass.length} plan{plansForClass.length === 1 ? "" : "s"} available</span></div>
+        {loadingPlans ? <p className="supervisor-review-empty">Loading published plans…</p> : plansForClass.length === 0 ? <p className="supervisor-review-empty">No approved weekly plans have been published for this class yet.</p> : <div className="week-library-list">{plansForClass.map((plan) => <article className="week-library-item" key={plan.id}><span className="week-number">{String(plan.weekNumber).padStart(2, "0")}</span><div className="week-details"><strong>Week {plan.weekNumber}</strong><small>{plan.weekLabel || formatDates(plan.startsOn, plan.endsOn)}</small></div><span className="week-status">Available</span><div className="week-actions"><button type="button" className="week-view-button" onClick={() => openPlan(plan.weekNumber)}>View <span>→</span></button><button type="button" className="week-download-button" onClick={() => { openPlan(plan.weekNumber); window.setTimeout(() => window.print(), 150); }}>Print / Download</button></div></article>)}</div>}</div>
     </section>
-
-    <section id="selected-plan" className={`selected-plan-wrap ${selectedWeek ? "is-open" : ""}`} aria-hidden={!selectedWeek}><div className="plan-toolbar page-width"><div><p className="eyebrow">OFFICIAL WEEKLY PLAN</p><h1>{grade} · {classType}</h1><p>Week {selectedWeekData.number} · {selectedWeekData.dates}</p></div><div className="toolbar-actions"><button className="button button-outline" type="button" onClick={() => setSelectedWeek(null)}>Back to Plans</button><button className="button button-primary" type="button" onClick={() => window.print()}>Print / Save PDF</button></div></div>
-      <section className="plan-paper page-width" aria-label="Weekly study plan"><div className="paper-header"><img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS PRIVATE SCHOOLS</strong><span>The Egyptian Section</span><h2>WEEKLY STUDY PLAN</h2></div></div><div className="paper-meta"><span><small>Class</small><strong>{grade.replace("Class", "")} · {classType.replace("Class ", "")}</strong></span><span><small>Class Teacher</small><strong>Mr.Mohamed Farid</strong></span><span><small>Week No.</small><strong>{selectedWeekData.number}</strong></span><span><small>Date</small><strong>{selectedWeekData.dates}</strong></span></div><div className="table-wrap"><table className="weekly-table"><thead><tr><th>Day</th><th>Course</th><th>Classwork</th><th>Homework</th><th>Classera Notes</th></tr></thead>{days.map(({ day, lessons }) => <tbody className="weekly-day-group" key={day}>{lessons.map((lesson, lessonIndex) => <tr key={`${day}-${lesson[0]}`} className={lessonIndex === 0 ? "new-day" : ""}>{lessonIndex === 0 && <td className="day-cell" rowSpan={lessons.length}>{day}</td>}<td className="course-cell">{lesson[0]}</td><td>{lesson[1]}</td><td>{lesson[2]}</td><td>{lesson[3]}</td></tr>)}</tbody>)}</table></div><section className="quiz-schedule" aria-labelledby="quiz-schedule-title"><div className="quiz-schedule-heading"><div><span>QA</span><div><small>Weekly assessment schedule</small><h3 id="quiz-schedule-title">QUIZZES &amp; ASSESSMENTS</h3></div></div><p>{quizzes.length} scheduled this week</p></div><div className="table-wrap quiz-table-wrap"><table className="quiz-table"><thead><tr><th>Day</th><th>Course</th><th>Quiz / Assessment</th><th>Study Scope</th><th>Notes</th></tr></thead><tbody>{quizzes.map((quiz) => <tr key={`${quiz.day}-${quiz.course}`}><td className="quiz-day-cell">{quiz.day}</td><td className="course-cell">{quiz.course}</td><td><strong>{quiz.assessment}</strong></td><td>{quiz.scope}</td><td>{quiz.notes}</td></tr>)}</tbody></table></div></section><div className="important-notes"><strong>Important Notes</strong><p>English spelling: animal · habitat · butterfly · grow · change &nbsp; | &nbsp; Mathematics quiz on Tuesday.</p></div></section>
-    </section>
+    <section id="selected-plan" className={`selected-plan-wrap ${selectedPlan ? "is-open" : ""}`} aria-hidden={!selectedPlan}>{selectedPlan && <><div className="plan-toolbar page-width"><div><p className="eyebrow">OFFICIAL WEEKLY PLAN</p><h1>{grade} · {classType}</h1><p>Week {selectedPlan.weekNumber} · {selectedPlan.weekLabel || formatDates(selectedPlan.startsOn, selectedPlan.endsOn)}</p></div><div className="toolbar-actions"><button className="button button-outline" type="button" onClick={() => setSelectedWeek(null)}>Back to Plans</button><button className="button button-primary" type="button" onClick={() => window.print()}>Print / Save PDF</button></div></div>
+      <section className="plan-paper page-width" aria-label="Weekly study plan"><div className="paper-header"><img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS PRIVATE SCHOOLS</strong><span>The Egyptian Section</span><h2>WEEKLY STUDY PLAN</h2></div></div><div className="paper-meta"><span><small>Class</small><strong>{grade} · {classType}</strong></span><span><small>Class Teacher</small><strong>To be confirmed</strong></span><span><small>Week No.</small><strong>{selectedPlan.weekNumber}</strong></span><span><small>Date</small><strong>{selectedPlan.weekLabel || formatDates(selectedPlan.startsOn, selectedPlan.endsOn)}</strong></span></div><div className="table-wrap"><table className="weekly-table"><thead><tr><th>Day</th><th>Course</th><th>Classwork</th><th>Homework</th><th>Classera Notes</th></tr></thead>{days.map(({ day, lessons }) => <tbody className="weekly-day-group" key={day}>{lessons.map((lesson, lessonIndex) => <tr key={`${day}-${lesson.period_number}`} className={lessonIndex === 0 ? "new-day" : ""}>{lessonIndex === 0 && <td className="day-cell" rowSpan={lessons.length}>{day}</td>}<td className="course-cell">{lesson.course}</td><td>{lesson.classwork || "—"}</td><td>{lesson.homework || "—"}</td><td>{lesson.notes || "—"}</td></tr>)}</tbody>)}</table>{days.length === 0 && <p className="supervisor-review-empty">This approved plan does not contain lesson entries yet.</p>}</div><div className="important-notes"><strong>Important Notes</strong><p>Notes and assessment details will appear here when they are added and approved by the school.</p></div></section></>}</section>
   </main>;
 }

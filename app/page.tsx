@@ -58,7 +58,7 @@ export default function Home() {
           </p>
           <div className="hero-actions">
             <a className="button button-primary" href="#plan-finder">Find your weekly plan <span aria-hidden="true">→</span></a>
-            <Link className="button button-glass" href="/weekly-plan">View sample plan</Link>
+            <Link className="button button-glass" href="/weekly-plan">Browse weekly plans</Link>
           </div>
         </div>
         <div className="hero-year" aria-hidden="true">EST. 1984</div>
