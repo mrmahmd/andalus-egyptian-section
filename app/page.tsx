@@ -127,13 +127,12 @@ export default function Home() {
             <p>Each subject appears in its own row, with classwork, homework, and notes kept clear and easy to scan.</p>
             <Link className="text-link" href="/weekly-plan">Explore the full weekly plan <span>→</span></Link>
           </div>
-          <div className="mini-plan" aria-label="Sample weekly plan preview">
-            <div className="mini-plan-head"><span>WEEK 03</span><strong>Grade 4 · Class A</strong></div>
+          <div className="mini-plan" aria-label="Weekly plan format preview">
+            <div className="mini-plan-head"><span>WEEKLY PLAN</span><strong>OFFICIAL SCHOOL FORMAT</strong></div>
             <div className="mini-row mini-labels"><span>DAY</span><span>COURSE</span><span>HOMEWORK</span></div>
-            <div className="mini-row"><span>Sunday</span><strong>English</strong><span>Workbook p. 9</span></div>
-            <div className="mini-row"><span></span><strong>Mathematics</strong><span>Worksheet 2A</span></div>
-            <div className="mini-row"><span>Monday</span><strong>Science</strong><span>Life cycle diagram</span></div>
-            <div className="mini-row"><span></span><strong>Arabic</strong><span>Book activity</span></div>
+            <div className="mini-row"><span>✓</span><strong>Approved plans</strong><span>Available online</span></div>
+            <div className="mini-row"><span>✓</span><strong>Clear lesson order</strong><span>Easy to follow</span></div>
+            <div className="mini-row"><span>✓</span><strong>Official school format</strong><span>Ready to print</span></div>
             <div className="mini-plan-foot"><span>Teacher updated</span><span>Print-ready PDF</span></div>
           </div>
         </div>

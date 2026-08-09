@@ -78,6 +78,11 @@ body { margin: 0; background: var(--white); color: var(--ink); font-family: "Apt
 .arabic-ui .plan-paper, .arabic-ui .plan-paper * { direction: ltr; font-family: "Plus Jakarta Sans", "Aptos", "Segoe UI", sans-serif !important; text-align: left; }
 .arabic-ui .plan-paper .paper-header, .arabic-ui .plan-paper .paper-header * { text-align: center !important; }
 .arabic-ui .compact-header, .arabic-ui .plan-toolbar { direction: rtl; text-align: right; }
+.arabic-ui .finder-shell, .arabic-ui .plan-directory, .arabic-ui .plan-directory-hero, .arabic-ui .plan-toolbar { direction: rtl; text-align: right; }
+.arabic-ui .finder-heading, .arabic-ui .finder-fields, .arabic-ui .plan-directory-heading, .arabic-ui .plan-directory-filters, .arabic-ui .week-library-heading, .arabic-ui .week-library-item, .arabic-ui .week-actions { direction: rtl; }
+.arabic-ui .finder-fields label, .arabic-ui .plan-directory-filters label, .arabic-ui .week-details, .arabic-ui .plan-directory-selection, .arabic-ui .supervisor-review-empty { text-align: right; }
+.arabic-ui .finder-fields select, .arabic-ui .plan-directory-filters select { text-align: right; direction: rtl; }
+.arabic-ui .mini-plan, .arabic-ui .mini-row, .arabic-ui .mini-plan-head, .arabic-ui .mini-plan-foot { direction: rtl; text-align: right; }
 html[dir="rtl"] .language-control { right: auto; left: 16px; }
 html[dir="rtl"] .language-switcher, html[dir="rtl"] .language-menu strong, html[dir="rtl"] .language-menu button { font-family: "Alexandria", "Cairo", "Tahoma", sans-serif; }
 html[dir="rtl"] .language-menu { right: auto; left: 0; direction: rtl; text-align: right; }
