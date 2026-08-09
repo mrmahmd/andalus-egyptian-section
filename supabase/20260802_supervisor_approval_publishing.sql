@@ -46,14 +46,10 @@ begin
   where id = submission_id
   returning * into submission;
 
-  if decision = 'approved' then
-    update public.weekly_plans
-    set status = 'published',
-        published_by = (select auth.uid()),
-        published_at = coalesce(published_at, now()),
-        updated_at = now()
-    where id = submission.weekly_plan_id;
-  end if;
+  -- Publication is decided only after every timetable-linked subject for the
+  -- class/week has an approved submission. The current production helper is
+  -- installed by 20260809_require_all_supervisor_approvals.sql.
+  perform private.refresh_weekly_plan_publication_state(submission.weekly_plan_id);
 
   return submission;
 end;
