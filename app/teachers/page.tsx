@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 const navigation = [
@@ -57,6 +57,7 @@ type TeacherEntry = {
   day: string;
   className: string;
   subject: string;
+  week: string;
   status: string;
   updated: string;
 };
@@ -92,6 +93,7 @@ type SlotDraft = { classwork: string; homework: string; classeraNotes: string; e
 type SchoolClass = { id: string; grade: number; section: string };
 type SchoolSubject = { id: string; name_en: string };
 type DepartmentTeacher = { userId: string; name: string; assignments: Assignment[] };
+type WeeklyPlanRow = { planId: string; classId: string; weekId: string; className: string; week: string; subjects: string[]; lessonCount: number; status: string; updated: string };
 
 const emptySlotDraft = (): SlotDraft => ({ classwork: "", homework: "", classeraNotes: "", englishProgramme: "", scienceComponent: "" });
 const scienceComponents = ["Chemistry", "Physics", "Biology"];
@@ -159,6 +161,10 @@ export default function TeachersDashboardPage() {
   const [quizSubjectId, setQuizSubjectId] = useState("");
   const [weeklyNote, setWeeklyNote] = useState("");
   const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
+  const [autoSaveState, setAutoSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [builderHydrated, setBuilderHydrated] = useState(false);
+  const autoSaveTimer = useRef<number | null>(null);
+  const autoSavedSignature = useRef("");
   const [savedPlanId, setSavedPlanId] = useState("");
   const [copyPanelOpen, setCopyPanelOpen] = useState(false);
   const [copySubjectId, setCopySubjectId] = useState("");
@@ -224,11 +230,13 @@ export default function TeachersDashboardPage() {
         const subject = one(entry.subjects as { name_en: string } | { name_en: string }[] | null);
         const weeklyPlan = one(entry.weekly_plans as unknown as { class_id: string; week_id: string; status: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null } | { class_id: string; week_id: string; status: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { label: string } | { label: string }[] | null }[] | null);
         const schoolClass = one(weeklyPlan?.school_classes);
+        const week = one(weeklyPlan?.academic_weeks);
         return {
           id: String(entry.id), weeklyPlanId: String(entry.weekly_plan_id), classId: String(weeklyPlan?.class_id ?? ""), weekId: String(weeklyPlan?.week_id ?? ""), subjectId: String(entry.subject_id),
           day: dayNames[Number(entry.day_of_week)] ?? "School day",
           className: `Grade ${schoolClass?.grade ?? "—"} · ${schoolClass?.section ?? ""}`,
           subject: subject?.name_en ?? "Subject",
+          week: week?.label ?? "Academic week",
           status: weeklyPlan?.status ?? "draft",
           updated: formatDate(String(entry.updated_at)),
         };
@@ -362,6 +370,7 @@ export default function TeachersDashboardPage() {
 
   const loadPlanIntoBuilder = useCallback(async () => {
     if (!weeklyBuilderOpen || !profileId || !selectedClassId || !selectedWeekId) return;
+    setBuilderHydrated(false);
     try {
       const supabase = getSupabaseBrowserClient();
       const { data: plan, error: planError } = await supabase.from("weekly_plans")
@@ -398,9 +407,11 @@ export default function TeachersDashboardPage() {
       }
       const note = ((plan?.plan_notes ?? []) as Array<{ note_text: string; teacher_id: string }>).find((row) => row.teacher_id === profileId);
       setWeeklyNote(note?.note_text ?? "");
+      setBuilderHydrated(true);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The saved plan could not be opened.");
       setMessageTone("error");
+      setBuilderHydrated(true);
     }
   }, [profileId, selectedClassId, selectedWeekId, selectedClassSlots, weeklyBuilderOpen, selectedWeek]);
 
@@ -438,7 +449,7 @@ export default function TeachersDashboardPage() {
     setSlotDrafts((current) => ({ ...current, [slotId]: { ...(current[slotId] ?? emptySlotDraft()), [field]: value } }));
   };
 
-  const saveWholeWeek = async (submitForReview = false) => {
+  const saveWholeWeek = async (submitForReview = false, silent = false) => {
     if (!profileId || !selectedClass || !selectedWeek) return;
     if (selectedClassSlots.length === 0) {
       setMessage("No timetable lessons are linked to this class yet. Ask the Super Admin to review the timetable connection.");
@@ -447,6 +458,7 @@ export default function TeachersDashboardPage() {
     }
 
     setSaving(true);
+    if (silent) setAutoSaveState("saving");
     try {
       const supabase = getSupabaseBrowserClient();
       const { data: existingPlan, error: planReadError } = await supabase.from("weekly_plans").select("id").eq("class_id", selectedClassId).eq("week_id", selectedWeek.id).maybeSingle();
@@ -513,18 +525,33 @@ export default function TeachersDashboardPage() {
       }
 
       setSavedPlanId(weeklyPlanId);
+      autoSavedSignature.current = autosaveSignature;
       setCopyPanelOpen(false);
-      setMessage(submitForReview ? "Your weekly plan was sent to your department supervisor for review." : "The whole week was saved successfully to Supabase.");
-      setMessageTone("success");
-      await loadTeacherDashboard();
+      if (!silent) {
+        setMessage(submitForReview ? "Your weekly plan was sent to your department supervisor for review." : "The whole week was saved successfully to Supabase.");
+        setMessageTone("success");
+        await loadTeacherDashboard();
+      } else {
+        setAutoSaveState("saved");
+      }
       if (submitForReview) setWeeklyBuilderOpen(false);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "The weekly plan could not be saved.");
-      setMessageTone("error");
+      if (silent) { autoSavedSignature.current = ""; setAutoSaveState("idle"); }
+      else { setMessage(error instanceof Error ? error.message : "The weekly plan could not be saved."); setMessageTone("error"); }
     } finally {
       setSaving(false);
     }
   };
+
+  const hasAutosaveContent = useMemo(() => Object.values(slotDrafts).some((draft) => Boolean(draft.classwork.trim() || draft.homework.trim() || draft.classeraNotes.trim())) || Boolean(quizDetails.trim() || weeklyNote.trim()), [slotDrafts, quizDetails, weeklyNote]);
+  const autosaveSignature = useMemo(() => JSON.stringify({ selectedClassId, selectedWeekId, slotDrafts, quizDay, quizDetails, quizSubjectId, weeklyNote }), [selectedClassId, selectedWeekId, slotDrafts, quizDay, quizDetails, quizSubjectId, weeklyNote]);
+  useEffect(() => {
+    if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current);
+    if (!weeklyBuilderOpen || !builderHydrated || !hasAutosaveContent || saving || builderStatus === "approved" || autoSavedSignature.current === autosaveSignature) return;
+    setAutoSaveState("idle");
+    autoSaveTimer.current = window.setTimeout(() => { autoSavedSignature.current = autosaveSignature; void saveWholeWeek(false, true); }, 1400);
+    return () => { if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current); };
+  }, [weeklyBuilderOpen, builderHydrated, hasAutosaveContent, autosaveSignature, saving, builderStatus]);
 
   const withdrawSubmissionForEditing = async (submission: MySubmission) => {
     if (submission.status !== "submitted") return;
@@ -588,6 +615,32 @@ export default function TeachersDashboardPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const openWeeklyPlan = (plan: WeeklyPlanRow) => {
+    setSelectedClassId(plan.classId);
+    setSelectedWeekId(plan.weekId);
+    setCopyPanelOpen(false);
+    setWeeklyBuilderOpen(true);
+  };
+
+  const clearWeeklyDraft = async (plan: WeeklyPlanRow) => {
+    if (plan.status !== "draft" && plan.status !== "changes_requested") return;
+    if (!window.confirm(`Clear your saved draft for ${plan.className}, ${plan.week}? This removes only your lessons and keeps other teachers' work unchanged.`)) return;
+    setSaving(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error: entryError } = await supabase.from("plan_entries").delete().eq("weekly_plan_id", plan.planId).eq("teacher_id", profileId);
+      if (entryError) throw entryError;
+      const { error: submissionError } = await supabase.from("plan_submissions").update({ status: "draft", submitted_at: null, review_note: null, reviewed_by: null, reviewed_at: null, updated_at: new Date().toISOString() }).eq("weekly_plan_id", plan.planId).eq("teacher_id", profileId).in("status", ["draft", "changes_requested"]);
+      if (submissionError) throw submissionError;
+      setMessage("Your draft lessons for this week were cleared. Other teachers' plans were not changed.");
+      setMessageTone("success");
+      await loadTeacherDashboard();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The weekly draft could not be cleared.");
+      setMessageTone("error");
+    } finally { setSaving(false); }
   };
 
   const toggleCopyTarget = (classId: string) => setCopyTargetClassIds((current) => current.includes(classId) ? current.filter((id) => id !== classId) : [...current, classId]);
@@ -703,6 +756,18 @@ export default function TeachersDashboardPage() {
   };
 
   const currentWeek = academicWeeks.find((week) => week.is_current) ?? academicWeeks[0];
+  const weeklyPlanRows = useMemo(() => Array.from(entries.reduce((groups, entry) => {
+    const existing = groups.get(entry.weeklyPlanId) ?? { planId: entry.weeklyPlanId, classId: entry.classId, weekId: entry.weekId, className: entry.className, week: entry.week, subjects: [], lessonCount: 0, status: "draft", updated: entry.updated } as WeeklyPlanRow;
+    if (!existing.subjects.includes(entry.subject)) existing.subjects.push(entry.subject);
+    existing.lessonCount += 1;
+    const status = entryReviewStatus(entry);
+    if (entry.status === "published") existing.status = "published";
+    else if (existing.status !== "published" && status === "submitted") existing.status = "submitted";
+    else if (existing.status !== "published" && existing.status !== "submitted" && status === "changes_requested") existing.status = "changes_requested";
+    else if (existing.status === "draft" && status === "approved") existing.status = "approved";
+    groups.set(entry.weeklyPlanId, existing);
+    return groups;
+  }, new Map<string, WeeklyPlanRow>()).values()).sort((a, b) => Number(b.weekId === currentWeek?.id) - Number(a.weekId === currentWeek?.id) || a.week.localeCompare(b.week)), [entries, mySubmissions, currentWeek?.id]);
   const publishedCount = entries.filter((entry) => entry.status === "published").length;
   const draftCount = entries.filter((entry) => entry.status === "draft").length;
   const waitingReviews = reviewItems.filter((item) => item.status === "submitted");
@@ -768,10 +833,10 @@ export default function TeachersDashboardPage() {
             </section>
 
             <section className="teacher-card teacher-plans-card teacher-live-plans-card">
-              <div className="teacher-card-heading"><div><h2>{activeNav === "Overview" ? "Recent weekly entries" : "All my weekly entries"}</h2><p>{currentWeek ? `${formatDate(currentWeek.starts_on)}–${formatDate(currentWeek.ends_on)} · ${currentWeek.label}` : "Academic weeks are not configured yet"}</p></div></div>
-              <div className="teacher-plan-table-wrap"><table className="teacher-plan-table"><thead><tr><th>Day</th><th>Class</th><th>Course</th><th>Status</th><th>Last updated</th><th>Actions</th></tr></thead><tbody>
-                {entries.map((entry) => { const reviewStatus = entryReviewStatus(entry); const statusLabel = entry.status === "published" ? "Published for families" : reviewStatus === "submitted" ? "Sent to supervisor" : reviewStatus === "changes_requested" ? "Changes requested" : reviewStatus === "approved" ? "Approved" : "Draft"; const editable = reviewStatus === "draft" || reviewStatus === "changes_requested"; return <tr key={entry.id}><td><span className="teacher-day-badge">{entry.day.slice(0, 3)}</span>{entry.day}</td><td><strong>{entry.className}</strong></td><td>{entry.subject}</td><td><span className={`teacher-status ${entry.status === "published" || reviewStatus === "approved" ? "green" : reviewStatus === "submitted" ? "navy" : "amber"}`}><i />{statusLabel}</span></td><td>{entry.updated}</td><td><div className="teacher-plan-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => openEntryEditor(entry)}>{editable ? "Edit" : "Preview"}</button>{reviewStatus === "submitted" && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => { const submission = mySubmissions.find((item) => item.classId === entry.classId && item.weekId === entry.weekId && item.subjectId === entry.subjectId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}{editable && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void deleteDraftEntry(entry)}>Delete</button>}</div></td></tr>; })}
-                {!loading && entries.length === 0 && <tr><td className="super-empty" colSpan={6}>No weekly-plan entries saved yet.</td></tr>}
+              <div className="teacher-card-heading"><div><h2>{activeNav === "Overview" ? "My weekly plans" : "All my weekly plans"}</h2><p>One row represents one class plan for one school week. Open it to continue writing all of its lessons.</p></div></div>
+              <div className="teacher-plan-table-wrap"><table className="teacher-plan-table teacher-weekly-plan-table"><thead><tr><th>Week</th><th>Class</th><th>Subjects written</th><th>Status</th><th>Last saved</th><th>Actions</th></tr></thead><tbody>
+                {weeklyPlanRows.map((plan) => { const statusLabel = plan.status === "published" ? "Published for families" : plan.status === "submitted" ? "Sent to supervisor" : plan.status === "changes_requested" ? "Changes requested" : plan.status === "approved" ? "Approved — waiting for class" : "Draft in progress"; const editable = plan.status === "draft" || plan.status === "changes_requested"; return <tr key={plan.planId}><td><strong>{plan.week}</strong><small>{plan.lessonCount} lesson{plan.lessonCount === 1 ? "" : "s"}</small></td><td><strong>{plan.className}</strong></td><td>{plan.subjects.join(", ")}</td><td><span className={`teacher-status ${plan.status === "published" || plan.status === "approved" ? "green" : plan.status === "submitted" ? "navy" : "amber"}`}><i />{statusLabel}</span></td><td>{plan.updated}</td><td><div className="teacher-plan-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => openWeeklyPlan(plan)}>{editable ? "Continue plan" : "Preview"}</button>{plan.status === "submitted" && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => { const submission = mySubmissions.find((item) => item.weeklyPlanId === plan.planId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}{editable && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void clearWeeklyDraft(plan)}>Clear draft</button>}</div></td></tr>; })}
+                {!loading && weeklyPlanRows.length === 0 && <tr><td className="super-empty" colSpan={6}>No weekly plans have been started yet.</td></tr>}
               </tbody></table></div>
             </section>
 
@@ -827,7 +892,7 @@ export default function TeachersDashboardPage() {
 
       {weeklyBuilderOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && setWeeklyBuilderOpen(false)}><section className="teacher-editor-modal weekly-builder-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
         <div className="teacher-modal-heading"><div><p>{selectedWeek.label}</p><h2 id="weekly-builder-title">Build the whole week</h2></div><button disabled={saving} aria-label="Close weekly builder" onClick={() => setWeeklyBuilderOpen(false)}>×</button></div>
-        <div className="teacher-editor-context"><span>One save for the whole week</span><i />Entries are placed according to your timetable slots.</div>
+        <div className="teacher-editor-context"><span>One save for the whole week</span><i />Entries are placed according to your timetable slots.<b className={`teacher-autosave-state ${autoSaveState}`}>{autoSaveState === "saving" ? "Saving draft…" : autoSaveState === "saved" ? "Draft saved automatically" : "Auto-save is on"}</b></div>
         <form onSubmit={(event) => { event.preventDefault(); void saveWholeWeek(true); }}>
           {builderStatus !== "new" && <div className={`weekly-builder-review-state ${builderStatus}`}><strong>{builderStatus === "submitted" ? "Under supervisor review" : builderStatus === "changes_requested" ? "Changes requested by supervisor" : builderStatus === "approved" ? "Approved" : "Saved as draft"}</strong><span>{builderStatus === "submitted" ? "You can preview it, or withdraw it to make changes before the supervisor decides." : builderStatus === "changes_requested" ? "Update the required items, then submit the plan for review again." : builderStatus === "approved" ? "This subject has already been approved. Contact your supervisor if a correction is needed." : "This plan is saved privately and has not been sent for review."}</span></div>}
           <div className="weekly-builder-toolbar"><label>1. Academic week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><label>2. Class<select value={selectedClassId} onChange={(event) => { setSelectedClassId(event.target.value); setSlotDrafts({}); setQuizSubjectId(""); }}>{Array.from(new Map(assignments.map((assignment) => [assignment.classId, assignment])).values()).map((assignment) => <option key={assignment.classId} value={assignment.classId}>Grade {assignment.grade} · {assignment.section}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedClassSlots.length > 0 ? "ready" : "missing"}`}>{selectedClassSlots.length > 0 ? `${selectedClassSlots.length} lessons ready for this week` : "Timetable connection required"}</span></div>
