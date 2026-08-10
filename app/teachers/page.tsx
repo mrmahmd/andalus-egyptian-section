@@ -93,6 +93,8 @@ type ReviewItem = {
   note: string;
   submittedAt: string;
   entries: { day: string; period: number; subject: string; classwork: string; homework: string; notes: string }[];
+  quizzes: { subject: string; date: string; details: string }[];
+  weeklyNotes: string[];
 };
 
 type SupervisorPlanReview = {
@@ -109,6 +111,8 @@ type SupervisorPlanReview = {
   note: string;
   reviews: ReviewItem[];
   entries: ReviewItem["entries"];
+  quizzes: ReviewItem["quizzes"];
+  weeklyNotes: string[];
 };
 
 type SlotDraft = { classwork: string; homework: string; classeraNotes: string; englishProgramme: string; scienceComponent: string };
@@ -284,7 +288,7 @@ export default function TeachersDashboardPage() {
       const departmentTeacherIds = departmentTeacherRows.map((item) => String(item.user_id ?? "")).filter(Boolean);
       const { data: supervisorReviewRows = [], error: supervisorReviewsError } = supervisorAccount && departmentTeacherIds.length
         ? await supabase.from("plan_submissions")
-          .select("id, weekly_plan_id, status, review_note, submitted_at, teacher_id, subject_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(id, class_id, school_classes(grade, section), academic_weeks(id, label), plan_entries(day_of_week, period_number, teacher_id, subject_id, classwork, homework, classera_notes))")
+          .select("id, weekly_plan_id, status, review_note, submitted_at, teacher_id, subject_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(id, class_id, school_classes(grade, section), academic_weeks(id, label), plan_entries(day_of_week, period_number, teacher_id, subject_id, classwork, homework, classera_notes), plan_quizzes(teacher_id, subject_id, quiz_date, details, subjects(name_en)), plan_notes(teacher_id, note_text))")
           .in("teacher_id", departmentTeacherIds)
           .in("status", ["submitted", "changes_requested", "approved"])
           .order("submitted_at", { ascending: false })
@@ -305,6 +309,8 @@ export default function TeachersDashboardPage() {
           className: `Grade ${schoolClass?.grade ?? ""} · ${schoolClass?.section ?? ""}`, week: week?.label ?? "Academic week",
           status: String(item.status), note: String(item.review_note ?? ""), submittedAt: item.submitted_at ? formatDate(String(item.submitted_at)) : "Not submitted",
           entries: matchingEntries.map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", period: entry.period_number, subject: subject?.name_en ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
+          quizzes: (((plan as unknown as { plan_quizzes?: { teacher_id: string; subject_id: string; quiz_date: string | null; details: string; subjects: { name_en: string } | { name_en: string }[] | null }[] } | null)?.plan_quizzes ?? []).filter((quiz) => String(quiz.teacher_id) === String(item.teacher_id) && Boolean(quiz.details)).map((quiz) => ({ subject: one(quiz.subjects)?.name_en ?? "Subject", date: quiz.quiz_date ?? "", details: quiz.details }))),
+          weeklyNotes: (((plan as unknown as { plan_notes?: { teacher_id: string; note_text: string }[] } | null)?.plan_notes ?? []).filter((note) => String(note.teacher_id) === String(item.teacher_id)).map((note) => note.note_text).filter(Boolean)),
         };
       });
       const { data: departmentAssignmentRows = [], error: departmentAssignmentError } = departmentTeacherIds.length ? await supabase.from("teacher_assignments").select("id, teacher_id, class_id, subject_id, school_classes(grade, section), subjects(name_en)").in("teacher_id", departmentTeacherIds) : { data: [], error: null };
@@ -795,7 +801,7 @@ export default function TeachersDashboardPage() {
       key: review.id, weeklyPlanId: review.weeklyPlanId, teacherId: review.teacherId, weekId: review.weekId, classId: review.classId,
       teacherName: review.teacherName, className: review.className, week: review.week,
       status: review.status === "approved" ? "approved" : review.status === "changes_requested" ? "changes_requested" : "submitted",
-      submittedAt: review.submittedAt, note: review.note, reviews: matchingReviews, entries: review.entries,
+      submittedAt: review.submittedAt, note: review.note, reviews: matchingReviews, entries: review.entries, quizzes: review.quizzes, weeklyNotes: review.weeklyNotes,
     };
     await reviewWeeklyPlan(plan, decision);
   };
@@ -861,16 +867,18 @@ export default function TeachersDashboardPage() {
     const current = groups.get(key) ?? {
       key, weeklyPlanId: item.weeklyPlanId, teacherId: item.teacherId, weekId: item.weekId, classId: item.classId,
       teacherName: item.teacherName, className: item.className, week: item.week, status: "approved", submittedAt: item.submittedAt,
-      note: "", reviews: [], entries: [],
+      note: "", reviews: [], entries: [], quizzes: [], weeklyNotes: [],
     } as SupervisorPlanReview;
     current.reviews.push(item);
     current.entries.push(...item.entries);
+    current.quizzes.push(...item.quizzes);
+    current.weeklyNotes.push(...item.weeklyNotes);
     if (item.status === "submitted") current.status = "submitted";
     else if (current.status !== "submitted" && item.status === "changes_requested") current.status = "changes_requested";
     if (!current.note && item.note) current.note = item.note;
     groups.set(key, current);
     return groups;
-  }, new Map<string, SupervisorPlanReview>()).values()).map((plan) => ({ ...plan, entries: plan.entries.sort((a, b) => dayNames.indexOf(a.day) - dayNames.indexOf(b.day) || a.period - b.period) })), [selectedTeacherReviewRawItems]);
+  }, new Map<string, SupervisorPlanReview>()).values()).map((plan) => ({ ...plan, entries: plan.entries.sort((a, b) => dayNames.indexOf(a.day) - dayNames.indexOf(b.day) || a.period - b.period), quizzes: Array.from(new Map(plan.quizzes.map((quiz) => [`${quiz.subject}-${quiz.date}-${quiz.details}`, quiz])).values()), weeklyNotes: Array.from(new Set(plan.weeklyNotes)) })), [selectedTeacherReviewRawItems]);
   const selectedTeacherReviewClasses = useMemo(() => Array.from(new Map(selectedTeacherReviewPlans.map((plan) => [plan.classId, { id: plan.classId, name: plan.className }])).values()), [selectedTeacherReviewPlans]);
   const selectedTeacherClassPlan = selectedTeacherReviewPlans.find((plan) => plan.classId === selectedReviewClassId) ?? null;
   const selectedTeacherReviewItems = useMemo(() => selectedTeacherReviewPlans
@@ -878,7 +886,7 @@ export default function TeachersDashboardPage() {
     .map((plan) => ({
       id: plan.key, weeklyPlanId: plan.weeklyPlanId, teacherId: plan.teacherId, weekId: plan.weekId, classId: plan.classId,
       teacherName: plan.teacherName, className: plan.className, week: plan.week,
-      subject: plan.reviews.map((item) => item.subject).join(" + "), status: plan.status, note: plan.note, submittedAt: plan.submittedAt, entries: plan.entries,
+      subject: plan.reviews.map((item) => item.subject).join(" + "), status: plan.status, note: plan.note, submittedAt: plan.submittedAt, entries: plan.entries, quizzes: plan.quizzes, weeklyNotes: plan.weeklyNotes,
     })), [selectedTeacherReviewPlans, selectedReviewClassId]);
   useEffect(() => {
     setSelectedReviewClassId((current) => selectedTeacherReviewClasses.some((schoolClass) => schoolClass.id === current) ? current : selectedTeacherReviewClasses[0]?.id ?? "");
@@ -986,6 +994,7 @@ export default function TeachersDashboardPage() {
               {!selectedReviewWeek || !selectedReviewTeacher ? <p className="supervisor-review-empty">Select the school week and teacher to open their weekly-plan review.</p> : selectedTeacherReviewItems.map((review) => <article key={review.id}>
                 <header><div><span className={`teacher-status ${review.status === "approved" ? "green" : review.status === "changes_requested" ? "amber" : "navy"}`}><i />{review.status.replaceAll("_", " ")}</span><h3>{review.teacherName}</h3><p>{review.subject} · {review.className} · {review.week}</p></div><small>Submitted {review.submittedAt}</small></header>
                 <div className="supervisor-entry-grid">{review.entries.map((entry) => <section key={`${entry.day}-${entry.period}`}><strong>{entry.day} · Period {entry.period}</strong><p><b>Classwork</b>{entry.classwork || "—"}</p><p><b>Homework</b>{entry.homework || "—"}</p><p><b>Classera</b>{entry.notes || "—"}</p></section>)}</div>
+                {(review.quizzes.length > 0 || review.weeklyNotes.length > 0) && <div className="supervisor-plan-extras">{review.quizzes.length > 0 && <section><strong>Quizzes & assessments</strong>{review.quizzes.map((quiz, index) => <p key={`${quiz.subject}-${index}`}><b>{quiz.subject}{quiz.date ? ` · ${quiz.date}` : ""}</b>{quiz.details}</p>)}</section>}{review.weeklyNotes.length > 0 && <section><strong>Weekly notes for families</strong>{review.weeklyNotes.map((note, index) => <p key={`${note}-${index}`}>{note}</p>)}</section>}</div>}
                 {review.status === "submitted" && <div className="supervisor-review-actions"><label>Review note<textarea value={reviewNotes[review.id] ?? review.note} onChange={(event) => setReviewNotes((current) => ({ ...current, [review.id]: event.target.value }))} placeholder="Write the required changes for the teacher" rows={3} /></label><div><button disabled={saving} className="teacher-secondary-button" onClick={() => void reviewSubmission(review, "changes_requested")}>Return whole plan</button><button disabled={saving} className="teacher-primary-button" onClick={() => void reviewSubmission(review, "approved")}>Approve whole plan</button></div></div>}
                 {review.status === "changes_requested" && <p className="supervisor-review-feedback"><strong>Your review note</strong>{review.note || "The teacher has been asked to revise this plan."}</p>}
                 {review.status === "approved" && <p className="supervisor-review-feedback approved"><strong>Approved for this department</strong>This complete department plan was approved. It will be visible to families once every required department plan for the class and week is approved.</p>}

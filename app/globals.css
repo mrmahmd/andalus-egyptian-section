@@ -340,6 +340,7 @@ button, select, input { font: inherit; }
 .supervisor-entry-subject { display: inline-flex; margin-top: 8px; padding: 4px 7px; border-radius: 6px; background: #d9eef6; color: #12627e; font-size: 11px; font-weight: 900; }
 .supervisor-entry-grid p { margin: 10px 0 0; display: grid; gap: 4px; color: #405977; font-size: 13px; line-height: 1.5; }
 .supervisor-entry-grid b { color: #122c54; font-size: 12px; }
+.supervisor-plan-extras { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 14px; }.supervisor-plan-extras section { padding: 13px 14px; border: 1px solid #d9e5ef; border-radius: 10px; background: #f8fbfe; }.supervisor-plan-extras strong { color: #174b7c; font-size: 13px; }.supervisor-plan-extras p { display: grid; gap: 3px; margin: 8px 0 0; color: #4d647e; font-size: 12px; line-height: 1.5; }.supervisor-plan-extras b { color: #153963; }
 .supervisor-review-actions { margin-top: 18px; padding-top: 18px; border-top: 1px solid #dde7f0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: end; }
 .supervisor-review-actions label { display: grid; gap: 7px; color: #263c5b; font-size: 14px; font-weight: 800; }
 .supervisor-review-actions textarea { min-height: 78px; padding: 10px 12px; border: 1px solid #cbd8e7; border-radius: 9px; color: #172d50; font: inherit; resize: vertical; }
@@ -381,6 +382,7 @@ button, select, input { font: inherit; }
 .plan-toolbar p:last-child { margin: 7px 0 0; color: var(--muted); }
 .toolbar-actions { display: flex; gap: 10px; }
 .plan-paper { margin-bottom: 70px; padding: 34px; background: var(--white); border: 1px solid var(--line); box-shadow: 0 22px 65px rgba(29,48,78,.10); }
+.parent-plan-assessments, .parent-plan-family-notes { margin-top: 12px; padding: 12px 14px; border-radius: 9px; background: #f3f8fc; }.parent-plan-assessments b, .parent-plan-family-notes b { display: block; color: #103867; font-size: 13px; }.parent-plan-assessments p, .parent-plan-family-notes p { margin: 7px 0 0; color: #3d5571; font-size: 12px; line-height: 1.55; }.parent-plan-assessments strong { display: block; color: #154f85; }
 .paper-header { position: relative; display: block; min-height: 72px; padding: 0 0 22px; border-bottom: 4px solid var(--navy-800); text-align: center; }
 .paper-header img { position: absolute; left: 0; width: 90px; height: 66px; object-fit: cover; border-radius: 4px; }
 .paper-header > div { display: grid; width: 100%; gap: 4px; text-align: center; }
