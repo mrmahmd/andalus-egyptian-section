@@ -39,6 +39,7 @@ type AcademicWeek = {
   ends_on: string;
   is_current: boolean;
 };
+type SchoolHoliday = { id: string; week_id: string; day_of_week: number; title: string; note: string | null };
 
 type TimetableSlot = {
   id: string;
@@ -162,6 +163,7 @@ export default function TeachersDashboardPage() {
   const [departmentName, setDepartmentName] = useState("Teacher Department");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [academicWeeks, setAcademicWeeks] = useState<AcademicWeek[]>([]);
+  const [schoolHolidays, setSchoolHolidays] = useState<SchoolHoliday[]>([]);
   const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>([]);
   const [entries, setEntries] = useState<TeacherEntry[]>([]);
   const [mySubmissions, setMySubmissions] = useState<MySubmission[]>([]);
@@ -226,7 +228,7 @@ export default function TeachersDashboardPage() {
       }
 
       const departmentTeachersPromise = supervisorAccount ? supabase.rpc("get_my_department_teachers") : Promise.resolve({ data: [], error: null });
-      const [assignmentsResult, weeksResult, slotsResult, entriesResult, mySubmissionsResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult] = await Promise.all([
+      const [assignmentsResult, weeksResult, slotsResult, entriesResult, mySubmissionsResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult, holidaysResult] = await Promise.all([
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en, include_in_weekly_plan)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
@@ -238,8 +240,9 @@ export default function TeachersDashboardPage() {
         supabase.from("subjects").select("id, name_en").eq("is_active", true).eq("include_in_weekly_plan", true).order("name_en"),
         supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
         supabase.from("weekly_plan_teacher_access").select("is_open").eq("teacher_id", userData.user.id).maybeSingle(),
+        supabase.from("weekly_plan_holidays").select("id, week_id, day_of_week, title, note"),
       ]);
-      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, mySubmissionsResult.error, reviewsResult.error, classesResult.error, subjectsResult.error].find(Boolean);
+      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, mySubmissionsResult.error, reviewsResult.error, classesResult.error, subjectsResult.error, holidaysResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const realAssignments: Assignment[] = (assignmentsResult.data ?? []).map((assignment) => {
@@ -335,6 +338,7 @@ export default function TeachersDashboardPage() {
       setIsSupervisor(supervisorAccount);
       setAssignments(realAssignments);
       setAcademicWeeks(weeks);
+      setSchoolHolidays((holidaysResult.data ?? []) as SchoolHoliday[]);
       setTimetableSlots((slotsResult.data ?? []) as TimetableSlot[]);
       setEntries(realEntries);
       setMySubmissions(realMySubmissions);
@@ -366,12 +370,14 @@ export default function TeachersDashboardPage() {
   }, [loadTeacherDashboard]);
 
   const selectedWeek = academicWeeks.find((week) => week.id === selectedWeekId);
+  const holidayForDay = (dayOfWeek: number) => schoolHolidays.find((holiday) => holiday.week_id === selectedWeekId && holiday.day_of_week === dayOfWeek) ?? null;
   const selectedClassAssignments = useMemo(() => assignments.filter((assignment) => assignment.classId === selectedClassId), [assignments, selectedClassId]);
   const selectedClass = selectedClassAssignments[0];
   const selectedClassSlots = useMemo(() => timetableSlots
-    .filter((slot) => slot.class_id === selectedClassId && selectedClassAssignments.some((assignment) => assignment.subjectId === slot.subject_id))
-    .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number), [timetableSlots, selectedClassAssignments, selectedClassId]);
-  const activeDayIndexes = dayNames.map((_, index) => index).filter((index) => selectedClassSlots.some((slot) => slot.day_of_week === index));
+    .filter((slot) => slot.class_id === selectedClassId && selectedClassAssignments.some((assignment) => assignment.subjectId === slot.subject_id) && !schoolHolidays.some((holiday) => holiday.week_id === selectedWeekId && holiday.day_of_week === slot.day_of_week))
+    .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number), [timetableSlots, selectedClassAssignments, selectedClassId, selectedWeekId, schoolHolidays]);
+  const editableClassSlots = useMemo(() => selectedClassSlots.filter((slot) => !holidayForDay(slot.day_of_week)), [selectedClassSlots, selectedWeekId, schoolHolidays]);
+  const activeDayIndexes = dayNames.map((_, index) => index).filter((index) => selectedClassSlots.some((slot) => slot.day_of_week === index) || Boolean(holidayForDay(index)));
   const assignmentForSlot = (slot: TimetableSlot) => selectedClassAssignments.find((assignment) => assignment.subjectId === slot.subject_id);
   const slotDraftFor = (slot: TimetableSlot) => slotDrafts[slot.id] ?? emptySlotDraft();
   const uniqueClasses = useMemo(() => Array.from(new Map(assignments.map((assignment) => [assignment.classId, `Grade ${assignment.grade} · ${assignment.section}`])).values()), [assignments]);
@@ -550,7 +556,7 @@ export default function TeachersDashboardPage() {
         weeklyPlanId = String(createdPlan.id);
       }
 
-      const entryRows = selectedClassSlots.filter((slot) => !approvedSubjectIds.has(slot.subject_id)).map((slot) => {
+      const entryRows = editableClassSlots.filter((slot) => !approvedSubjectIds.has(slot.subject_id)).map((slot) => {
         const assignment = assignmentForSlot(slot);
         const draft = slotDraftFor(slot);
         const classwork = draft.classwork.trim();
@@ -573,7 +579,7 @@ export default function TeachersDashboardPage() {
         if (entriesError) throw entriesError;
       }
 
-      const submissionRows = Array.from(new Set(selectedClassSlots.filter((slot) => !approvedSubjectIds.has(slot.subject_id)).map((slot) => slot.subject_id))).map((subjectId) => ({
+      const submissionRows = Array.from(new Set(editableClassSlots.filter((slot) => !approvedSubjectIds.has(slot.subject_id)).map((slot) => slot.subject_id))).map((subjectId) => ({
         weekly_plan_id: weeklyPlanId, teacher_id: profileId, subject_id: subjectId,
         status: submitForReview ? "submitted" : "draft", reviewed_by: null, reviewed_at: null,
         submitted_at: submitForReview ? new Date().toISOString() : null,

@@ -6,7 +6,7 @@ import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 type AccountRole = "Teacher" | "Admin";
 type AccountStatus = "Not Registered" | "Pending" | "Active" | "Suspended" | "Rejected";
-type DashboardSection = "approvals" | "accounts" | "roles" | "plans" | "classes" | "activity" | "settings";
+type DashboardSection = "approvals" | "accounts" | "roles" | "plans" | "holidays" | "classes" | "activity" | "settings";
 
 type AssignmentItem = {
   id?: string;
@@ -47,6 +47,8 @@ type ClassOption = {
 
 type ManagedPlan = {
   id: string;
+  weekId: string;
+  classId: string;
   week: string;
   className: string;
   classTeacher: string;
@@ -54,6 +56,13 @@ type ManagedPlan = {
   entries: number;
   updated: string;
 };
+
+type AcademicWeekOption = { id: string; week_number: number; label: string; starts_on: string; ends_on: string; is_current: boolean };
+type SchoolHoliday = { id: string; week_id: string; day_of_week: number; title: string; note: string | null };
+type EditableEntry = { id: string; day_of_week: number; period_number: number; course: string; classwork: string; homework: string; classeraNotes: string };
+type EditablePlan = { id: string; className: string; week: string; entries: EditableEntry[] };
+
+const holidayDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
 
 function singleRelation<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
@@ -74,6 +83,13 @@ export default function SuperAdminPage() {
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [weeklyPlans, setWeeklyPlans] = useState<ManagedPlan[]>([]);
+  const [academicWeeks, setAcademicWeeks] = useState<AcademicWeekOption[]>([]);
+  const [schoolHolidays, setSchoolHolidays] = useState<SchoolHoliday[]>([]);
+  const [selectedPlanWeekId, setSelectedPlanWeekId] = useState("");
+  const [selectedHolidayWeekId, setSelectedHolidayWeekId] = useState("");
+  const [holidayDraft, setHolidayDraft] = useState({ dayOfWeek: "0", title: "Official Holiday", note: "" });
+  const [editingPlan, setEditingPlan] = useState<EditablePlan | null>(null);
+  const [editorLoading, setEditorLoading] = useState(false);
   const [currentAdminId, setCurrentAdminId] = useState("");
   const [currentAdminName, setCurrentAdminName] = useState("Mohamed Farid");
   const [loading, setLoading] = useState(true);
@@ -118,19 +134,21 @@ export default function SuperAdminPage() {
       setCurrentAdminId(userData.user.id);
       setCurrentAdminName(ownerProfile.display_name || "Mohamed Farid");
 
-      const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult, plansResult, accessResult, teacherAccessResult] = await Promise.all([
+      const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult, plansResult, accessResult, teacherAccessResult, weeksResult, holidaysResult] = await Promise.all([
         supabase.from("staff_directory").select("id, full_name, account_kind, administrative_role, department_id, departments(name_en)").eq("is_active", true).order("full_name"),
         supabase.from("registration_requests").select("id, user_id, staff_id, username, status, requested_at, reviewed_at").order("requested_at", { ascending: false }),
         supabase.from("profiles").select("user_id, staff_id, username, display_name, role, status, approved_at, updated_at"),
         supabase.from("teacher_assignments").select("id, teacher_id, class_id, subject_id, school_classes(grade, section), subjects(name_en)"),
         supabase.from("subjects").select("id, name_en, minimum_grade, maximum_grade").eq("is_active", true).eq("include_in_weekly_plan", true).order("name_en"),
         supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
-        supabase.from("weekly_plans").select("id, class_teacher_name, status, updated_at, school_classes(grade, section), academic_weeks(week_number, label), plan_entries(count)").order("updated_at", { ascending: false }),
+        supabase.from("weekly_plans").select("id, class_id, week_id, class_teacher_name, status, updated_at, school_classes(grade, section), academic_weeks(week_number, label), plan_entries(count)").order("updated_at", { ascending: false }),
         supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
         supabase.from("weekly_plan_teacher_access").select("teacher_id, is_open"),
+        supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
+        supabase.from("weekly_plan_holidays").select("id, week_id, day_of_week, title, note").order("day_of_week"),
       ]);
 
-      const firstError = [directoryResult.error, requestsResult.error, profilesResult.error, assignmentsResult.error, subjectsResult.error, classesResult.error, plansResult.error].find(Boolean);
+      const firstError = [directoryResult.error, requestsResult.error, profilesResult.error, assignmentsResult.error, subjectsResult.error, classesResult.error, plansResult.error, weeksResult.error, holidaysResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const requestsByStaff = new Map<string, Record<string, unknown>>();
@@ -205,12 +223,19 @@ export default function SuperAdminPage() {
       setTeacherPlanAccess(Object.fromEntries((teacherAccessResult.data ?? []).map((row) => [String(row.teacher_id), Boolean(row.is_open)])));
       setSubjects((subjectsResult.data ?? []) as SubjectOption[]);
       setClasses((classesResult.data ?? []) as ClassOption[]);
+      const loadedWeeks = (weeksResult.data ?? []) as AcademicWeekOption[];
+      setAcademicWeeks(loadedWeeks);
+      setSchoolHolidays((holidaysResult.data ?? []) as SchoolHoliday[]);
+      setSelectedPlanWeekId((value) => value || loadedWeeks.find((week) => week.is_current)?.id || loadedWeeks[0]?.id || "");
+      setSelectedHolidayWeekId((value) => value || loadedWeeks.find((week) => week.is_current)?.id || loadedWeeks[0]?.id || "");
       setWeeklyPlans((plansResult.data ?? []).map((plan) => {
         const schoolClass = singleRelation(plan.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
         const week = singleRelation(plan.academic_weeks as { week_number: number; label: string } | { week_number: number; label: string }[] | null);
         const entryCount = singleRelation(plan.plan_entries as { count: number } | { count: number }[] | null);
         return {
           id: String(plan.id),
+          weekId: String(plan.week_id),
+          classId: String(plan.class_id),
           week: week?.label ?? `Week ${week?.week_number ?? "—"}`,
           className: `Grade ${schoolClass?.grade ?? "—"} ${schoolClass?.section ?? ""}`,
           classTeacher: String(plan.class_teacher_name),
@@ -349,6 +374,7 @@ export default function SuperAdminPage() {
     accounts: { kicker: "Live school directory", title: "All Accounts", description: "Real teachers and administrators loaded securely from the school database." },
     roles: { kicker: "Access control", title: "Roles & Permissions", description: "See exactly what each school role is allowed to manage." },
     plans: { kicker: "Weekly-plan control", title: "Manage Public Plans", description: "Review and control the real weekly plans stored in the school database." },
+    holidays: { kicker: "School calendar", title: "School-wide Holidays", description: "Mark a day as an official holiday for every class in one school week." },
     classes: { kicker: "School structure", title: "Classes & Subjects", description: "Live classes and weekly-plan subjects available for teacher assignments." },
     activity: { kicker: "Account history", title: "Activity Log", description: "Recent account registration, approval and access activity." },
     settings: { kicker: "Platform status", title: "System Settings", description: "Review the active platform configuration and connected services." },
@@ -363,6 +389,9 @@ export default function SuperAdminPage() {
     setErrorMessage("");
     setSuccessMessage("");
   };
+
+  const plansForSelectedWeek = useMemo(() => weeklyPlans.filter((plan) => plan.weekId === selectedPlanWeekId), [selectedPlanWeekId, weeklyPlans]);
+  const holidaysForSelectedWeek = useMemo(() => schoolHolidays.filter((holiday) => holiday.week_id === selectedHolidayWeekId), [schoolHolidays, selectedHolidayWeekId]);
 
   const reviewRequest = async (status: "approved" | "rejected") => {
     if (!reviewAccount?.requestId || !currentAdminId) return;
@@ -466,6 +495,56 @@ export default function SuperAdminPage() {
     finally { setBusy(false); }
   };
 
+  const openPlanEditor = async (plan: ManagedPlan) => {
+    setEditorLoading(true); setErrorMessage("");
+    try {
+      const { data, error } = await getSupabaseBrowserClient().from("weekly_plans")
+        .select("id, plan_entries(id, day_of_week, period_number, classwork, homework, classera_notes, subjects(parent_plan_name))")
+        .eq("id", plan.id).maybeSingle();
+      if (error || !data) throw error ?? new Error("Weekly plan could not be found.");
+      const rawEntries = (data.plan_entries ?? []) as unknown as { id: string; day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string; subjects: { parent_plan_name: string } | { parent_plan_name: string }[] | null }[];
+      setEditingPlan({ id: plan.id, className: plan.className, week: plan.week, entries: rawEntries.sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number).map((entry) => ({ id: entry.id, day_of_week: entry.day_of_week, period_number: entry.period_number, course: singleRelation(entry.subjects)?.parent_plan_name ?? "Subject", classwork: entry.classwork ?? "", homework: entry.homework ?? "", classeraNotes: entry.classera_notes ?? "" })) });
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "The plan editor could not be opened."); }
+    finally { setEditorLoading(false); }
+  };
+
+  const savePlanEdits = async () => {
+    if (!editingPlan) return;
+    setBusy(true); setErrorMessage("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const results = await Promise.all(editingPlan.entries.map((entry) => supabase.from("plan_entries").update({ classwork: entry.classwork, homework: entry.homework, classera_notes: entry.classeraNotes, updated_at: new Date().toISOString() }).eq("id", entry.id)));
+      const failed = results.find((result) => result.error)?.error;
+      if (failed) throw failed;
+      setEditingPlan(null); setSuccessMessage("The weekly plan was updated. Its publication status remains governed by the supervisor approval workflow.");
+      await loadDashboard();
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "The weekly-plan changes could not be saved."); }
+    finally { setBusy(false); }
+  };
+
+  const saveHoliday = async () => {
+    if (!currentAdminId || !selectedHolidayWeekId) return;
+    setBusy(true); setErrorMessage("");
+    try {
+      const { error } = await getSupabaseBrowserClient().from("weekly_plan_holidays").upsert({ week_id: selectedHolidayWeekId, day_of_week: Number(holidayDraft.dayOfWeek), title: holidayDraft.title.trim() || "Official Holiday", note: holidayDraft.note.trim() || null, created_by: currentAdminId }, { onConflict: "week_id,day_of_week" });
+      if (error) throw error;
+      setSuccessMessage("The school-wide holiday is now active for every class in this week.");
+      await loadDashboard();
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "The holiday could not be saved."); }
+    finally { setBusy(false); }
+  };
+
+  const deleteHoliday = async (holidayId: string) => {
+    if (!window.confirm("Remove this school-wide holiday? Existing teacher content will remain saved.")) return;
+    setBusy(true); setErrorMessage("");
+    try {
+      const { error } = await getSupabaseBrowserClient().from("weekly_plan_holidays").delete().eq("id", holidayId);
+      if (error) throw error;
+      setSuccessMessage("The holiday was removed. Teacher content was not deleted."); await loadDashboard();
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "The holiday could not be removed."); }
+    finally { setBusy(false); }
+  };
+
   const selectedClass = classes.find((item) => item.id === assignmentDraft.classId);
   const compatibleSubjects = subjects.filter((subject) => !selectedClass || (selectedClass.grade >= subject.minimum_grade && selectedClass.grade <= subject.maximum_grade));
 
@@ -480,6 +559,7 @@ export default function SuperAdminPage() {
           <button className={activeSection === "accounts" ? "active" : ""} onClick={() => openSection("accounts")}><span className="teacher-nav-icon">AC</span>All Accounts</button>
           <button className={activeSection === "roles" ? "active" : ""} onClick={() => openSection("roles")}><span className="teacher-nav-icon">RL</span>Roles & Permissions</button>
           <button className={activeSection === "plans" ? "active" : ""} onClick={() => openSection("plans")}><span className="teacher-nav-icon">WP</span>Manage Public Plans</button>
+          <button className={activeSection === "holidays" ? "active" : ""} onClick={() => openSection("holidays")}><span className="teacher-nav-icon">HD</span>School Holidays</button>
           <p>School System</p>
           <button className={activeSection === "classes" ? "active" : ""} onClick={() => openSection("classes")}><span className="teacher-nav-icon">CL</span>Classes & Subjects</button>
           <button className={activeSection === "activity" ? "active" : ""} onClick={() => openSection("activity")}><span className="teacher-nav-icon">LG</span>Activity Log</button>
@@ -534,11 +614,18 @@ export default function SuperAdminPage() {
           </section>}
 
           {activeSection === "plans" && <section className="teacher-card super-admin-accounts-card">
+            <div className="super-admin-filters"><label>School week<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label || `Week ${week.week_number}`}</option>)}</select></label><span className="super-waiting-registration">{plansForSelectedWeek.length} plans in this week</span></div>
             <div className="super-admin-toolbar"><div><h2>Real weekly-plan directory</h2><p>{weeklyPlans.length} plans stored in Supabase</p></div><Link className="teacher-primary-button super-admin-plans-link" href="/weekly-plan">Open family plan page <span>→</span></Link></div>
             <div className="super-admin-table-wrap"><table className="super-admin-table"><thead><tr><th>Week</th><th>Class</th><th>Class Teacher</th><th>Entries</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
-              {weeklyPlans.map((plan) => <tr key={plan.id}><td><strong>{plan.week}</strong></td><td>{plan.className}</td><td>{plan.classTeacher}</td><td>{plan.entries}</td><td><span className={`super-account-status ${plan.status}`}><i />{plan.status}</span></td><td>{plan.updated}</td><td><div className="super-row-actions"><Link href="/weekly-plan">View</Link>{plan.status !== "published" ? <button disabled={busy} className="review" onClick={() => void updatePlanStatus(plan.id, "published")}>Publish</button> : <button disabled={busy} className="manage" onClick={() => void updatePlanStatus(plan.id, "draft")}>Unpublish</button>}<button disabled={busy} onClick={() => void updatePlanStatus(plan.id, "archived")}>Archive</button><button disabled={busy} className="super-plan-delete" onClick={() => void removeWeeklyPlan(plan.id)}>Delete</button></div></td></tr>)}
-              {!loading && weeklyPlans.length === 0 && <tr><td className="super-empty" colSpan={7}>No real weekly plans have been created yet. Plans will appear here after teachers begin submitting content.</td></tr>}
+              {plansForSelectedWeek.map((plan) => <tr key={plan.id}><td><strong>{plan.week}</strong></td><td>{plan.className}</td><td>{plan.classTeacher}</td><td>{plan.entries}</td><td><span className={`super-account-status ${plan.status}`}><i />{plan.status}</span></td><td>{plan.updated}</td><td><div className="super-row-actions"><Link href="/weekly-plan">View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit plan"}</button></div></td></tr>)}
+              {!loading && plansForSelectedWeek.length === 0 && <tr><td className="super-empty" colSpan={7}>No weekly plans were created for the selected school week.</td></tr>}
             </tbody></table></div>
+          </section>}
+
+          {activeSection === "holidays" && <section className="teacher-card super-admin-accounts-card">
+            <div className="super-admin-toolbar"><div><h2>School-wide holiday control</h2><p>A holiday replaces that day&apos;s lessons for every class. Saved teacher content is kept safely in the database.</p></div></div>
+            <div className="super-assignment-picker super-holiday-editor"><label>School week<select value={selectedHolidayWeekId} onChange={(event) => setSelectedHolidayWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label || `Week ${week.week_number}`}</option>)}</select></label><label>Day<select value={holidayDraft.dayOfWeek} onChange={(event) => setHolidayDraft({ ...holidayDraft, dayOfWeek: event.target.value })}>{holidayDays.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Holiday title<input value={holidayDraft.title} onChange={(event) => setHolidayDraft({ ...holidayDraft, title: event.target.value })} /></label><label>Family note<input value={holidayDraft.note} onChange={(event) => setHolidayDraft({ ...holidayDraft, note: event.target.value })} placeholder="Optional parent-facing note" /></label><button disabled={busy || !selectedHolidayWeekId} type="button" className="teacher-primary-button" onClick={() => void saveHoliday()}>{busy ? "Saving…" : "Save holiday"}</button></div>
+            <div className="super-assignment-list">{holidaysForSelectedWeek.map((holiday) => <span key={holiday.id}><strong>{holidayDays[holiday.day_of_week]}: {holiday.title}</strong>{holiday.note ? <small>{holiday.note}</small> : null}<button disabled={busy} type="button" onClick={() => void deleteHoliday(holiday.id)} aria-label="Remove holiday">×</button></span>)}{holidaysForSelectedWeek.length === 0 && <small>No school-wide holidays are set for this week.</small>}</div>
           </section>}
 
           {activeSection === "classes" && <section className="super-admin-structure-layout">
@@ -557,6 +644,17 @@ export default function SuperAdminPage() {
           </section>}
         </div>
       </section>
+
+      {editingPlan && (
+        <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !busy && setEditingPlan(null)}>
+          <section className="teacher-editor-modal super-review-modal" role="dialog" aria-modal="true" aria-labelledby="edit-plan-title">
+            <div className="teacher-modal-heading"><div><p>Super Admin editor</p><h2 id="edit-plan-title">{editingPlan.className} · {editingPlan.week}</h2></div><button disabled={busy} aria-label="Close editor" onClick={() => setEditingPlan(null)}>×</button></div>
+            <p className="super-assignment-help">Changes are saved directly to the approved paper layout. Publication still follows the required supervisor approval workflow.</p>
+            <div className="super-plan-editor-list">{editingPlan.entries.map((entry, index) => <article key={entry.id}><header><strong>{holidayDays[entry.day_of_week]} · Period {entry.period_number}</strong><span>{entry.course}</span></header><label>Classwork<textarea rows={2} value={entry.classwork} onChange={(event) => setEditingPlan((current) => current ? { ...current, entries: current.entries.map((item, itemIndex) => itemIndex === index ? { ...item, classwork: event.target.value } : item) } : current)} /></label><label>Homework<textarea rows={2} value={entry.homework} onChange={(event) => setEditingPlan((current) => current ? { ...current, entries: current.entries.map((item, itemIndex) => itemIndex === index ? { ...item, homework: event.target.value } : item) } : current)} /></label><label>Classera notes<textarea rows={2} value={entry.classeraNotes} onChange={(event) => setEditingPlan((current) => current ? { ...current, entries: current.entries.map((item, itemIndex) => itemIndex === index ? { ...item, classeraNotes: event.target.value } : item) } : current)} /></label></article>)}</div>
+            <div className="teacher-editor-footer"><button disabled={busy} type="button" className="teacher-secondary-button" onClick={() => setEditingPlan(null)}>Cancel</button><button disabled={busy} type="button" className="teacher-primary-button" onClick={() => void savePlanEdits()}>{busy ? "Saving…" : "Save changes"}</button></div>
+          </section>
+        </div>
+      )}
 
       {reviewAccount && (
         <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !busy && setReviewAccount(null)}>

@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
-type PublishedPlan = { id: string; grade: number; section: string; weekNumber: number; weekLabel: string; startsOn: string; endsOn: string };
+type PublishedPlan = { id: string; weekId: string; grade: number; section: string; weekNumber: number; weekLabel: string; startsOn: string; endsOn: string };
 type LiveLesson = { day_of_week: number; period_number: number; course: string; classwork: string; homework: string; notes: string };
 type LiveQuiz = { course: string; date: string; details: string };
+type LiveHoliday = { day_of_week: number; title: string; note: string | null };
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
 const one = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] ?? null : value;
@@ -21,6 +22,7 @@ export default function WeeklyPlanPage() {
   const [liveLessons, setLiveLessons] = useState<LiveLesson[]>([]);
   const [liveQuizzes, setLiveQuizzes] = useState<LiveQuiz[]>([]);
   const [liveFamilyNotes, setLiveFamilyNotes] = useState<string[]>([]);
+  const [liveHolidays, setLiveHolidays] = useState<LiveHoliday[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [isArabic, setIsArabic] = useState(false);
 
@@ -37,12 +39,12 @@ export default function WeeklyPlanPage() {
       const supabase = getSupabaseBrowserClient();
       const { data } = await supabase
         .from("weekly_plans")
-        .select("id, school_classes(grade, section), academic_weeks(week_number, label, starts_on, ends_on)")
+        .select("id, week_id, school_classes(grade, section), academic_weeks(week_number, label, starts_on, ends_on)")
         .eq("status", "published");
       const plans = ((data ?? []) as unknown as Record<string, unknown>[]).map((item) => {
         const schoolClass = one(item.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
         const week = one(item.academic_weeks as { week_number: number; label: string; starts_on: string; ends_on: string } | { week_number: number; label: string; starts_on: string; ends_on: string }[] | null);
-        return schoolClass && week ? { id: String(item.id), grade: schoolClass.grade, section: schoolClass.section, weekNumber: week.week_number, weekLabel: week.label, startsOn: week.starts_on, endsOn: week.ends_on } : null;
+        return schoolClass && week ? { id: String(item.id), weekId: String(item.week_id), grade: schoolClass.grade, section: schoolClass.section, weekNumber: week.week_number, weekLabel: week.label, startsOn: week.starts_on, endsOn: week.ends_on } : null;
       }).filter((plan): plan is PublishedPlan => plan !== null).sort((a, b) => b.weekNumber - a.weekNumber);
       setPublishedPlans(plans);
       setLoadingPlans(false);
@@ -60,23 +62,31 @@ export default function WeeklyPlanPage() {
       setLiveLessons([]);
       setLiveQuizzes([]);
       setLiveFamilyNotes([]);
+      setLiveHolidays([]);
       return;
     }
     const loadLivePlan = async () => {
-      const { data } = await getSupabaseBrowserClient().from("weekly_plans")
+      const supabase = getSupabaseBrowserClient();
+      const [{ data }, { data: holidayData }] = await Promise.all([
+        supabase.from("weekly_plans")
         .select("plan_entries(day_of_week, period_number, classwork, homework, classera_notes, subjects(parent_plan_name)), plan_quizzes(quiz_date, details, subjects(parent_plan_name)), plan_notes(note_text)")
-        .eq("id", selectedPlan.id).eq("status", "published").maybeSingle();
+        .eq("id", selectedPlan.id).eq("status", "published").maybeSingle(),
+        supabase.from("weekly_plan_holidays").select("day_of_week, title, note").eq("week_id", selectedPlan.weekId),
+      ]);
       const entries = (data?.plan_entries ?? []) as unknown as { day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string; subjects: { parent_plan_name: string } | { parent_plan_name: string }[] | null }[];
-      setLiveLessons(entries.sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number).map((entry) => ({ day_of_week: entry.day_of_week, period_number: entry.period_number, course: one(entry.subjects)?.parent_plan_name ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })));
+      const holidayRows = (holidayData ?? []) as LiveHoliday[];
+      const lessonRows = entries.map((entry) => ({ day_of_week: entry.day_of_week, period_number: entry.period_number, course: one(entry.subjects)?.parent_plan_name ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes }));
+      setLiveLessons([...lessonRows.filter((lesson) => !holidayRows.some((holiday) => holiday.day_of_week === lesson.day_of_week)), ...holidayRows.map((holiday) => ({ day_of_week: holiday.day_of_week, period_number: 0, course: holiday.title, classwork: holiday.note || "No classes today.", homework: "—", notes: "School-wide holiday" }))].sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number));
       const quizzes = (data?.plan_quizzes ?? []) as unknown as { quiz_date: string | null; details: string; subjects: { parent_plan_name: string } | { parent_plan_name: string }[] | null }[];
       setLiveQuizzes(quizzes.filter((quiz) => Boolean(quiz.details)).map((quiz) => ({ course: one(quiz.subjects)?.parent_plan_name ?? "Subject", date: quiz.quiz_date ?? "", details: quiz.details })));
       const familyNotes = (data?.plan_notes ?? []) as unknown as { note_text: string }[];
       setLiveFamilyNotes(familyNotes.map((note) => note.note_text).filter(Boolean));
+      setLiveHolidays((holidayData ?? []) as LiveHoliday[]);
     };
     void loadLivePlan();
   }, [selectedPlan]);
 
-  const days = dayNames.map((day, dayIndex) => ({ day, lessons: liveLessons.filter((lesson) => lesson.day_of_week === dayIndex) })).filter((item) => item.lessons.length > 0);
+  const days = dayNames.map((day, dayIndex) => ({ day, lessons: liveLessons.filter((lesson) => lesson.day_of_week === dayIndex), holiday: liveHolidays.find((holiday) => holiday.day_of_week === dayIndex) ?? null })).filter((item) => item.lessons.length > 0 || item.holiday);
   const gradeLabel = (value: number) => isArabic ? `الصف ${value}` : `Grade ${value}`;
   const classLabel = (value: string) => isArabic ? `الشعبة ${value === "A" ? "أ" : "ب"}` : `Class ${value}`;
   const openPlan = (weekNumber: number) => {
