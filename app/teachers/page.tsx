@@ -48,6 +48,10 @@ type TimetableSlot = {
   period_number: number;
 };
 
+type ParentPreviewSlot = TimetableSlot & {
+  subject: string;
+};
+
 type TeacherEntry = {
   id: string;
   weeklyPlanId: string;
@@ -169,6 +173,9 @@ export default function TeachersDashboardPage() {
   const [copyPanelOpen, setCopyPanelOpen] = useState(false);
   const [copySubjectId, setCopySubjectId] = useState("");
   const [copyTargetClassIds, setCopyTargetClassIds] = useState<string[]>([]);
+  const [parentPreviewOpen, setParentPreviewOpen] = useState(false);
+  const [parentPreviewLoading, setParentPreviewLoading] = useState(false);
+  const [parentPreviewSlots, setParentPreviewSlots] = useState<ParentPreviewSlot[]>([]);
 
   const loadTeacherDashboard = useCallback(async () => {
     setLoading(true);
@@ -447,6 +454,49 @@ export default function TeachersDashboardPage() {
 
   const updateSlotDraft = (slotId: string, field: keyof SlotDraft, value: string) => {
     setSlotDrafts((current) => ({ ...current, [slotId]: { ...(current[slotId] ?? emptySlotDraft()), [field]: value } }));
+  };
+
+  const previewClasswork = (slot: TimetableSlot) => {
+    const assignment = assignmentForSlot(slot);
+    const draft = slotDraftFor(slot);
+    const prefix = assignment?.subject === "Integrated Science"
+      ? draft.scienceComponent
+      : englishSubjectNames.has(assignment?.subject ?? "")
+        ? draft.englishProgramme || defaultEnglishProgramme(assignment?.grade ?? 0, assignment?.subject ?? "")
+        : "";
+    return [prefix, draft.classwork.trim()].filter(Boolean).join(" — ");
+  };
+
+  const openParentPreview = async () => {
+    if (!selectedClass || !selectedWeek) return;
+    setParentPreviewOpen(true);
+    setParentPreviewLoading(true);
+    try {
+      const { data, error } = await getSupabaseBrowserClient().from("timetable_slots")
+        .select("id, class_id, subject_id, day_of_week, period_number, subjects(parent_plan_name, name_en)")
+        .eq("class_id", selectedClassId)
+        .order("day_of_week", { ascending: true })
+        .order("period_number", { ascending: true });
+      if (error) throw error;
+      const slots = (data ?? []).map((row) => {
+        const related = one((row as { subjects?: { parent_plan_name?: string; name_en?: string } | { parent_plan_name?: string; name_en?: string }[] | null }).subjects);
+        return {
+          id: String(row.id),
+          class_id: String(row.class_id),
+          subject_id: String(row.subject_id),
+          day_of_week: Number(row.day_of_week),
+          period_number: Number(row.period_number),
+          subject: related?.parent_plan_name || related?.name_en || "Subject",
+        };
+      });
+      setParentPreviewSlots(slots);
+    } catch (error) {
+      setParentPreviewSlots([]);
+      setMessage(error instanceof Error ? error.message : "The parent-plan preview could not be loaded.");
+      setMessageTone("error");
+    } finally {
+      setParentPreviewLoading(false);
+    }
   };
 
   const saveWholeWeek = async (submitForReview = false, silent = false) => {
@@ -900,9 +950,10 @@ export default function TeachersDashboardPage() {
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Choose the subject, then add the quiz for this class.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Subject<select value={quizSubjectId} onChange={(event) => setQuizSubjectId(event.target.value)}><option value="">Select subject</option>{selectedClassAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>NT</span><div><strong>Weekly notes for families</strong><small>Spelling words, reminders or important announcements.</small></div></div></div><textarea className="weekly-builder-notes" rows={3} value={weeklyNote} onChange={(event) => setWeeklyNote(event.target.value)} placeholder="Weekly notes" /></section>
           <section className="weekly-copy-panel"><div><strong>Copy this subject plan to other classes</strong><p>{savedPlanId ? "Only classes in the same grade where you teach the same subject appear here. The copied plans are saved as drafts; quizzes and weekly notes stay with the original class." : "Save this class as a draft first, then you can copy one subject plan to your other eligible classes."}</p></div><button type="button" className="teacher-secondary-button" disabled={saving || !savedPlanId || builderStatus === "approved"} onClick={() => { setCopyPanelOpen((open) => !open); setCopySubjectId((current) => current || sourceSubjectAssignments[0]?.subjectId || ""); }}>Copy plan</button>{savedPlanId && copyPanelOpen && <div className="weekly-copy-controls"><label>Subject to copy<select value={copySubjectId} onChange={(event) => { setCopySubjectId(event.target.value); setCopyTargetClassIds([]); }}><option value="">Select subject</option>{sourceSubjectAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><div className="weekly-copy-targets">{copyTargetClasses.map((target) => <label key={target.classId}><input type="checkbox" checked={copyTargetClassIds.includes(target.classId)} onChange={() => toggleCopyTarget(target.classId)} /><span><strong>Grade {target.grade} · {target.section}</strong><small>{target.lessonCount} matching timetable lesson{target.lessonCount === 1 ? "" : "s"}</small></span></label>)}{copySubjectId && copyTargetClasses.length === 0 && <p>No other eligible class is assigned to you for this subject and grade.</p>}</div><div className="weekly-copy-actions"><small>Different lesson dates or periods are matched by lesson order: first lesson to first lesson, second to second, and so on.</small><button type="button" className="teacher-primary-button" disabled={saving || !copySubjectId || copyTargetClassIds.length === 0} onClick={() => void copyPlanToOtherClasses()}>Save copied drafts</button></div></div>}</section>
-          <div className="teacher-editor-footer"><span>{selectedClassSlots.length > 0 ? "Every card is one of your real timetable lessons. Save once when the whole class week is ready." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "approved"} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button>{builderStatus === "submitted" && <button disabled={saving} type="button" className="teacher-secondary-button warning" onClick={() => { const submission = mySubmissions.find((item) => item.classId === selectedClassId && item.weekId === selectedWeekId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}<button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "approved"} className="teacher-primary-button" type="submit">{saving ? "Saving…" : builderStatus === "changes_requested" ? "Resubmit for review" : "Submit for review"}</button></div></div>
+          <div className="teacher-editor-footer"><span>{selectedClassSlots.length > 0 ? "Every card is one of your real timetable lessons. Save once when the whole class week is ready." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button teacher-preview-button" onClick={() => void openParentPreview()}>Preview parent plan</button><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "approved"} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button>{builderStatus === "submitted" && <button disabled={saving} type="button" className="teacher-secondary-button warning" onClick={() => { const submission = mySubmissions.find((item) => item.classId === selectedClassId && item.weekId === selectedWeekId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}<button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "approved"} className="teacher-primary-button" type="submit">{saving ? "Saving…" : builderStatus === "changes_requested" ? "Resubmit for review" : "Submit for review"}</button></div></div>
         </form>
       </section></div>}
+      {parentPreviewOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop parent-preview-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setParentPreviewOpen(false)}><section className="teacher-parent-preview" dir="ltr" role="dialog" aria-modal="true" aria-labelledby="parent-preview-title"><div className="teacher-modal-heading"><div><p>Preview only — nothing has been saved or sent</p><h2 id="parent-preview-title">Parent weekly-plan preview</h2></div><button aria-label="Close parent plan preview" onClick={() => setParentPreviewOpen(false)}>×</button></div><div className="parent-preview-intro">Your current writing is shown in its real timetable position. Other subjects are intentionally blank because this is only your private preview.</div>{parentPreviewLoading ? <p className="parent-preview-loading">Loading the class timetable…</p> : <section className="parent-preview-paper"><div className="parent-preview-paper-header"><img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS PRIVATE SCHOOLS</strong><span>The Egyptian Section</span><h3>WEEKLY STUDY PLAN</h3></div></div><div className="parent-preview-meta"><span><small>Class</small><strong>Grade {selectedClass.grade} · Class {selectedClass.section}</strong></span><span><small>Week No.</small><strong>{selectedWeek.week_number}</strong></span><span><small>Date</small><strong>{selectedWeek.label}</strong></span></div><div className="table-wrap"><table className="weekly-table parent-preview-table"><thead><tr><th>Day</th><th>Course</th><th>Classwork</th><th>Homework</th><th>Classera Notes</th></tr></thead>{dayNames.map((day, dayIndex) => { const daySlots = parentPreviewSlots.filter((slot) => slot.day_of_week === dayIndex); return daySlots.length > 0 ? <tbody className="weekly-day-group" key={day}>{daySlots.map((slot, index) => { const ownSlot = selectedClassSlots.find((teacherSlot) => teacherSlot.id === slot.id); const draft = ownSlot ? slotDraftFor(ownSlot) : null; return <tr key={slot.id} className={index === 0 ? "new-day" : ""}>{index === 0 && <td className="day-cell" rowSpan={daySlots.length}>{day}</td>}<td className="course-cell">{slot.subject}</td><td className={draft?.classwork.trim() ? "preview-written" : "preview-empty"}>{ownSlot ? previewClasswork(ownSlot) || "—" : "—"}</td><td className={draft?.homework.trim() ? "preview-written" : "preview-empty"}>{ownSlot ? draft?.homework.trim() || "—" : "—"}</td><td className={draft?.classeraNotes.trim() ? "preview-written" : "preview-empty"}>{ownSlot ? draft?.classeraNotes.trim() || "—" : "—"}</td></tr>; })}</tbody> : null; })}</table>{parentPreviewSlots.length === 0 && <p className="parent-preview-loading">No timetable lessons are available for this class yet.</p>}</div><div className="important-notes"><strong>Important Notes</strong><p>Your weekly notes and quiz details will appear here after they are saved and approved.</p></div></section>}<div className="teacher-editor-footer parent-preview-footer"><span>This preview does not submit, approve, or publish the weekly plan.</span><div><button type="button" className="teacher-primary-button" onClick={() => setParentPreviewOpen(false)}>Return to editor</button></div></div></section></div>}
     </main>
   );
 }
