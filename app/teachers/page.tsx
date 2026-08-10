@@ -81,8 +81,10 @@ type MySubmission = {
 
 type ReviewItem = {
   id: string;
+  weeklyPlanId: string;
   teacherId: string;
   weekId: string;
+  classId: string;
   teacherName: string;
   subject: string;
   className: string;
@@ -90,7 +92,23 @@ type ReviewItem = {
   status: string;
   note: string;
   submittedAt: string;
-  entries: { day: string; period: number; classwork: string; homework: string; notes: string }[];
+  entries: { day: string; period: number; subject: string; classwork: string; homework: string; notes: string }[];
+};
+
+type SupervisorPlanReview = {
+  key: string;
+  weeklyPlanId: string;
+  teacherId: string;
+  weekId: string;
+  classId: string;
+  teacherName: string;
+  className: string;
+  week: string;
+  status: "submitted" | "changes_requested" | "approved";
+  submittedAt: string;
+  note: string;
+  reviews: ReviewItem[];
+  entries: ReviewItem["entries"];
 };
 
 type SlotDraft = { classwork: string; homework: string; classeraNotes: string; englishProgramme: string; scienceComponent: string };
@@ -148,6 +166,7 @@ export default function TeachersDashboardPage() {
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [selectedReviewWeekId, setSelectedReviewWeekId] = useState("");
   const [selectedReviewTeacherId, setSelectedReviewTeacherId] = useState("");
+  const [selectedReviewClassId, setSelectedReviewClassId] = useState("");
   const [departmentTeachers, setDepartmentTeachers] = useState<DepartmentTeacher[]>([]);
   const [schoolClasses, setSchoolClasses] = useState<SchoolClass[]>([]);
   const [schoolSubjects, setSchoolSubjects] = useState<SchoolSubject[]>([]);
@@ -265,7 +284,7 @@ export default function TeachersDashboardPage() {
       const departmentTeacherIds = departmentTeacherRows.map((item) => String(item.user_id ?? "")).filter(Boolean);
       const { data: supervisorReviewRows = [], error: supervisorReviewsError } = supervisorAccount && departmentTeacherIds.length
         ? await supabase.from("plan_submissions")
-          .select("id, status, review_note, submitted_at, teacher_id, subject_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(school_classes(grade, section), academic_weeks(id, label), plan_entries(day_of_week, period_number, teacher_id, subject_id, classwork, homework, classera_notes))")
+          .select("id, weekly_plan_id, status, review_note, submitted_at, teacher_id, subject_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(id, class_id, school_classes(grade, section), academic_weeks(id, label), plan_entries(day_of_week, period_number, teacher_id, subject_id, classwork, homework, classera_notes))")
           .in("teacher_id", departmentTeacherIds)
           .in("status", ["submitted", "changes_requested", "approved"])
           .order("submitted_at", { ascending: false })
@@ -275,17 +294,17 @@ export default function TeachersDashboardPage() {
       const realReviews: ReviewItem[] = ((supervisorReviewRows ?? []) as unknown as Record<string, unknown>[]).map((item) => {
         const subject = one(item.subjects as { name_en: string } | { name_en: string }[] | null);
         const teacher = one(item.profiles as { display_name: string } | { display_name: string }[] | null);
-        const plan = one(item.weekly_plans as { school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { id: string; label: string } | { id: string; label: string }[] | null; plan_entries: { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[] | null } | { school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { id: string; label: string } | { id: string; label: string }[] | null; plan_entries: { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[] | null }[] | null);
+        const plan = one(item.weekly_plans as { id: string; class_id: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { id: string; label: string } | { id: string; label: string }[] | null; plan_entries: { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[] | null } | { id: string; class_id: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { id: string; label: string } | { id: string; label: string }[] | null; plan_entries: { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[] | null }[] | null);
         const schoolClass = one(plan?.school_classes);
         const week = one(plan?.academic_weeks);
         const matchingEntries = (plan?.plan_entries ?? [])
           .filter((entry) => String(entry.teacher_id) === String(item.teacher_id) && String(entry.subject_id) === String(item.subject_id))
           .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
         return {
-          id: String(item.id), teacherId: String(item.teacher_id), weekId: String(week?.id ?? ""), teacherName: teacher?.display_name ?? "Teacher", subject: subject?.name_en ?? "Subject",
+          id: String(item.id), weeklyPlanId: String(item.weekly_plan_id ?? plan?.id ?? ""), teacherId: String(item.teacher_id), weekId: String(week?.id ?? ""), classId: String(plan?.class_id ?? ""), teacherName: teacher?.display_name ?? "Teacher", subject: subject?.name_en ?? "Subject",
           className: `Grade ${schoolClass?.grade ?? ""} · ${schoolClass?.section ?? ""}`, week: week?.label ?? "Academic week",
           status: String(item.status), note: String(item.review_note ?? ""), submittedAt: item.submitted_at ? formatDate(String(item.submitted_at)) : "Not submitted",
-          entries: matchingEntries.map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", period: entry.period_number, classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
+          entries: matchingEntries.map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", period: entry.period_number, subject: subject?.name_en ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
         };
       });
       const { data: departmentAssignmentRows = [], error: departmentAssignmentError } = departmentTeacherIds.length ? await supabase.from("teacher_assignments").select("id, teacher_id, class_id, subject_id, school_classes(grade, section), subjects(name_en)").in("teacher_id", departmentTeacherIds) : { data: [], error: null };
@@ -744,21 +763,23 @@ export default function TeachersDashboardPage() {
     }
   };
 
-  const reviewSubmission = async (review: ReviewItem, decision: "approved" | "changes_requested") => {
-    const note = reviewNotes[review.id]?.trim() ?? "";
+  const reviewWeeklyPlan = async (review: SupervisorPlanReview, decision: "approved" | "changes_requested") => {
+    const note = reviewNotes[review.key]?.trim() ?? "";
     if (decision === "changes_requested" && !note) {
-      setMessage("Write a review note before returning this plan to the teacher.");
+      setMessage("Write a review note before returning the weekly plan to the teacher.");
       setMessageTone("error");
       return;
     }
     setSaving(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.rpc("review_plan_submission", { submission_id: review.id, decision, note: note || null });
-      if (error) throw error;
-      setMessage(decision === "approved" ? "The submission was approved. It becomes visible to families when every required subject for this class and week is approved." : "The plan was returned to the teacher with your note.");
+      const pendingReviewIds = review.reviews.filter((item) => item.status === "submitted").map((item) => item.id);
+      const results = await Promise.all(pendingReviewIds.map((submissionId) => supabase.rpc("review_plan_submission", { submission_id: submissionId, decision, note: note || null })));
+      const failed = results.find((result) => result.error)?.error;
+      if (failed) throw failed;
+      setMessage(decision === "approved" ? "The full weekly plan was approved. It becomes visible to families when every required department plan for this class and week is approved." : "The full weekly plan was returned to the teacher with your note.");
       setMessageTone("success");
-      setReviewNotes((current) => ({ ...current, [review.id]: "" }));
+      setReviewNotes((current) => ({ ...current, [review.key]: "" }));
       await loadTeacherDashboard();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The review action could not be completed.");
@@ -766,6 +787,17 @@ export default function TeachersDashboardPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const reviewSubmission = async (review: ReviewItem, decision: "approved" | "changes_requested") => {
+    const matchingReviews = reviewItems.filter((item) => item.weeklyPlanId === review.weeklyPlanId && item.teacherId === review.teacherId);
+    const plan: SupervisorPlanReview = {
+      key: review.id, weeklyPlanId: review.weeklyPlanId, teacherId: review.teacherId, weekId: review.weekId, classId: review.classId,
+      teacherName: review.teacherName, className: review.className, week: review.week,
+      status: review.status === "approved" ? "approved" : review.status === "changes_requested" ? "changes_requested" : "submitted",
+      submittedAt: review.submittedAt, note: review.note, reviews: matchingReviews, entries: review.entries,
+    };
+    await reviewWeeklyPlan(plan, decision);
   };
 
   const selectDepartmentTeacher = (teacherId: string) => {
@@ -823,11 +855,34 @@ export default function TeachersDashboardPage() {
   const waitingReviews = reviewItems.filter((item) => item.status === "submitted");
   const selectedReviewTeacher = departmentTeachers.find((teacher) => teacher.userId === selectedReviewTeacherId);
   const selectedReviewWeek = academicWeeks.find((week) => week.id === selectedReviewWeekId);
-  const selectedTeacherReviewItems = reviewItems.filter((item) => item.teacherId === selectedReviewTeacherId && item.weekId === selectedReviewWeekId);
-  const selectedTeacherReviewClasses = Array.from(new Set(selectedTeacherReviewItems.map((item) => item.className))).map((className) => ({
-    className,
-    reviews: selectedTeacherReviewItems.filter((item) => item.className === className),
-  }));
+  const selectedTeacherReviewRawItems = reviewItems.filter((item) => item.teacherId === selectedReviewTeacherId && item.weekId === selectedReviewWeekId);
+  const selectedTeacherReviewPlans = useMemo(() => Array.from(selectedTeacherReviewRawItems.reduce((groups, item) => {
+    const key = item.weeklyPlanId || `${item.teacherId}-${item.weekId}-${item.classId}`;
+    const current = groups.get(key) ?? {
+      key, weeklyPlanId: item.weeklyPlanId, teacherId: item.teacherId, weekId: item.weekId, classId: item.classId,
+      teacherName: item.teacherName, className: item.className, week: item.week, status: "approved", submittedAt: item.submittedAt,
+      note: "", reviews: [], entries: [],
+    } as SupervisorPlanReview;
+    current.reviews.push(item);
+    current.entries.push(...item.entries);
+    if (item.status === "submitted") current.status = "submitted";
+    else if (current.status !== "submitted" && item.status === "changes_requested") current.status = "changes_requested";
+    if (!current.note && item.note) current.note = item.note;
+    groups.set(key, current);
+    return groups;
+  }, new Map<string, SupervisorPlanReview>()).values()).map((plan) => ({ ...plan, entries: plan.entries.sort((a, b) => dayNames.indexOf(a.day) - dayNames.indexOf(b.day) || a.period - b.period) })), [selectedTeacherReviewRawItems]);
+  const selectedTeacherReviewClasses = useMemo(() => Array.from(new Map(selectedTeacherReviewPlans.map((plan) => [plan.classId, { id: plan.classId, name: plan.className }])).values()), [selectedTeacherReviewPlans]);
+  const selectedTeacherClassPlan = selectedTeacherReviewPlans.find((plan) => plan.classId === selectedReviewClassId) ?? null;
+  const selectedTeacherReviewItems = useMemo(() => selectedTeacherReviewPlans
+    .filter((plan) => !selectedReviewClassId || plan.classId === selectedReviewClassId)
+    .map((plan) => ({
+      id: plan.key, weeklyPlanId: plan.weeklyPlanId, teacherId: plan.teacherId, weekId: plan.weekId, classId: plan.classId,
+      teacherName: plan.teacherName, className: plan.className, week: plan.week,
+      subject: plan.reviews.map((item) => item.subject).join(" + "), status: plan.status, note: plan.note, submittedAt: plan.submittedAt, entries: plan.entries,
+    })), [selectedTeacherReviewPlans, selectedReviewClassId]);
+  useEffect(() => {
+    setSelectedReviewClassId((current) => selectedTeacherReviewClasses.some((schoolClass) => schoolClass.id === current) ? current : selectedTeacherReviewClasses[0]?.id ?? "");
+  }, [selectedTeacherReviewClasses]);
   const selectedDepartmentTeacher = departmentTeachers.find((teacher) => teacher.userId === selectedDepartmentTeacherId);
   const workspaceNavigation = isSupervisor ? [...navigation, ["Teacher Reviews", "RV"] as const, ["Department Teachers", "DT"] as const] : navigation;
   const openWorkspaceSection = (label: string) => {
@@ -918,21 +973,22 @@ export default function TeachersDashboardPage() {
           </section>}
           {isSupervisor && activeNav === "Teacher Reviews" && <section className="teacher-card supervisor-review-card">
             <div className="teacher-card-heading supervisor-review-heading">
-              <div><p className="teacher-kicker">Supervisor workspace</p><h2>Weekly plan review</h2><p>Choose a school week and one teacher. Their submitted class plans are shown in a clean review view.</p></div>
-              <span className="supervisor-review-authority">{waitingReviews.length} submissions waiting for review</span>
+              <div><p className="teacher-kicker">Supervisor workspace</p><h2>Weekly plan review</h2><p>Choose a school week, teacher, then class. All subjects the teacher wrote for that class are reviewed together as one weekly plan.</p></div>
+              <span className="supervisor-review-authority">{waitingReviews.length} subject entries waiting for review</span>
             </div>
             <div className="supervisor-review-selector">
               <label>1. School week<select value={selectedReviewWeekId} onChange={(event) => setSelectedReviewWeekId(event.target.value)}><option value="">Select week</option>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label>
-              <label>2. Teacher<select value={selectedReviewTeacherId} onChange={(event) => setSelectedReviewTeacherId(event.target.value)}><option value="">Select teacher</option>{departmentTeachers.filter((teacher) => teacher.userId).map((teacher) => <option key={teacher.userId} value={teacher.userId}>{teacher.name}</option>)}</select></label>
+              <label>2. Teacher<select value={selectedReviewTeacherId} onChange={(event) => { setSelectedReviewTeacherId(event.target.value); setSelectedReviewClassId(""); }}><option value="">Select teacher</option>{departmentTeachers.filter((teacher) => teacher.userId).map((teacher) => <option key={teacher.userId} value={teacher.userId}>{teacher.name}</option>)}</select></label>
+              <label>3. Class<select value={selectedReviewClassId} onChange={(event) => setSelectedReviewClassId(event.target.value)} disabled={!selectedReviewTeacher || selectedTeacherReviewClasses.length === 0}><option value="">Select class</option>{selectedTeacherReviewClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}</select></label>
               <span>{selectedTeacherReviewClasses.length} class plan{selectedTeacherReviewClasses.length === 1 ? "" : "s"} found</span>
             </div>
             <div className="supervisor-review-list">
               {!selectedReviewWeek || !selectedReviewTeacher ? <p className="supervisor-review-empty">Select the school week and teacher to open their weekly-plan review.</p> : selectedTeacherReviewItems.map((review) => <article key={review.id}>
                 <header><div><span className={`teacher-status ${review.status === "approved" ? "green" : review.status === "changes_requested" ? "amber" : "navy"}`}><i />{review.status.replaceAll("_", " ")}</span><h3>{review.teacherName}</h3><p>{review.subject} · {review.className} · {review.week}</p></div><small>Submitted {review.submittedAt}</small></header>
                 <div className="supervisor-entry-grid">{review.entries.map((entry) => <section key={`${entry.day}-${entry.period}`}><strong>{entry.day} · Period {entry.period}</strong><p><b>Classwork</b>{entry.classwork || "—"}</p><p><b>Homework</b>{entry.homework || "—"}</p><p><b>Classera</b>{entry.notes || "—"}</p></section>)}</div>
-                {review.status === "submitted" && <div className="supervisor-review-actions"><label>Review note<textarea value={reviewNotes[review.id] ?? review.note} onChange={(event) => setReviewNotes((current) => ({ ...current, [review.id]: event.target.value }))} placeholder="Write the required changes for the teacher" rows={3} /></label><div><button disabled={saving} className="teacher-secondary-button" onClick={() => void reviewSubmission(review, "changes_requested")}>Return for changes</button><button disabled={saving} className="teacher-primary-button" onClick={() => void reviewSubmission(review, "approved")}>Approve & publish</button></div></div>}
+                {review.status === "submitted" && <div className="supervisor-review-actions"><label>Review note<textarea value={reviewNotes[review.id] ?? review.note} onChange={(event) => setReviewNotes((current) => ({ ...current, [review.id]: event.target.value }))} placeholder="Write the required changes for the teacher" rows={3} /></label><div><button disabled={saving} className="teacher-secondary-button" onClick={() => void reviewSubmission(review, "changes_requested")}>Return whole plan</button><button disabled={saving} className="teacher-primary-button" onClick={() => void reviewSubmission(review, "approved")}>Approve whole plan</button></div></div>}
                 {review.status === "changes_requested" && <p className="supervisor-review-feedback"><strong>Your review note</strong>{review.note || "The teacher has been asked to revise this plan."}</p>}
-                {review.status === "approved" && <p className="supervisor-review-feedback approved"><strong>Published for families</strong>This subject was approved and is currently visible in the family weekly plan.</p>}
+                {review.status === "approved" && <p className="supervisor-review-feedback approved"><strong>Approved for this department</strong>This complete department plan was approved. It will be visible to families once every required department plan for the class and week is approved.</p>}
               </article>)}
               {selectedReviewWeek && selectedReviewTeacher && selectedTeacherReviewItems.length === 0 && <p className="supervisor-review-empty"><strong>{selectedReviewTeacher.name}</strong> has not sent a weekly plan for {selectedReviewWeek.label} yet.</p>}
             </div>

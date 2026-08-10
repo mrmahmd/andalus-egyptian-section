@@ -321,7 +321,7 @@ button, select, input { font: inherit; }
 .supervisor-review-heading .teacher-kicker { margin-bottom: 7px; }
 .supervisor-review-authority { max-width: 240px; padding: 10px 13px; border-radius: 11px; background: #eaf7f0; color: #167252; font-size: 13px; font-weight: 800; line-height: 1.5; }
 .supervisor-review-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
-.supervisor-review-selector { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto; gap: 12px; align-items: end; margin: 20px 0; padding: 16px; border: 1px solid #dce7f2; border-radius: 14px; background: linear-gradient(105deg, #f8fbff, #f1f8fc); }
+.supervisor-review-selector { display: grid; grid-template-columns: repeat(3, minmax(190px, 1fr)) auto; gap: 12px; align-items: end; margin: 20px 0; padding: 16px; border: 1px solid #dce7f2; border-radius: 14px; background: linear-gradient(105deg, #f8fbff, #f1f8fc); }
 .supervisor-review-selector label { display: grid; gap: 7px; color: #263c5b; font-size: 13px; font-weight: 800; }
 .supervisor-review-selector select { min-height: 46px; padding: 0 11px; border: 1px solid #cbd8e7; border-radius: 9px; background: #fff; color: #17355f; font: inherit; font-size: 14px; font-weight: 700; }
 .supervisor-review-selector > span { min-height: 46px; padding: 0 13px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: #e5f4eb; color: #167252; font-size: 12px; font-weight: 800; text-align: center; }
@@ -337,6 +337,7 @@ button, select, input { font: inherit; }
 .supervisor-entry-grid { margin-top: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: 12px; }
 .supervisor-entry-grid section { padding: 14px; border-radius: 11px; background: #eef5fb; }
 .supervisor-entry-grid section > strong { color: #0c4d88; font-size: 14px; }
+.supervisor-entry-subject { display: inline-flex; margin-top: 8px; padding: 4px 7px; border-radius: 6px; background: #d9eef6; color: #12627e; font-size: 11px; font-weight: 900; }
 .supervisor-entry-grid p { margin: 10px 0 0; display: grid; gap: 4px; color: #405977; font-size: 13px; line-height: 1.5; }
 .supervisor-entry-grid b { color: #122c54; font-size: 12px; }
 .supervisor-review-actions { margin-top: 18px; padding-top: 18px; border-top: 1px solid #dde7f0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: end; }
