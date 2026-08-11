@@ -1592,3 +1592,40 @@ button, select, input { font: inherit; }
   .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child,
   .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { position: static; max-width: none; }
 }
+
+/* English workspace type: a cleaner, more legible hierarchy for long school data. */
+html[dir="ltr"] .teacher-portal,
+html[dir="ltr"] .teacher-auth-page,
+html[dir="ltr"] .super-admin-portal {
+  font-family: "Manrope", "Plus Jakarta Sans", "Aptos", "Segoe UI", sans-serif;
+  font-weight: 600;
+  letter-spacing: .002em;
+}
+html[dir="ltr"] .teacher-portal button,
+html[dir="ltr"] .teacher-portal input,
+html[dir="ltr"] .teacher-portal select,
+html[dir="ltr"] .teacher-portal textarea,
+html[dir="ltr"] .teacher-auth-page button,
+html[dir="ltr"] .teacher-auth-page input,
+html[dir="ltr"] .teacher-auth-page select,
+html[dir="ltr"] .teacher-auth-page textarea,
+html[dir="ltr"] .super-admin-portal button,
+html[dir="ltr"] .super-admin-portal input,
+html[dir="ltr"] .super-admin-portal select,
+html[dir="ltr"] .super-admin-portal textarea { font-family: inherit; }
+html[dir="ltr"] .teacher-portal .teacher-page-heading h1,
+html[dir="ltr"] .super-admin-portal .teacher-page-heading h1 { font-weight: 800; letter-spacing: -.035em; }
+html[dir="ltr"] .teacher-portal .teacher-card-heading h2,
+html[dir="ltr"] .super-admin-portal .teacher-card-heading h2 { font-weight: 800; letter-spacing: -.02em; }
+html[dir="ltr"] .teacher-portal .teacher-page-heading > div:first-child > span,
+html[dir="ltr"] .teacher-portal .teacher-card-heading p,
+html[dir="ltr"] .teacher-portal .teacher-settings-row small { font-weight: 600; }
+html[dir="ltr"] .teacher-portal .teacher-nav button,
+html[dir="ltr"] .super-admin-portal .super-admin-nav-link { font-size: 16px; font-weight: 750; }
+html[dir="ltr"] .teacher-portal .teacher-primary-button,
+html[dir="ltr"] .teacher-portal .teacher-secondary-button,
+html[dir="ltr"] .teacher-auth-page button { font-weight: 800; letter-spacing: .01em; }
+html[dir="ltr"] .teacher-portal .teacher-plan-table { font-size: 15px; }
+html[dir="ltr"] .teacher-portal .teacher-plan-table th { font-size: 12px; font-weight: 800; }
+html[dir="ltr"] .teacher-portal .teacher-plan-table td { font-weight: 600; }
+html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px; font-weight: 800; }
