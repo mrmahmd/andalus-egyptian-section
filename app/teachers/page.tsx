@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 const navigation = [
@@ -978,7 +979,7 @@ export default function TeachersDashboardPage() {
 
           {activeNav === "Calendar" && <section className="teacher-card teacher-live-assignment-panel"><div><h2>Academic Weeks</h2><p>Available weekly-plan periods from Supabase.</p></div><div className="teacher-week-list">{academicWeeks.map((week) => <span key={week.id} className={week.is_current ? "current" : ""}><strong>Week {week.week_number}</strong><small>{week.label}</small><i>{formatDate(week.starts_on)}–{formatDate(week.ends_on)}</i></span>)}{academicWeeks.length === 0 && <p>No academic weeks configured yet.</p>}</div></section>}
 
-          {activeNav === "Settings" && <section className="teacher-card teacher-live-assignment-panel"><div><h2>Account Settings</h2><p>Your account is authenticated and connected to Supabase.</p></div><div className="teacher-settings-row"><span><small>Name</small><strong>{teacherName}</strong></span><span><small>Department</small><strong>{departmentName}</strong></span><button className="teacher-secondary-button" onClick={() => void signOut()}>Sign out</button></div></section>}
+          {activeNav === "Settings" && <><section className="teacher-card teacher-live-assignment-panel"><div><h2>Account Settings</h2><p>Your account is authenticated and connected to Supabase.</p></div><div className="teacher-settings-row"><span><small>Name</small><strong>{teacherName}</strong></span><span><small>Department</small><strong>{departmentName}</strong></span><button className="teacher-secondary-button" onClick={() => void signOut()}>Sign out</button></div></section><StaffLanguagePreference /></>}
 
           {isSupervisor && activeNav === "Department Teachers" && <section className="teacher-card department-teachers-card">
             <div className="teacher-card-heading"><div><p className="teacher-kicker">Department management</p><h2>Department Teachers</h2><p>Manage only the teachers assigned to your supervision group.</p></div><span className="supervisor-review-authority">{departmentTeachers.length} teachers</span></div>

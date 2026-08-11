@@ -242,5 +242,17 @@ export default function LanguageSwitcher({ children }: { children: React.ReactNo
     window.localStorage.setItem("andalus-language", next);
     window.location.reload();
   };
-  return <>{children}{!pathname.includes("/super-admin") && <div className="language-control"><button className="language-switcher" type="button" aria-label="Change language" aria-expanded={languageMenuOpen} onClick={() => setLanguageMenuOpen((open) => !open)}><span aria-hidden="true">◎</span><b>{language === "en" ? "AR" : "EN"}</b></button>{languageMenuOpen && <div className="language-menu"><strong>{language === "en" ? "Language" : "اللغة"}</strong><button type="button" onClick={switchLanguage}>{language === "en" ? "العربية" : "English"}</button></div>}</div>}</>;
+  const isStaffDashboard = pathname.startsWith("/teachers") || pathname.startsWith("/admin");
+  return <>{children}{!pathname.includes("/super-admin") && !isStaffDashboard && <div className="language-control"><button className="language-switcher" type="button" aria-label="Change language" aria-expanded={languageMenuOpen} onClick={() => setLanguageMenuOpen((open) => !open)}><span aria-hidden="true">◎</span><b>{language === "en" ? "AR" : "EN"}</b></button>{languageMenuOpen && <div className="language-menu"><strong>{language === "en" ? "Language" : "اللغة"}</strong><button type="button" onClick={switchLanguage}>{language === "en" ? "العربية" : "English"}</button></div>}</div>}</>;
+}
+
+export function StaffLanguagePreference() {
+  const [language, setLanguage] = useState<"en" | "ar">(() => typeof window !== "undefined" && window.localStorage.getItem("andalus-language") === "ar" ? "ar" : "en");
+  const changeLanguage = () => {
+    const next = language === "en" ? "ar" : "en";
+    window.localStorage.setItem("andalus-language", next);
+    window.location.reload();
+  };
+  const arabic = language === "ar";
+  return <section className="teacher-card teacher-language-settings" dir={arabic ? "rtl" : "ltr"}><div><p className="teacher-kicker">{arabic ? "اللغة" : "Language"}</p><h2>{arabic ? "لغة لوحة التحكم" : "Dashboard language"}</h2><p>{arabic ? "اختر اللغة التي ستظهر بها لوحة التحكم." : "Choose the language used across your dashboard."}</p></div><button type="button" className="teacher-primary-button" onClick={changeLanguage}>{arabic ? "English" : "العربية"}</button></section>;
 }
