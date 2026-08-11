@@ -959,7 +959,7 @@ export default function TeachersDashboardPage() {
               </tbody></table></div>
             </section>
 
-            <section className="teacher-card teacher-review-status-card">
+            <section className="teacher-card teacher-review-status-card" hidden>
               <div className="teacher-card-heading"><div><p className="teacher-kicker">Plan follow-up</p><h2>My submitted plans</h2><p>Plans remain editable until the supervisor starts reviewing them. A returned plan includes the supervisor&apos;s note.</p></div></div>
               <div className="teacher-review-status-list">
                 {mySubmissions.filter((submission) => submission.status !== "draft").map((submission) => <article key={submission.id}>
