@@ -2209,3 +2209,25 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
   .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading { grid-template-columns: 1fr; align-items: stretch; }
   .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { width: 100%; margin: 0; }
 }
+
+/* Colorful, high-contrast timetable subject cells */
+.timetable-day li {
+  min-height: 52px;
+  margin: 0 0 8px;
+  padding: 0 13px;
+  border: 1px solid #c9deec;
+  border-radius: 11px;
+  color: #12345f;
+  background: linear-gradient(100deg, #edf8fc, #ffffff);
+  box-shadow: 0 5px 12px rgba(12,53,106,.08);
+  font-size: 15px;
+  font-weight: 900;
+}
+.timetable-day li:nth-child(3n + 2) { border-color: #e7cfe1; background: linear-gradient(100deg, #fff1f8, #ffffff); }
+.timetable-day li:nth-child(3n) { border-color: #d9d3ef; background: linear-gradient(100deg, #f4f1ff, #ffffff); }
+.timetable-day li:nth-child(4n) { border-color: #d7e8ce; background: linear-gradient(100deg, #f2faee, #ffffff); }
+.timetable-day li:last-child { margin-bottom: 0; }
+.timetable-day li b { width: 27px; color: #087d9e; font-size: 12px; }
+.timetable-day li:nth-child(3n + 2) b { color: #b32978; }
+.timetable-day li:nth-child(3n) b { color: #6955a7; }
+.timetable-day li:nth-child(4n) b { color: #4e8c45; }
