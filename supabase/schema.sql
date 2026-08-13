@@ -104,6 +104,7 @@ create table if not exists public.timetable_slots (
   period_number smallint not null check (period_number between 1 and 12),
   subject_id uuid not null references public.subjects(id) on delete restrict,
   teacher_id uuid references public.profiles(user_id) on delete set null,
+  requires_weekly_plan_submission boolean not null default true,
   unique (class_id, day_of_week, period_number)
 );
 

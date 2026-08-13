@@ -48,6 +48,7 @@ type TimetableSlot = {
   subject_id: string;
   day_of_week: number;
   period_number: number;
+  requires_weekly_plan_submission: boolean;
 };
 
 type ParentPreviewSlot = TimetableSlot & {
@@ -232,7 +233,7 @@ export default function TeachersDashboardPage() {
       const [assignmentsResult, weeksResult, slotsResult, entriesResult, mySubmissionsResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult, holidaysResult] = await Promise.all([
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en, include_in_weekly_plan)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
-        supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
+        supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number, requires_weekly_plan_submission").eq("teacher_id", userData.user.id).eq("requires_weekly_plan_submission", true).order("day_of_week").order("period_number"),
         supabase.from("plan_entries").select("id, weekly_plan_id, subject_id, day_of_week, updated_at, subjects(name_en), weekly_plans(class_id, week_id, status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         supabase.from("plan_submissions").select("id, weekly_plan_id, subject_id, status, review_note, weekly_plans(class_id, week_id, school_classes(grade, section), academic_weeks(label)), subjects(name_en)").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         Promise.resolve({ data: [], error: null }),
@@ -246,10 +247,11 @@ export default function TeachersDashboardPage() {
       const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, mySubmissionsResult.error, reviewsResult.error, classesResult.error, subjectsResult.error, holidaysResult.error].find(Boolean);
       if (firstError) throw firstError;
 
+      const requiredSlotRows = (slotsResult.data ?? []) as TimetableSlot[];
       const realAssignments: Assignment[] = (assignmentsResult.data ?? []).map((assignment) => {
         const schoolClass = one(assignment.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
         const subject = one(assignment.subjects as { name_en: string; include_in_weekly_plan: boolean } | { name_en: string; include_in_weekly_plan: boolean }[] | null);
-        if (!subject?.include_in_weekly_plan) return null;
+        if (!subject?.include_in_weekly_plan || !requiredSlotRows.some((slot) => String(slot.class_id) === String(assignment.class_id) && String(slot.subject_id) === String(assignment.subject_id))) return null;
         return {
           id: String(assignment.id),
           classId: String(assignment.class_id),
@@ -340,7 +342,7 @@ export default function TeachersDashboardPage() {
       setAssignments(realAssignments);
       setAcademicWeeks(weeks);
       setSchoolHolidays((holidaysResult.data ?? []) as SchoolHoliday[]);
-      setTimetableSlots((slotsResult.data ?? []) as TimetableSlot[]);
+      setTimetableSlots(requiredSlotRows);
       setEntries(realEntries);
       setMySubmissions(realMySubmissions);
       setReviewItems(realReviews);
@@ -507,6 +509,7 @@ export default function TeachersDashboardPage() {
       const { data, error } = await getSupabaseBrowserClient().from("timetable_slots")
         .select("id, class_id, subject_id, day_of_week, period_number, subjects(parent_plan_name, name_en)")
         .eq("class_id", selectedClassId)
+        .eq("requires_weekly_plan_submission", true)
         .order("day_of_week", { ascending: true })
         .order("period_number", { ascending: true });
       if (error) throw error;
@@ -518,6 +521,7 @@ export default function TeachersDashboardPage() {
           subject_id: String(row.subject_id),
           day_of_week: Number(row.day_of_week),
           period_number: Number(row.period_number),
+          requires_weekly_plan_submission: true,
           subject: related?.parent_plan_name || related?.name_en || "Subject",
         };
       });
