@@ -1676,19 +1676,15 @@ button, select, input { font: inherit; }
 }
 
 .support-header {
-  min-height: 100px;
-  justify-content: flex-start;
-  gap: 24px;
-  box-shadow: 0 8px 24px rgba(8, 38, 83, .06);
+  min-height: 102px;
+  justify-content: stretch;
+  gap: 28px;
 }
-.support-header .brand-lockup { width: 104px; justify-content: center; }
-.support-header .brand-lockup img {
-  width: 98px;
-  height: 76px;
-  object-fit: contain;
-  border-radius: 0;
-}
-.support-header .button { min-height: 48px; border-radius: 13px; font-size: 15px; }
+.support-header .brand-lockup { width: auto; justify-content: flex-start; gap: 18px; }
+.support-header .brand-lockup img { width: 96px; height: 76px; flex-basis: 96px; border-radius: 0; }
+.support-header .brand-copy { min-width: 250px; }
+.support-header nav { gap: 10px; }
+.support-header .button { min-height: 48px; border-radius: 13px; font-size: 15px; justify-self: start; white-space: nowrap; }
 
 .hero-section { box-shadow: inset 0 1px 0 rgba(255,255,255,.09); }
 .finder-shell,
@@ -1760,6 +1756,14 @@ button, select, input { font: inherit; }
   .compact-header .brand-lockup { width: 92px; }
   .compact-header .brand-lockup img { width: 88px; height: 68px; flex-basis: 88px; }
   .compact-header > .button { display: none; }
+  .support-header { grid-template-columns: minmax(250px, 1fr) auto; gap: 16px; padding-inline: 24px; }
+  .support-header .brand-lockup { gap: 11px; }
+  .support-header .brand-lockup img { width: 78px; height: 64px; flex-basis: 78px; }
+  .support-header .brand-copy { min-width: 0; max-width: 175px; }
+  .support-header .brand-copy strong { font-size: 14px; }
+  .support-header .brand-copy small { font-size: 11px; }
+  .support-header nav { gap: 7px; }
+  .support-header nav a { min-height: 43px; padding-inline: 12px; font-size: 13px; }
   .site-header .brand-copy { min-width: 0; max-width: 205px; }
   .site-header .brand-copy strong { font-size: 14px; }
 }
@@ -1786,8 +1790,10 @@ button, select, input { font: inherit; }
   .site-header .brand-lockup img,
   .compact-header .brand-lockup img { width: 66px; height: 54px; flex-basis: 66px; }
   .support-header { min-height: 76px; padding-inline: 16px; }
-  .support-header .brand-lockup { width: 68px; }
+  .support-header { grid-template-columns: 1fr; }
+  .support-header .brand-lockup { width: auto; }
   .support-header .brand-lockup img { width: 66px; height: 54px; }
+  .support-header nav { display: none; }
   .language-control { top: 19px; right: 14px; }
   html[dir="rtl"] .language-control { right: auto; left: 14px; }
   .site-header .brand-copy {
