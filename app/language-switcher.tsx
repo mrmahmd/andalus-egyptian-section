@@ -196,8 +196,155 @@ Object.assign(staffAr, {
   "Copy this subject plan to other classes": "\u0646\u0633\u062e \u062e\u0637\u0629 \u0647\u0630\u0647 \u0627\u0644\u0645\u0627\u062f\u0629 \u0625\u0644\u0649 \u0641\u0635\u0648\u0644 \u0623\u062e\u0631\u0649", "Save this class as a draft first, then you can copy one subject plan to your other eligible classes.": "\u0627\u062d\u0641\u0638 \u062e\u0637\u0629 \u0647\u0630\u0627 \u0627\u0644\u0641\u0635\u0644 \u0643\u0645\u0633\u0648\u062f\u0629 \u0623\u0648\u0644\u0627\u064b\u060c \u062b\u0645 \u064a\u0645\u0643\u0646\u0643 \u0646\u0633\u062e \u062e\u0637\u0629 \u0645\u0627\u062f\u0629 \u0625\u0644\u0649 \u0641\u0635\u0648\u0644\u0643 \u0627\u0644\u0623\u062e\u0631\u0649 \u0627\u0644\u0645\u0624\u0647\u0644\u0629.", "Copy plan": "\u0646\u0633\u062e \u0627\u0644\u062e\u0637\u0629", "Every card is one of your real timetable lessons. Save once when the whole class week is ready.": "\u0643\u0644 \u0628\u0637\u0627\u0642\u0629 \u062a\u0645\u062b\u0644 \u062d\u0635\u0629 \u062d\u0642\u064a\u0642\u064a\u0629 \u0645\u0646 \u062c\u062f\u0648\u0644\u0643. \u0627\u062d\u0641\u0638 \u0645ر\u0629 \u0648ا\u062d\u062f\u0629 \u0628عد \u0627\u0643تمال \u0623\u0633\u0628\u0648ع \u0627\u0644\u0641\u0635\u0644.", "Saving is blocked until the timetable is connected.": "\u064a\u062a\u0639\u0630\u0631 \u0627\u0644\u062d\u0641\u0638 \u062d\u062a\u0649 \u064a\u062a\u0645 \u0631\u0628\u0637 \u062c\u062f\u0648\u0644 \u0627\u0644\u062d\u0635\u0635.", "Select subject": "\u0627\u062e\u062a\u0631 \u0627\u0644\u0645\u0627\u062f\u0629", "Select quiz day": "\u0627\u062e\u062a\u0631 \u064aوم \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631", "Quiz details": "\u062aف\u0627\u0635\u064a\u0644 \u0627\u0644\u0627\u062e\u062a\u0628ار", "Title, scope or revision pages": "\u0627\u0644\u0639\u0646\u0648\u0627ن\u060c \u0627\u0644\u0646\u0637اق \u0623\u0648 \u0635ف\u062d\u0627\u062a \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629"
 });
 
+// Complete staff-workspace vocabulary. Keys intentionally match the rendered
+// English copy because the dashboard is translated after React renders it.
+Object.assign(staffAr, {
+  "Administration Reports": "تقارير الإدارة",
+  "Administration": "الإدارة",
+  "Published Plan Report": "تقرير الخطط المنشورة",
+  "Family Plan Page": "صفحة خطط أولياء الأمور",
+  "Administrative account": "حساب إداري",
+  "Administrative report navigation": "التنقل في تقارير الإدارة",
+  "Live school data": "بيانات المدرسة المباشرة",
+  "Read-only reporting": "تقارير للعرض فقط",
+  "Administrative workspace": "مساحة عمل الإدارة",
+  "Weekly-plan creation access": "صلاحية إنشاء الخطة الأسبوعية",
+  "Open or close plan creation for all teachers, or control an individual teacher.": "افتح أو أغلق إنشاء الخطط لجميع المعلمين، أو تحكم في صلاحية معلم محدد.",
+  "Close creation": "إغلاق الإنشاء",
+  "Open creation": "فتح الإنشاء",
+  "Open": "مفتوح",
+  "Closed": "مغلق",
+  "Published lessons": "الحصص المنشورة",
+  "Last updated": "آخر تحديث",
+  "Report": "التقرير",
+  "Period": "الحصة",
+  "Subject & teacher": "المادة والمعلم",
+  "Classera notes": "ملاحظات كلاسيرا",
+  "School day": "يوم دراسي",
+  "The published-plan report could not be loaded.": "تعذر تحميل تقرير الخطط المنشورة.",
+  "Weekly plan creation is open.": "تم فتح إنشاء الخطط الأسبوعية.",
+  "Weekly plan creation is closed.": "تم إغلاق إنشاء الخطط الأسبوعية.",
+  "Close workspace menu": "إغلاق قائمة لوحة التحكم",
+  "Teacher workspace menu": "قائمة لوحة تحكم المعلم",
+  "Close menu": "إغلاق القائمة",
+  "Teacher workspace navigation": "التنقل في لوحة تحكم المعلم",
+  "Open workspace menu": "فتح قائمة لوحة التحكم",
+  "Supervisor workspace navigation": "التنقل في لوحة تحكم المشرف",
+  "Weekly plan summary": "ملخص الخطط الأسبوعية",
+  "Only the Super Admin can change these assignments.": "يمكن للمشرف العام فقط تعديل هذه التكليفات.",
+  "Weekly plan review": "مراجعة الخطط الأسبوعية",
+  "Choose a school week, teacher, then class. All subjects the teacher wrote for that class are reviewed together as one weekly plan.": "اختر الأسبوع الدراسي ثم المعلم ثم الفصل. تُراجع جميع المواد التي كتبها المعلم لهذا الفصل معًا كخطة أسبوعية واحدة.",
+  "1. School week": "١. الأسبوع الدراسي",
+  "2. Teacher": "٢. المعلم",
+  "3. Class": "٣. الفصل",
+  "Select week": "اختر الأسبوع",
+  "Select teacher": "اختر المعلم",
+  "Select the school week and teacher to open their weekly-plan review.": "اختر الأسبوع الدراسي والمعلم لفتح مراجعة خطته الأسبوعية.",
+  "has not sent a weekly plan for": "لم يرسل خطة أسبوعية للأسبوع",
+  "yet.": "حتى الآن.",
+  "Submitted": "أُرسلت",
+  "Classera": "كلاسيرا",
+  "Quizzes & assessments": "الاختبارات والتقييمات",
+  "Return whole plan": "إرجاع الخطة كاملة للتعديل",
+  "Approve whole plan": "اعتماد الخطة كاملة",
+  "Approved for this department": "معتمدة من هذه الشعبة",
+  "This complete department plan was approved. It will be visible to families once every required department plan for the class and week is approved.": "تم اعتماد خطة الشعبة كاملة. ستظهر لأولياء الأمور بعد اعتماد جميع خطط الشعب المطلوبة لهذا الفصل والأسبوع.",
+  "The teacher has been asked to revise this plan.": "طُلب من المعلم مراجعة هذه الخطة وتعديلها.",
+  "submitted": "مرسلة للمراجعة",
+  "changes requested": "مطلوب تعديل",
+  "approved": "معتمدة",
+  "draft": "مسودة",
+  "published": "منشورة",
+  "Entries are placed according to your timetable slots.": "تُرتب الإدخالات تلقائيًا حسب حصص جدولك.",
+  "Saving draft…": "جارٍ حفظ المسودة…",
+  "Draft saved automatically": "تم حفظ المسودة تلقائيًا",
+  "Auto-save is on": "الحفظ التلقائي يعمل",
+  "Under supervisor review": "قيد مراجعة المشرف",
+  "Changes requested by supervisor": "طلب المشرف تعديلات",
+  "Approved": "معتمدة",
+  "Saved as draft": "محفوظة كمسودة",
+  "You can preview it, or withdraw it to make changes before the supervisor decides.": "يمكنك معاينتها أو سحبها لإجراء تعديلات قبل قرار المشرف.",
+  "Update the required items, then submit the plan for review again.": "عدّل البنود المطلوبة ثم أرسل الخطة للمراجعة مرة أخرى.",
+  "This subject has already been approved. Contact your supervisor if a correction is needed.": "تم اعتماد هذه المادة بالفعل. تواصل مع مشرفك إذا احتجت إلى تصحيح.",
+  "This plan is saved privately and has not been sent for review.": "هذه الخطة محفوظة بصورة خاصة ولم تُرسل للمراجعة بعد.",
+  "1. Academic week": "١. الأسبوع الدراسي",
+  "2. Class": "٢. الفصل",
+  "Timetable connection required": "يلزم ربط جدول الحصص",
+  "Subject": "المادة",
+  "Science component": "فرع العلوم المتكاملة",
+  "Select Chemistry, Physics or Biology": "اختر الكيمياء أو الفيزياء أو الأحياء",
+  "Chemistry": "الكيمياء",
+  "Physics": "الفيزياء",
+  "Biology": "الأحياء",
+  "Integrated Science": "العلوم المتكاملة",
+  "English programme": "برنامج اللغة الإنجليزية",
+  "The programme name is added automatically before Classwork.": "يُضاف اسم البرنامج تلقائيًا قبل عمل الحصة.",
+  "Lesson, unit and pages": "اكتب الدرس والوحدة والصفحات",
+  "Homework for this lesson": "اكتب واجب هذه الحصة",
+  "Reminder or materials": "اكتب التذكير أو الأدوات المطلوبة",
+  "Choose the subject, then add the quiz for this class.": "اختر المادة ثم أضف اختبار هذا الفصل.",
+  "Only classes in the same grade where you teach the same subject appear here. The copied plans are saved as drafts; quizzes and weekly notes stay with the original class.": "تظهر هنا فقط فصول الصف نفسه التي تدرّس لها المادة نفسها. تُحفظ الخطط المنسوخة كمسودات، وتظل الاختبارات والملاحظات الأسبوعية في الفصل الأصلي.",
+  "Subject to copy": "المادة المراد نسخها",
+  "No other eligible class is assigned to you for this subject and grade.": "لا يوجد فصل آخر مؤهل ومُسند إليك لهذه المادة وهذا الصف.",
+  "Different lesson dates or periods are matched by lesson order: first lesson to first lesson, second to second, and so on.": "تُطابق الحصص المختلفة حسب ترتيبها: الحصة الأولى مع الأولى، والثانية مع الثانية، وهكذا.",
+  "Save copied drafts": "حفظ الخطط المنسوخة كمسودات",
+  "Saving…": "جارٍ الحفظ…",
+  "Resubmit for review": "إعادة الإرسال للمراجعة",
+  "Preview only — nothing has been saved or sent": "معاينة فقط — لم يتم حفظ أو إرسال أي شيء",
+  "Parent weekly-plan preview": "معاينة خطة ولي الأمر",
+  "Close parent plan preview": "إغلاق معاينة خطة ولي الأمر",
+  "Your current writing is shown in its real timetable position. Other subjects are intentionally blank because this is only your private preview.": "تظهر كتابتك الحالية في موضعها الحقيقي بالجدول. تُترك المواد الأخرى فارغة عمدًا لأن هذه معاينة خاصة بك فقط.",
+  "Loading the class timetable…": "جارٍ تحميل جدول الفصل…",
+  "No timetable lessons are available for this class yet.": "لا توجد حصص متاحة لهذا الفصل في الجدول حتى الآن.",
+  "This preview does not submit, approve, or publish the weekly plan.": "هذه المعاينة لا ترسل الخطة ولا تعتمدها ولا تنشرها.",
+  "Return to editor": "العودة إلى المحرر",
+  "Sunday": "الأحد",
+  "Monday": "الاثنين",
+  "Tuesday": "الثلاثاء",
+  "Wednesday": "الأربعاء",
+  "Thursday": "الخميس"
+});
+
 function normalizedText(value: string) {
   return value.replaceAll("â€™", "’").replaceAll("â€”", "—").replaceAll("â€“", "–").replaceAll("â†’", "→").replaceAll("â†“", "↓").replaceAll("آ·", "·");
+}
+
+function translateDynamicStaffText(value: string) {
+  let match = value.match(/^Period (\d+)$/);
+  if (match) return `الحصة ${match[1]}`;
+  match = value.match(/^(\d+) lessons?$/);
+  if (match) return `${match[1]} حصة`;
+  match = value.match(/^(\d+) lessons? ready for this week$/);
+  if (match) return `${match[1]} حصة جاهزة لهذا الأسبوع`;
+  match = value.match(/^(\d+) matching timetable lessons?$/);
+  if (match) return `${match[1]} حصة مطابقة في الجدول`;
+  match = value.match(/^(\d+) class plans? found$/);
+  if (match) return `تم العثور على ${match[1]} خطة فصل`;
+  match = value.match(/^(\d+) subject entries? waiting for review$/);
+  if (match) return `${match[1]} إدخال مادة بانتظار المراجعة`;
+  match = value.match(/^(\d+) class \/ subject assignments?$/);
+  if (match) return `${match[1]} تكليف فصل ومادة`;
+  match = value.match(/^Grade (\d+) · ([A-Za-z])$/);
+  if (match) return `الصف ${match[1]} · الشعبة ${match[2]}`;
+  match = value.match(/^Grade (\d+) ([A-Za-z])$/);
+  if (match) return `الصف ${match[1]} ${match[2]}`;
+  match = value.match(/^Week (\d+)$/);
+  if (match) return `الأسبوع ${match[1]}`;
+  match = value.match(/^Week (\d+)(.+)$/);
+  if (match) {
+    const localizedDate = match[2]
+      .replaceAll("September", "سبتمبر")
+      .replaceAll("October", "أكتوبر")
+      .replaceAll("November", "نوفمبر")
+      .replaceAll("December", "ديسمبر")
+      .replaceAll("January", "يناير");
+    return `الأسبوع ${match[1]}${localizedDate}`;
+  }
+  match = value.match(/^Submitted (.+)$/);
+  if (match) return `أُرسلت في ${match[1]}`;
+  match = value.match(/^(\d+) published plans? shown$/);
+  if (match) return `يتم عرض ${match[1]} خطة منشورة`;
+  return undefined;
 }
 
 function translatePage(root: HTMLElement) {
@@ -206,29 +353,32 @@ function translatePage(root: HTMLElement) {
   while (walker.nextNode()) nodes.push(walker.currentNode as Text);
   nodes.forEach((node) => {
     // The timetable is intentionally English-only, including on the Arabic platform.
-    if (node.parentElement?.closest(".plan-paper, .super-admin-portal, .timetable-grid")) return;
+    if (node.parentElement?.closest(".plan-paper, .parent-preview-paper, .super-admin-portal, .timetable-grid")) return;
     const original = node.nodeValue ?? "";
     const value = original.trim();
     const translated = value.startsWith("Welcome, ")
       ? `\u0645\u0631\u062d\u0628\u064b\u0627\u060c ${value.slice(9)}`
-      : staffAr[normalizedText(value)] ?? homeAr[normalizedText(value)] ?? ar[value];
+      : staffAr[normalizedText(value)] ?? homeAr[normalizedText(value)] ?? ar[value] ?? translateDynamicStaffText(normalizedText(value));
     if (translated) node.nodeValue = original.replace(value, translated);
   });
   root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input[placeholder], textarea[placeholder]").forEach((field) => {
-    if (field.closest(".plan-paper, .super-admin-portal, .timetable-grid")) return;
+    if (field.closest(".plan-paper, .parent-preview-paper, .super-admin-portal, .timetable-grid")) return;
     const translated = staffAr[normalizedText(field.placeholder.trim())] ?? homeAr[normalizedText(field.placeholder.trim())] ?? ar[field.placeholder.trim()];
     if (translated) field.placeholder = translated;
   });
 }
 
 export default function LanguageSwitcher({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<"en" | "ar">(() => {
-    if (typeof window === "undefined") return "en";
-    return window.localStorage.getItem("andalus-language") === "ar" ? "ar" : "en";
-  });
+  const [language, setLanguage] = useState<"en" | "ar">("en");
+  const [languageReady, setLanguageReady] = useState(false);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const pathname = usePathname();
   useEffect(() => {
+    setLanguage(window.localStorage.getItem("andalus-language") === "ar" ? "ar" : "en");
+    setLanguageReady(true);
+  }, []);
+  useEffect(() => {
+    if (!languageReady) return;
     document.documentElement.lang = language;
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
     document.body.classList.toggle("arabic-ui", language === "ar");
@@ -238,7 +388,7 @@ export default function LanguageSwitcher({ children }: { children: React.ReactNo
     const observer = new MutationObserver(() => translatePage(document.body));
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
-  }, [language, pathname]);
+  }, [language, languageReady, pathname]);
   const switchLanguage = () => {
     const next = language === "en" ? "ar" : "en";
     window.localStorage.setItem("andalus-language", next);
@@ -249,7 +399,8 @@ export default function LanguageSwitcher({ children }: { children: React.ReactNo
 }
 
 export function StaffLanguagePreference() {
-  const [language, setLanguage] = useState<"en" | "ar">(() => typeof window !== "undefined" && window.localStorage.getItem("andalus-language") === "ar" ? "ar" : "en");
+  const [language, setLanguage] = useState<"en" | "ar">("en");
+  useEffect(() => setLanguage(window.localStorage.getItem("andalus-language") === "ar" ? "ar" : "en"), []);
   const changeLanguage = () => {
     const next = language === "en" ? "ar" : "en";
     window.localStorage.setItem("andalus-language", next);
