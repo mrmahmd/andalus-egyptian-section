@@ -890,7 +890,17 @@ export default function TeachersDashboardPage() {
     groups.set(key, current);
     return groups;
   }, new Map<string, SupervisorPlanReview>()).values()).map((plan) => ({ ...plan, entries: plan.entries.sort((a, b) => dayNames.indexOf(a.day) - dayNames.indexOf(b.day) || a.period - b.period), quizzes: Array.from(new Map(plan.quizzes.map((quiz) => [`${quiz.subject}-${quiz.date}-${quiz.details}`, quiz])).values()), weeklyNotes: Array.from(new Set(plan.weeklyNotes)) })), [selectedTeacherReviewRawItems]);
-  const selectedTeacherReviewClasses = useMemo(() => Array.from(new Map(selectedTeacherReviewPlans.map((plan) => [plan.classId, { id: plan.classId, name: plan.className }])).values()), [selectedTeacherReviewPlans]);
+  const selectedTeacherReviewClasses = useMemo(() => {
+    const assignedClasses = (selectedReviewTeacher?.assignments ?? []).map((assignment) => [
+      assignment.classId,
+      { id: assignment.classId, name: `Grade ${assignment.grade} · ${assignment.section}` },
+    ] as const);
+    const submittedClasses = selectedTeacherReviewPlans.map((plan) => [
+      plan.classId,
+      { id: plan.classId, name: plan.className },
+    ] as const);
+    return Array.from(new Map([...assignedClasses, ...submittedClasses]).values());
+  }, [selectedReviewTeacher, selectedTeacherReviewPlans]);
   const selectedTeacherClassPlan = selectedTeacherReviewPlans.find((plan) => plan.classId === selectedReviewClassId) ?? null;
   const selectedTeacherReviewItems = useMemo(() => selectedTeacherReviewPlans
     .filter((plan) => !selectedReviewClassId || plan.classId === selectedReviewClassId)
