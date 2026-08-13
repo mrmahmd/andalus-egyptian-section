@@ -29,8 +29,9 @@ export default function Home() {
         <Link href="/" className="brand-lockup" aria-label="AlAndalus Private Schools home">
           <img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" />
           <span className="brand-copy">
-            <strong>ALANDALUS PRIVATE SCHOOLS</strong>
-            <small>Egyptian Section · Weekly Study Plan</small>
+            <strong>AlAndalus Private Schools</strong>
+            <small>Egyptian Section</small>
+            <em>Weekly Plans Platform</em>
           </span>
         </Link>
         <nav className="desktop-nav" aria-label="Main navigation">

@@ -33,6 +33,9 @@ const homeAr: Record<string, string> = {
 };
 
 Object.assign(homeAr, {
+  "AlAndalus Private Schools": "مدارس الأندلس الأهلية",
+  "Egyptian Section": "المسار المصري",
+  "Weekly Plans Platform": "منصة الخطط الأسبوعية",
   "Browse weekly plans": "تصفح الخطط الأسبوعية",
   "Choose your child’s grade and class to see approved weekly plans published by the school.": "اختر صف الطالب وشعبته لعرض الخطط الأسبوعية المعتمدة والمنشورة من المدرسة.",
   "Only supervisor-approved plans are shown here. Previous plans remain available for families to revisit.": "تظهر هنا الخطط المعتمدة من المشرف فقط، وتبقى الخطط السابقة متاحة لرجوع أولياء الأمور إليها.",
