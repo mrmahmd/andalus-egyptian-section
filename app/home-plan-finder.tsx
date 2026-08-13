@@ -8,7 +8,7 @@ type PublishedPlan = { grade: number; section: string; weekNumber: number; weekL
 const one = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] ?? null : value;
 
 export default function HomePlanFinder() {
-  const [grade, setGrade] = useState("4");
+  const [grade, setGrade] = useState("1");
   const [section, setSection] = useState("A");
   const [week, setWeek] = useState("");
   const [publishedPlans, setPublishedPlans] = useState<PublishedPlan[]>([]);

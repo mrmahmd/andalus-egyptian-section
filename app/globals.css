@@ -2231,3 +2231,5 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
 .timetable-day li:nth-child(3n + 2) b { color: #b32978; }
 .timetable-day li:nth-child(3n) b { color: #6955a7; }
 .timetable-day li:nth-child(4n) b { color: #4e8c45; }
+.timetable-day li span { color: #12345f; font-size: 16px; font-weight: 900; letter-spacing: -.01em; }
+.arabic-ui .timetable-day li span { font-family: "Manrope", "Plus Jakarta Sans", sans-serif !important; }
