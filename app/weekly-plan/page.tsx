@@ -21,7 +21,7 @@ const formatDates = (startsOn: string, endsOn: string) => new Intl.DateTimeForma
 
 export default function WeeklyPlanPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-  const [grade, setGrade] = useState("Grade 4");
+  const [grade, setGrade] = useState("Grade 1");
   const [classType, setClassType] = useState("Class A");
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [publishedPlans, setPublishedPlans] = useState<PublishedPlan[]>([]);
@@ -54,7 +54,7 @@ export default function WeeklyPlanPage() {
       }).filter((plan): plan is PublishedPlan => plan !== null).sort((a, b) => b.weekNumber - a.weekNumber);
       setPublishedPlans(plans);
       setLoadingPlans(false);
-      const target = plans.find((plan) => plan.grade === Number(requestedGrade ?? 4) && plan.section === (requestedSection ?? "A") && plan.weekNumber === requestedWeek);
+      const target = plans.find((plan) => plan.grade === Number(requestedGrade ?? 1) && plan.section === (requestedSection ?? "A") && plan.weekNumber === requestedWeek);
       if (target) setSelectedWeek(target.weekNumber);
     };
     void loadPublishedPlans();

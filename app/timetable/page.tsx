@@ -16,7 +16,7 @@ const subjectLabels: Record<string, string> = {
 export default function TimetablePage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const classes = Object.values(timetableSource.classes) as Array<{ classId: string; className: string; grade: number; section: string; schedule: Record<string, { dayLabel: string; periods: { period: number; subject: string }[] }> }>;
-  const [selectedClassId, setSelectedClassId] = useState("grade-4-a");
+  const [selectedClassId, setSelectedClassId] = useState("grade-1-a");
   const selectedClass = classes.find((entry) => entry.classId === selectedClassId) ?? classes[0];
   const gradeOptions = [...new Set(classes.map((entry) => entry.grade))].sort((a, b) => a - b);
   const selectedGrade = selectedClass?.grade ?? 4;
