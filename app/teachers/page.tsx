@@ -537,6 +537,17 @@ export default function TeachersDashboardPage() {
 
   const saveWholeWeek = async (submitForReview = false, silent = false) => {
     if (!profileId || !selectedClass || !selectedWeek) return;
+    if (submitForReview && autoSaveTimer.current) {
+      window.clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
+    if (!submitForReview && builderStatus === "submitted") {
+      if (!silent) {
+        setMessage("This weekly plan is already with your supervisor. Withdraw it before making or saving changes.");
+        setMessageTone("info");
+      }
+      return;
+    }
     if (selectedClassSlots.length === 0) {
       setMessage("No timetable lessons are linked to this class yet. Ask the Super Admin to review the timetable connection.");
       setMessageTone("error");
@@ -589,9 +600,30 @@ export default function TeachersDashboardPage() {
         status: submitForReview ? "submitted" : "draft", reviewed_by: null, reviewed_at: null,
         submitted_at: submitForReview ? new Date().toISOString() : null,
       }));
-      if (submissionRows.length) {
-        const { error: submissionError } = await supabase.from("plan_submissions").upsert(submissionRows, { onConflict: "weekly_plan_id,teacher_id,subject_id" });
+      let writableSubmissionRows = submissionRows;
+      if (!submitForReview && submissionRows.length) {
+        const { data: currentSubmissionRows, error: currentSubmissionError } = await supabase
+          .from("plan_submissions")
+          .select("subject_id, status")
+          .eq("weekly_plan_id", weeklyPlanId)
+          .eq("teacher_id", profileId)
+          .in("subject_id", submissionRows.map((row) => row.subject_id));
+        if (currentSubmissionError) throw currentSubmissionError;
+        const protectedSubjectIds = new Set((currentSubmissionRows ?? [])
+          .filter((row) => row.status === "submitted" || row.status === "approved")
+          .map((row) => String(row.subject_id)));
+        writableSubmissionRows = submissionRows.filter((row) => !protectedSubjectIds.has(row.subject_id));
+      }
+      if (writableSubmissionRows.length) {
+        const { data: savedSubmissionRows, error: submissionError } = await supabase
+          .from("plan_submissions")
+          .upsert(writableSubmissionRows, { onConflict: "weekly_plan_id,teacher_id,subject_id" })
+          .select("subject_id, status, submitted_at");
         if (submissionError) throw submissionError;
+        if (submitForReview && (
+          (savedSubmissionRows ?? []).length !== writableSubmissionRows.length
+          || (savedSubmissionRows ?? []).some((row) => row.status !== "submitted" || !row.submitted_at)
+        )) throw new Error("Supabase did not confirm the supervisor submission. Please try again.");
       }
 
       if (quizDetails.trim() && quizSubjectId) {
@@ -633,7 +665,7 @@ export default function TeachersDashboardPage() {
   const autosaveSignature = useMemo(() => JSON.stringify({ selectedClassId, selectedWeekId, slotDrafts, quizDay, quizDetails, quizSubjectId, weeklyNote }), [selectedClassId, selectedWeekId, slotDrafts, quizDay, quizDetails, quizSubjectId, weeklyNote]);
   useEffect(() => {
     if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current);
-    if (!weeklyBuilderOpen || !builderHydrated || !hasAutosaveContent || saving || builderStatus === "approved" || autoSavedSignature.current === autosaveSignature) return;
+    if (!weeklyBuilderOpen || !builderHydrated || !hasAutosaveContent || saving || builderStatus === "submitted" || builderStatus === "approved" || autoSavedSignature.current === autosaveSignature) return;
     setAutoSaveState("idle");
     autoSaveTimer.current = window.setTimeout(() => { autoSavedSignature.current = autosaveSignature; void saveWholeWeek(false, true); }, 1400);
     return () => { if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current); };
