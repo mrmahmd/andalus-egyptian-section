@@ -1650,6 +1650,9 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
   .teacher-portal:not(.super-admin-portal) .teacher-content { max-width: 1780px; margin-inline: auto; }
   .teacher-portal:not(.super-admin-portal) .teacher-page-heading {
     position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     overflow: hidden;
     padding: 30px 32px;
     border: 1px solid rgba(195, 216, 232, .9);
@@ -1670,6 +1673,8 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
     pointer-events: none;
   }
   .teacher-portal:not(.super-admin-portal) .teacher-page-heading > * { position: relative; z-index: 1; }
+  .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child { min-width: 0; text-align: start; }
+  .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { width: auto; margin: 0; justify-self: end; }
   .teacher-portal:not(.super-admin-portal) .teacher-page-heading h1 { font-weight: 850; letter-spacing: -.045em; }
   .teacher-portal:not(.super-admin-portal) .teacher-kicker { color: var(--staff-pink); font-weight: 850; letter-spacing: .08em; }
 
@@ -1707,7 +1712,8 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
     scrollbar-width: thin;
   }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-modal {
-    width: min(1580px, calc(100vw - 28px));
+    width: calc(100vw - 24px);
+    max-width: none;
     max-height: calc(100dvh - 24px);
     border: 1px solid rgba(196, 216, 231, .9);
     border-radius: 26px;
@@ -1753,18 +1759,22 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
   .teacher-portal:not(.super-admin-portal) .weekly-builder-toolbar select { min-height: 52px; border-radius: 12px; background: #fff; font-size: 15px; font-weight: 750; }
   .teacher-portal:not(.super-admin-portal) .teacher-timetable-ready { min-height: 52px; border-radius: 12px; font-size: 12px; }
 
-  .teacher-portal:not(.super-admin-portal) .weekly-builder-days,
-  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-1,
-  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-2,
-  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-3,
-  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-4,
-  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-5 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-days {
+    gap: 14px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-color: #76a9bf #e7f0f6;
+    scrollbar-width: thin;
   }
-  .teacher-portal:not(.super-admin-portal) .weekly-builder-days .weekly-builder-day:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-1 { grid-template-columns: minmax(230px, 1fr); }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-2 { grid-template-columns: repeat(2, minmax(230px, 1fr)); }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-3 { grid-template-columns: repeat(3, minmax(230px, 1fr)); }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-4 { grid-template-columns: repeat(4, minmax(230px, 1fr)); }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-5 { grid-template-columns: repeat(5, minmax(230px, 1fr)); }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-days .weekly-builder-day:last-child:nth-child(odd) { grid-column: auto; }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-day {
-    padding: 16px;
+    min-width: 230px;
+    padding: 13px;
     border: 1px solid #cbdeea;
     border-radius: 20px;
     background: linear-gradient(150deg, #f7fbff, #edf6fb);
@@ -1782,7 +1792,7 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
   .teacher-portal:not(.super-admin-portal) .weekly-builder-day > header small { font-size: 12px; font-weight: 800; }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-day article {
     position: relative;
-    padding: 18px;
+    padding: 14px;
     border-color: #d4e2ed;
     border-radius: 17px;
     box-shadow: 0 8px 22px rgba(9, 48, 91, .07);
@@ -1815,7 +1825,7 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
     font-size: 15px;
     line-height: 1.65;
   }
-  .teacher-portal:not(.super-admin-portal) .weekly-builder-day article textarea { min-height: 104px; }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-day article textarea { min-height: 96px; }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-day article textarea:focus,
   .teacher-portal:not(.super-admin-portal) .weekly-builder-day article select:focus,
   .teacher-portal:not(.super-admin-portal) .weekly-builder-extra input:focus,
@@ -1840,8 +1850,8 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
   .teacher-portal:not(.super-admin-portal) .weekly-copy-panel { border-color: #d6cfe5; background: linear-gradient(125deg, #f1f9fd, #fff6fb); }
   .teacher-portal:not(.super-admin-portal) .teacher-editor-footer {
     position: sticky;
-    bottom: -30px;
-    z-index: 10;
+    bottom: 0;
+    z-index: 20;
     margin: 4px -30px -30px;
     padding: 18px 30px;
     border-top: 1px solid #cfdfe9;
@@ -1850,18 +1860,20 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
     backdrop-filter: blur(16px);
   }
   .teacher-portal:not(.super-admin-portal) .teacher-editor-footer > span { max-width: 520px; color: #61748c; font-size: 12px; line-height: 1.6; }
-  .teacher-portal:not(.super-admin-portal) .teacher-editor-footer > div { flex-wrap: wrap; justify-content: flex-end; }
+  .teacher-portal:not(.super-admin-portal) .teacher-editor-footer > div { flex-wrap: nowrap; justify-content: flex-end; }
+  .teacher-portal:not(.super-admin-portal) .teacher-editor-footer button { white-space: nowrap; }
 
   .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading {
     position: relative;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     min-height: 0;
     direction: rtl;
   }
   .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child,
   .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { position: static; max-width: none; }
-  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child { flex: 1; }
-  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { margin-right: auto; margin-left: 0; }
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading > div:first-child { width: 100%; text-align: right; }
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { width: auto; margin: 0; justify-self: end; }
   .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-editor-context,
   .arabic-ui .teacher-portal:not(.super-admin-portal) .weekly-builder-toolbar,
   .arabic-ui .teacher-portal:not(.super-admin-portal) .weekly-builder-day,
@@ -1890,7 +1902,10 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
   .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-2,
   .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-3,
   .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-4,
-  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-5 { grid-template-columns: minmax(0, 1fr); }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-days.days-5 {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-x: visible;
+  }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-days .weekly-builder-day:last-child:nth-child(odd) { grid-column: auto; }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-toolbar { grid-template-columns: 1fr 1fr; }
   .teacher-portal:not(.super-admin-portal) .teacher-timetable-ready { grid-column: 1 / -1; }
@@ -1914,10 +1929,11 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
   .teacher-portal:not(.super-admin-portal) .weekly-builder-extra,
   .teacher-portal:not(.super-admin-portal) .weekly-copy-panel { padding: 15px; }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-section-heading { flex-direction: row; }
-  .teacher-portal:not(.super-admin-portal) .teacher-editor-footer { bottom: -22px; margin: 4px -14px -22px; padding: 14px; }
+  .teacher-portal:not(.super-admin-portal) .teacher-editor-footer { bottom: 0; margin: 4px -14px -22px; padding: 14px max(14px, env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+  .teacher-portal:not(.super-admin-portal) .teacher-editor-footer > span { display: none; }
   .teacher-portal:not(.super-admin-portal) .teacher-editor-footer > div { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
   .teacher-portal:not(.super-admin-portal) .teacher-editor-footer button { width: 100%; min-width: 0; padding-inline: 9px; font-size: 13px; }
-  .teacher-portal:not(.super-admin-portal) .teacher-page-heading { padding: 21px; }
-  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading { align-items: stretch; flex-direction: column; }
+  .teacher-portal:not(.super-admin-portal) .teacher-page-heading { grid-template-columns: 1fr; padding: 21px; }
+  .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-page-heading { grid-template-columns: 1fr; align-items: stretch; }
   .arabic-ui .teacher-portal:not(.super-admin-portal) .teacher-heading-actions { width: 100%; margin: 0; }
 }
