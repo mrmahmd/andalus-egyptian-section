@@ -1549,13 +1549,14 @@ button, select, input { font: inherit; }
 
 .site-header {
   height: 106px;
-  grid-template-columns: 112px minmax(0, 1fr);
-  justify-content: start;
-  gap: 28px;
+  grid-template-columns: minmax(390px, 1fr) auto minmax(390px, 1fr);
+  justify-content: stretch;
+  gap: 0;
   padding-inline: max(34px, calc((100vw - 1240px) / 2));
   box-shadow: 0 8px 24px rgba(8, 38, 83, .06);
 }
 .site-header .brand-lockup { width: auto; justify-content: flex-start; gap: 12px; }
+.site-header .brand-lockup { grid-column: 1; }
 .site-header .brand-lockup img {
   width: 106px;
   height: 82px;
@@ -1586,9 +1587,10 @@ button, select, input { font: inherit; }
   text-transform: uppercase;
 }
 .site-header .desktop-nav {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
+  grid-column: 2;
+  justify-self: center;
+  transform: none;
   gap: 9px;
 }
 .site-header .desktop-nav a {
@@ -1693,8 +1695,10 @@ button, select, input { font: inherit; }
 .arabic-ui .site-header,
 .arabic-ui .compact-header,
 .arabic-ui .support-header { direction: rtl; }
+.arabic-ui .site-header { direction: ltr !important; }
 .arabic-ui .site-header .desktop-nav,
 .arabic-ui .compact-header nav { direction: rtl; }
+.arabic-ui .site-header .brand-lockup { grid-column: 3; direction: rtl; justify-self: end; }
 .arabic-ui .site-header .brand-copy { text-align: right; }
 .arabic-ui .site-header .brand-copy strong { color: #08396f; letter-spacing: 0; font-size: 16px; }
 .arabic-ui .site-header .brand-copy em { font-size: 10px; letter-spacing: 0; text-transform: none; }
@@ -1709,6 +1713,14 @@ button, select, input { font: inherit; }
   .compact-header > .button { display: none; }
   .site-header .brand-copy { min-width: 0; max-width: 205px; }
   .site-header .brand-copy strong { font-size: 14px; }
+}
+
+@media (min-width: 981px) and (max-width: 1200px) {
+  .site-header { grid-template-columns: minmax(260px, 1fr) auto minmax(260px, 1fr); }
+  .site-header .brand-copy { min-width: 0; max-width: 205px; }
+  .site-header .brand-copy strong { font-size: 14px; }
+  .site-header .desktop-nav { gap: 7px; }
+  .site-header .desktop-nav a { padding-inline: 10px; font-size: 12px; }
 }
 
 @media (max-width: 720px) {
