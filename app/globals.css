@@ -1616,19 +1616,36 @@ button, select, input { font: inherit; }
 
 .compact-header {
   height: 102px;
-  grid-template-columns: 106px auto minmax(0, 1fr);
-  justify-content: start;
-  gap: 18px;
+  grid-template-columns: minmax(330px, 1fr) auto auto;
+  justify-content: stretch;
+  gap: 28px;
   padding-inline: max(34px, calc((100vw - 1240px) / 2));
   box-shadow: 0 8px 24px rgba(8, 38, 83, .06);
 }
-.compact-header .brand-lockup { width: 106px; justify-content: center; }
+.compact-header .brand-lockup {
+  width: auto;
+  justify-content: flex-start;
+  gap: 18px;
+}
 .compact-header .brand-lockup img {
-  width: 102px;
-  height: 78px;
-  flex-basis: 102px;
+  width: 96px;
+  height: 76px;
+  flex-basis: 96px;
   object-fit: contain;
   border-radius: 0;
+}
+.compact-header .brand-copy { min-width: 250px; }
+.compact-header .brand-copy strong {
+  font-family: "Outfit", "Plus Jakarta Sans", sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+.compact-header .brand-copy small {
+  color: #087e9f;
+  font-family: "Outfit", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
 }
 .compact-header nav { gap: 10px; }
 .compact-header nav a,
@@ -1640,6 +1657,23 @@ button, select, input { font: inherit; }
   font-weight: 800;
 }
 .compact-header > .button { justify-self: start; }
+
+@media (min-width: 981px) and (max-width: 1350px) {
+  .compact-header {
+    height: 96px;
+    grid-template-columns: minmax(250px, 1fr) auto auto;
+    gap: 16px;
+    padding-inline: 24px;
+  }
+  .compact-header .brand-lockup { gap: 11px; }
+  .compact-header .brand-lockup img { width: 78px; height: 64px; flex-basis: 78px; }
+  .compact-header .brand-copy { min-width: 0; max-width: 175px; }
+  .compact-header .brand-copy strong { font-size: 14px; }
+  .compact-header .brand-copy small { font-size: 11px; }
+  .compact-header nav { gap: 7px; }
+  .compact-header nav a,
+  .compact-header > .button { min-height: 43px; padding-inline: 12px; font-size: 13px; }
+}
 
 .support-header {
   min-height: 100px;
