@@ -4,13 +4,19 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
-type PublishedPlan = { id: string; weekId: string; grade: number; section: string; weekNumber: number; weekLabel: string; startsOn: string; endsOn: string };
+type PublishedPlan = { id: string; weekId: string; classId: string; grade: number; section: string; weekNumber: number; weekLabel: string; startsOn: string; endsOn: string };
 type LiveLesson = { day_of_week: number; period_number: number; course: string; classwork: string; homework: string; notes: string };
 type LiveQuiz = { course: string; date: string; details: string };
 type LiveHoliday = { day_of_week: number; title: string; note: string | null };
+type FixedTimetableSlot = { day_of_week: number; period_number: number; subjects: { code: string; parent_plan_name: string; name_en: string } | { code: string; parent_plan_name: string; name_en: string }[] | null };
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
 const one = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] ?? null : value;
+const fixedLessonText: Record<string, { course: string; classwork: string }> = {
+  quran: { course: "Quran", classwork: "المدرسة القرآنية - حفظ كتاب الله" },
+  swimming: { course: "Swimming", classwork: "School swimming pool" },
+  pe: { course: "PE", classwork: "School playground" },
+};
 const formatDates = (startsOn: string, endsOn: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${startsOn}T00:00:00`)) + " – " + new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${endsOn}T00:00:00`));
 
 export default function WeeklyPlanPage() {
@@ -39,12 +45,12 @@ export default function WeeklyPlanPage() {
       const supabase = getSupabaseBrowserClient();
       const { data } = await supabase
         .from("weekly_plans")
-        .select("id, week_id, school_classes(grade, section), academic_weeks(week_number, label, starts_on, ends_on)")
+        .select("id, week_id, class_id, school_classes(grade, section), academic_weeks(week_number, label, starts_on, ends_on)")
         .eq("status", "published");
       const plans = ((data ?? []) as unknown as Record<string, unknown>[]).map((item) => {
         const schoolClass = one(item.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
         const week = one(item.academic_weeks as { week_number: number; label: string; starts_on: string; ends_on: string } | { week_number: number; label: string; starts_on: string; ends_on: string }[] | null);
-        return schoolClass && week ? { id: String(item.id), weekId: String(item.week_id), grade: schoolClass.grade, section: schoolClass.section, weekNumber: week.week_number, weekLabel: week.label, startsOn: week.starts_on, endsOn: week.ends_on } : null;
+        return schoolClass && week ? { id: String(item.id), weekId: String(item.week_id), classId: String(item.class_id), grade: schoolClass.grade, section: schoolClass.section, weekNumber: week.week_number, weekLabel: week.label, startsOn: week.starts_on, endsOn: week.ends_on } : null;
       }).filter((plan): plan is PublishedPlan => plan !== null).sort((a, b) => b.weekNumber - a.weekNumber);
       setPublishedPlans(plans);
       setLoadingPlans(false);
@@ -67,16 +73,21 @@ export default function WeeklyPlanPage() {
     }
     const loadLivePlan = async () => {
       const supabase = getSupabaseBrowserClient();
-      const [{ data }, { data: holidayData }] = await Promise.all([
+      const [{ data }, { data: holidayData }, { data: timetableData }] = await Promise.all([
         supabase.from("weekly_plans")
-        .select("plan_entries(day_of_week, period_number, classwork, homework, classera_notes, subjects(parent_plan_name)), plan_quizzes(quiz_date, details, subjects(parent_plan_name)), plan_notes(note_text)")
+        .select("plan_entries(day_of_week, period_number, classwork, homework, classera_notes, subjects(code, parent_plan_name)), plan_quizzes(quiz_date, details, subjects(parent_plan_name)), plan_notes(note_text)")
         .eq("id", selectedPlan.id).eq("status", "published").maybeSingle(),
         supabase.from("weekly_plan_holidays").select("day_of_week, title, note").eq("week_id", selectedPlan.weekId),
+        supabase.from("timetable_slots").select("day_of_week, period_number, subjects(code, parent_plan_name, name_en)").eq("class_id", selectedPlan.classId).order("day_of_week").order("period_number"),
       ]);
-      const entries = (data?.plan_entries ?? []) as unknown as { day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string; subjects: { parent_plan_name: string } | { parent_plan_name: string }[] | null }[];
+      const entries = (data?.plan_entries ?? []) as unknown as { day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string; subjects: { code: string; parent_plan_name: string } | { code: string; parent_plan_name: string }[] | null }[];
       const holidayRows = (holidayData ?? []) as LiveHoliday[];
-      const lessonRows = entries.map((entry) => ({ day_of_week: entry.day_of_week, period_number: entry.period_number, course: one(entry.subjects)?.parent_plan_name ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes }));
-      setLiveLessons([...lessonRows.filter((lesson) => !holidayRows.some((holiday) => holiday.day_of_week === lesson.day_of_week)), ...holidayRows.map((holiday) => ({ day_of_week: holiday.day_of_week, period_number: 0, course: holiday.title, classwork: holiday.note || "No classes today.", homework: "—", notes: "School-wide holiday" }))].sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number));
+      const lessonRows = entries.filter((entry) => !fixedLessonText[one(entry.subjects)?.code ?? ""]).map((entry) => ({ day_of_week: entry.day_of_week, period_number: entry.period_number, course: one(entry.subjects)?.parent_plan_name ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes }));
+      const fixedRows = ((timetableData ?? []) as unknown as FixedTimetableSlot[]).flatMap((slot) => {
+        const fixed = fixedLessonText[one(slot.subjects)?.code ?? ""];
+        return fixed ? [{ day_of_week: slot.day_of_week, period_number: slot.period_number, course: fixed.course, classwork: fixed.classwork, homework: "—", notes: "—" }] : [];
+      });
+      setLiveLessons([...lessonRows, ...fixedRows].filter((lesson) => !holidayRows.some((holiday) => holiday.day_of_week === lesson.day_of_week)).concat(holidayRows.map((holiday) => ({ day_of_week: holiday.day_of_week, period_number: 0, course: holiday.title, classwork: holiday.note || "No classes today.", homework: "—", notes: "School-wide holiday" }))).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number));
       const quizzes = (data?.plan_quizzes ?? []) as unknown as { quiz_date: string | null; details: string; subjects: { parent_plan_name: string } | { parent_plan_name: string }[] | null }[];
       setLiveQuizzes(quizzes.filter((quiz) => Boolean(quiz.details)).map((quiz) => ({ course: one(quiz.subjects)?.parent_plan_name ?? "Subject", date: quiz.quiz_date ?? "", details: quiz.details })));
       const familyNotes = (data?.plan_notes ?? []) as unknown as { note_text: string }[];

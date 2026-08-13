@@ -77,6 +77,20 @@ test("connects the teacher workspace to approved Supabase data", async () => {
   assert.doesNotMatch(source, /Changes in this prototype are not saved/);
 });
 
+test("adds fixed Quran, Swimming and PE rows only to published parent plans", async () => {
+  const source = await readFile(
+    new URL("../app/weekly-plan/page.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /quran: \{ course: "Quran", classwork: "المدرسة القرآنية - حفظ كتاب الله" \}/);
+  assert.match(source, /swimming: \{ course: "Swimming", classwork: "School swimming pool" \}/);
+  assert.match(source, /pe: \{ course: "PE", classwork: "School playground" \}/);
+  assert.match(source, /from\("timetable_slots"\)/);
+  assert.match(source, /eq\("status", "published"\)/);
+  assert.match(source, /a\.day_of_week - b\.day_of_week \|\| a\.period_number - b\.period_number/);
+});
+
 test("uses the high-readability teacher typography scale", async () => {
   const css = await readFile(
     new URL("../app/globals.css", import.meta.url),
