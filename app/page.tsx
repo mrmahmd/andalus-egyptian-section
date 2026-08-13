@@ -25,11 +25,6 @@ export default function Home() {
 
   return (
     <HomeReveal>
-      <div className="notice-bar">
-        <span className="notice-dot" />
-        Weekly plans are published every Thursday for the following school week.
-      </div>
-
       <header className="site-header">
         <Link href="/" className="brand-lockup" aria-label="AlAndalus Private Schools home">
           <img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" />
