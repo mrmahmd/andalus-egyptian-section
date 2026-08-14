@@ -459,13 +459,16 @@ export default function SuperAdminPage() {
     }
   };
 
-  const removeWeeklyPlan = async (planId: string) => {
-    if (!window.confirm("Delete this weekly plan permanently?")) return;
+  const removeWeeklyPlan = async (plan: ManagedPlan) => {
+    const confirmed = window.confirm(
+      `Permanently delete ${plan.className} — ${plan.week}?\n\nThis removes the plan, lesson entries, quizzes, notes, and review submissions for this class and week. Staff accounts, assignments, and the timetable will not be affected.`,
+    );
+    if (!confirmed) return;
     setBusy(true);
     setErrorMessage("");
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.from("weekly_plans").delete().eq("id", planId);
+      const { error } = await supabase.from("weekly_plans").delete().eq("id", plan.id);
       if (error) throw error;
       setSuccessMessage("Weekly plan deleted successfully.");
       await loadDashboard();
@@ -620,7 +623,7 @@ export default function SuperAdminPage() {
             <div className="super-admin-filters"><label>School week<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label || `Week ${week.week_number}`}</option>)}</select></label><span className="super-waiting-registration">{plansForSelectedWeek.length} plans in this week</span></div>
             <div className="super-admin-toolbar"><div><h2>Real weekly-plan directory</h2><p>{weeklyPlans.length} plans stored in Supabase</p></div><Link className="teacher-primary-button super-admin-plans-link" href="/weekly-plan">Open family plan page <span>→</span></Link></div>
             <div className="super-admin-table-wrap"><table className="super-admin-table"><thead><tr><th>Week</th><th>Class</th><th>Class Teacher</th><th>Entries</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
-              {plansForSelectedWeek.map((plan) => <tr key={plan.id}><td><strong>{plan.week}</strong></td><td>{plan.className}</td><td>{plan.classTeacher}</td><td>{plan.entries}</td><td><span className={`super-account-status ${plan.status}`}><i />{plan.status}</span>{plan.manualPublicationOverride ? <small className="super-plan-override-note">Super Admin override</small> : null}</td><td>{plan.updated}</td><td><div className="super-row-actions"><Link href="/weekly-plan">View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit plan"}</button><button disabled={busy} className={plan.manualPublicationOverride ? "super-plan-delete" : "review"} onClick={() => void setPlanPublicationOverride(plan, !plan.manualPublicationOverride)}>{plan.manualPublicationOverride ? "Remove override" : "Force publish"}</button></div></td></tr>)}
+              {plansForSelectedWeek.map((plan) => <tr key={plan.id}><td><strong>{plan.week}</strong></td><td>{plan.className}</td><td>{plan.classTeacher}</td><td>{plan.entries}</td><td><span className={`super-account-status ${plan.status}`}><i />{plan.status}</span>{plan.manualPublicationOverride ? <small className="super-plan-override-note">Super Admin override</small> : null}</td><td>{plan.updated}</td><td><div className="super-row-actions"><Link href="/weekly-plan">View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit plan"}</button><button disabled={busy} className={plan.manualPublicationOverride ? "super-plan-delete" : "review"} onClick={() => void setPlanPublicationOverride(plan, !plan.manualPublicationOverride)}>{plan.manualPublicationOverride ? "Remove override" : "Force publish"}</button><button disabled={busy} className="super-plan-delete" onClick={() => void removeWeeklyPlan(plan)}>Delete plan</button></div></td></tr>)}
               {!loading && plansForSelectedWeek.length === 0 && <tr><td className="super-empty" colSpan={7}>No weekly plans were created for the selected school week.</td></tr>}
             </tbody></table></div>
           </section>}
