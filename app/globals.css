@@ -1457,6 +1457,7 @@ button, select, input { font: inherit; }
 .super-row-actions .review { border-color: #dcb7ce; background: #fbf1f7; color: #9b1a70; }
 .super-row-actions .manage { border-color: #b8d9e4; background: #eef9fc; color: #0d6d84; }
 .super-row-actions .super-plan-delete { border-color: #e4bfcb; background: #fff4f7; color: #9f1d5d; }
+.super-plan-override-note { display: block; margin-top: 6px; color: #9b1a70; font-size: 11px; font-weight: 800; white-space: nowrap; }
 .super-waiting-registration { color: #78869a; font-size: 11px; font-weight: 750; white-space: nowrap; }
 .super-empty { padding: 45px !important; color: #7a879a !important; font-size: 14px; text-align: center; }
 .super-admin-live-message { margin: 14px 0 0; padding: 13px 16px; border: 1px solid; border-radius: 11px; font-size: 13px; font-weight: 750; }

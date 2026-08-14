@@ -53,6 +53,7 @@ type ManagedPlan = {
   className: string;
   classTeacher: string;
   status: "draft" | "published" | "archived";
+  manualPublicationOverride: boolean;
   entries: number;
   updated: string;
 };
@@ -141,7 +142,7 @@ export default function SuperAdminPage() {
         supabase.from("teacher_assignments").select("id, teacher_id, class_id, subject_id, school_classes(grade, section), subjects(name_en)"),
         supabase.from("subjects").select("id, name_en, minimum_grade, maximum_grade").eq("is_active", true).eq("include_in_weekly_plan", true).order("name_en"),
         supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
-        supabase.from("weekly_plans").select("id, class_id, week_id, class_teacher_name, status, updated_at, school_classes(grade, section), academic_weeks(week_number, label), plan_entries(count)").order("updated_at", { ascending: false }),
+        supabase.from("weekly_plans").select("id, class_id, week_id, class_teacher_name, status, manual_publication_override, updated_at, school_classes(grade, section), academic_weeks(week_number, label), plan_entries(count)").order("updated_at", { ascending: false }),
         supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
         supabase.from("weekly_plan_teacher_access").select("teacher_id, is_open"),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
@@ -240,6 +241,7 @@ export default function SuperAdminPage() {
           className: `Grade ${schoolClass?.grade ?? "—"} ${schoolClass?.section ?? ""}`,
           classTeacher: String(plan.class_teacher_name),
           status: plan.status as ManagedPlan["status"],
+          manualPublicationOverride: Boolean(plan.manual_publication_override),
           entries: Number(entryCount?.count ?? 0),
           updated: formatDate(plan.updated_at),
         };
@@ -435,22 +437,23 @@ export default function SuperAdminPage() {
     }
   };
 
-  const updatePlanStatus = async (planId: string, status: ManagedPlan["status"]) => {
+  const setPlanPublicationOverride = async (plan: ManagedPlan, shouldPublish: boolean) => {
     setBusy(true);
     setErrorMessage("");
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.from("weekly_plans").update({
-        status,
-        updated_at: new Date().toISOString(),
-        published_by: status === "published" ? currentAdminId : null,
-        published_at: status === "published" ? new Date().toISOString() : null,
-      }).eq("id", planId);
+      const { data, error } = await supabase.rpc("set_weekly_plan_publication_override", {
+        target_plan_id: plan.id,
+        should_publish: shouldPublish,
+      });
       if (error) throw error;
-      setSuccessMessage(`Weekly plan changed to ${status}.`);
+      if (!data) throw new Error("The publication override was not applied.");
+      setSuccessMessage(shouldPublish
+        ? `${plan.className} was published by Super Admin override.`
+        : `${plan.className} returned to the normal supervisor approval workflow.`);
       await loadDashboard();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "The weekly plan status could not be updated.");
+      setErrorMessage(error instanceof Error ? error.message : "The publication override could not be updated.");
     } finally {
       setBusy(false);
     }
@@ -617,7 +620,7 @@ export default function SuperAdminPage() {
             <div className="super-admin-filters"><label>School week<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label || `Week ${week.week_number}`}</option>)}</select></label><span className="super-waiting-registration">{plansForSelectedWeek.length} plans in this week</span></div>
             <div className="super-admin-toolbar"><div><h2>Real weekly-plan directory</h2><p>{weeklyPlans.length} plans stored in Supabase</p></div><Link className="teacher-primary-button super-admin-plans-link" href="/weekly-plan">Open family plan page <span>→</span></Link></div>
             <div className="super-admin-table-wrap"><table className="super-admin-table"><thead><tr><th>Week</th><th>Class</th><th>Class Teacher</th><th>Entries</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
-              {plansForSelectedWeek.map((plan) => <tr key={plan.id}><td><strong>{plan.week}</strong></td><td>{plan.className}</td><td>{plan.classTeacher}</td><td>{plan.entries}</td><td><span className={`super-account-status ${plan.status}`}><i />{plan.status}</span></td><td>{plan.updated}</td><td><div className="super-row-actions"><Link href="/weekly-plan">View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit plan"}</button></div></td></tr>)}
+              {plansForSelectedWeek.map((plan) => <tr key={plan.id}><td><strong>{plan.week}</strong></td><td>{plan.className}</td><td>{plan.classTeacher}</td><td>{plan.entries}</td><td><span className={`super-account-status ${plan.status}`}><i />{plan.status}</span>{plan.manualPublicationOverride ? <small className="super-plan-override-note">Super Admin override</small> : null}</td><td>{plan.updated}</td><td><div className="super-row-actions"><Link href="/weekly-plan">View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit plan"}</button><button disabled={busy} className={plan.manualPublicationOverride ? "super-plan-delete" : "review"} onClick={() => void setPlanPublicationOverride(plan, !plan.manualPublicationOverride)}>{plan.manualPublicationOverride ? "Remove override" : "Force publish"}</button></div></td></tr>)}
               {!loading && plansForSelectedWeek.length === 0 && <tr><td className="super-empty" colSpan={7}>No weekly plans were created for the selected school week.</td></tr>}
             </tbody></table></div>
           </section>}
