@@ -450,6 +450,38 @@ Object.assign(staffAr, {
   "Done": "تم",
   "Approve account": "اعتماد الحساب",
   "Close": "إغلاق"
+  ,"SCHOOL SYSTEM": "نظام المدرسة"
+  ,"plans in this week": "خطط في هذا الأسبوع"
+  ,"plans stored in Supabase": "خطط محفوظة في Supabase"
+  ,"Weekly plan deleted successfully.": "تم حذف الخطة الأسبوعية بنجاح."
+  ,"The weekly plan could not be deleted.": "تعذر حذف الخطة الأسبوعية."
+  ,"Account approved and activated successfully.": "تم اعتماد الحساب وتفعيله بنجاح."
+  ,"Account request rejected.": "تم رفض طلب الحساب."
+  ,"Account reactivated successfully.": "تمت إعادة تنشيط الحساب بنجاح."
+  ,"Account suspended successfully.": "تم إيقاف الحساب بنجاح."
+  ,"Teacher weekly-plan access updated.": "تم تحديث صلاحية إنشاء الخطة للمعلم."
+  ,"The weekly plan was updated. Its publication status remains governed by the supervisor approval workflow.": "تم تحديث الخطة الأسبوعية، ويظل نشرها خاضعًا لمسار موافقات المشرفين."
+  ,"The school-wide holiday is now active for every class in this week.": "أصبحت الإجازة المدرسية سارية لجميع الفصول في هذا الأسبوع."
+  ,"The holiday was removed. Teacher content was not deleted.": "تمت إزالة الإجازة، ولم يتم حذف محتوى المعلمين."
+  ,"Weekly plan creation is now open for teachers.": "تم فتح إنشاء الخطط الأسبوعية للمعلمين."
+  ,"Weekly plan creation is now closed for teachers.": "تم إغلاق إنشاء الخطط الأسبوعية للمعلمين."
+  ,"The weekly-plan access setting could not be saved.": "تعذر حفظ إعداد صلاحية إنشاء الخطة الأسبوعية."
+  ,"The teacher access setting could not be saved.": "تعذر حفظ إعداد صلاحية المعلم."
+  ,"The holiday could not be saved.": "تعذر حفظ الإجازة."
+  ,"The holiday could not be removed.": "تعذر إزالة الإجازة."
+  ,"The plan editor could not be opened.": "تعذر فتح محرر الخطة."
+  ,"The weekly-plan changes could not be saved.": "تعذر حفظ تغييرات الخطة الأسبوعية."
+  ,"The account request could not be updated.": "تعذر تحديث طلب الحساب."
+  ,"The account status could not be changed.": "تعذر تغيير حالة الحساب."
+  ,"The publication override could not be updated.": "تعذر تحديث النشر الاستثنائي."
+  ,"The teacher assignment could not be saved.": "تعذر حفظ تكليف المعلم."
+  ,"The teacher assignment could not be removed.": "تعذر إزالة تكليف المعلم."
+  ,"The real school account directory could not be loaded.": "تعذر تحميل دليل حسابات المدرسة."
+  ,"The password could not be reset.": "تعذر إعادة تعيين كلمة المرور."
+  ,"Set a temporary password with at least 8 characters.": "استخدم كلمة مرور مؤقتة من 8 أحرف على الأقل."
+  ,"Updating the staff password securely…": "جارٍ تحديث كلمة مرور الموظف بأمان…"
+  ,"Temporary password updated successfully. Share it privately with the staff member.": "تم تحديث كلمة المرور المؤقتة بنجاح. شاركها مع الموظف بشكل خاص."
+  ,"Remove this school-wide holiday? Existing teacher content will remain saved.": "إزالة هذه الإجازة العامة؟ سيظل محتوى المعلمين محفوظًا."
 });
 
 function normalizedText(value: string) {
@@ -507,6 +539,18 @@ function translateDynamicStaffText(value: string) {
   if (match) return `تم الاعتماد في ${match[1]}`;
   match = value.match(/^Rejected (.+)$/);
   if (match) return `تم الرفض في ${match[1]}`;
+  match = value.match(/^Suspended(?: · updated)? (.+)$/);
+  if (match) return `موقوف · آخر تحديث ${match[1]}`;
+  match = value.match(/^A temporary password was set for (.+)\. Share it privately with the staff member\.$/);
+  if (match) return `تم تعيين كلمة مرور مؤقتة لـ ${match[1]}. شاركها مع الموظف بشكل خاص.`;
+  match = value.match(/^(.+) saved immediately\.$/);
+  if (match) return `تم حفظ ${match[1]} فورًا.`;
+  match = value.match(/^(.+) removed immediately\.$/);
+  if (match) return `تمت إزالة ${match[1]} فورًا.`;
+  match = value.match(/^(.+) was published by Super Admin override\.$/);
+  if (match) return `${match[1]} تم نشرها باستثناء من المشرف العام.`;
+  match = value.match(/^(.+) returned to the normal supervisor approval workflow\.$/);
+  if (match) return `${match[1]} عادت لمسار اعتماد المشرفين المعتاد.`;
   return undefined;
 }
 

@@ -461,8 +461,11 @@ export default function SuperAdminPage() {
   };
 
   const removeWeeklyPlan = async (plan: ManagedPlan) => {
+    const arabicUi = typeof window !== "undefined" && window.localStorage.getItem("andalus-language") === "ar";
     const confirmed = window.confirm(
-      `Permanently delete ${plan.className} — ${plan.week}?\n\nThis removes the plan, lesson entries, quizzes, notes, and review submissions for this class and week. Staff accounts, assignments, and the timetable will not be affected.`,
+      arabicUi
+        ? `حذف ${plan.className} — ${plan.week} نهائيًا؟\n\nسيؤدي ذلك إلى حذف الخطة وإدخالات الحصص والاختبارات والملاحظات وطلبات المراجعة لهذا الفصل والأسبوع. لن تتأثر حسابات الموظفين أو التكليفات أو جدول الحصص.`
+        : `Permanently delete ${plan.className} — ${plan.week}?\n\nThis removes the plan, lesson entries, quizzes, notes, and review submissions for this class and week. Staff accounts, assignments, and the timetable will not be affected.`,
     );
     if (!confirmed) return;
     setBusy(true);
@@ -542,7 +545,8 @@ export default function SuperAdminPage() {
   };
 
   const deleteHoliday = async (holidayId: string) => {
-    if (!window.confirm("Remove this school-wide holiday? Existing teacher content will remain saved.")) return;
+    const arabicUi = typeof window !== "undefined" && window.localStorage.getItem("andalus-language") === "ar";
+    if (!window.confirm(arabicUi ? "إزالة هذه الإجازة العامة؟ سيظل محتوى المعلمين محفوظًا." : "Remove this school-wide holiday? Existing teacher content will remain saved.")) return;
     setBusy(true); setErrorMessage("");
     try {
       const { error } = await getSupabaseBrowserClient().from("weekly_plan_holidays").delete().eq("id", holidayId);
