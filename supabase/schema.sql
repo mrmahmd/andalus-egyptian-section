@@ -192,7 +192,11 @@ begin
       approved_by, approved_at
     ) values (
       new.user_id, new.staff_id, new.username, staff_record.full_name,
-      case when staff_record.account_kind = 'admin' then 'admin' else 'teacher' end,
+      case
+        when staff_record.account_kind = 'admin' and staff_record.administrative_role = 'Super Admin' then 'super_admin'
+        when staff_record.account_kind = 'admin' then 'admin'
+        else 'teacher'
+      end,
       staff_record.department_id, new.reviewed_by, coalesce(new.reviewed_at, now())
     )
     on conflict (user_id) do update set
@@ -402,7 +406,8 @@ on conflict (full_name, account_kind) do update set department_id = excluded.dep
 insert into public.staff_directory (full_name, account_kind, administrative_role) values
   ('همام عبد المنعم', 'admin', 'Vice Principal'),
   ('خالد سعد الدين', 'admin', 'Vice Principal'),
-  ('أحمد حجازي', 'admin', 'Vice Principal')
+  ('أحمد حجازي', 'admin', 'Vice Principal'),
+  ('معاذ باعظيم', 'admin', 'Super Admin')
 on conflict (full_name, account_kind) do update set administrative_role = excluded.administrative_role, is_active = true;
 
 insert into public.school_classes (grade, section)

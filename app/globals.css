@@ -85,10 +85,19 @@ body { margin: 0; background: var(--white); color: var(--ink); font-family: "Apt
 .arabic-ui .hero-content > p { font-family: "Alexandria", "Cairo", sans-serif !important; font-size: 19px; font-weight: 500; line-height: 1.9; }
 .arabic-ui .hero-kicker, .arabic-ui .hero-actions { justify-content: flex-start; }
 .arabic-ui .hero-actions, .arabic-ui .finder-heading, .arabic-ui .finder-fields, .arabic-ui .preview-grid, .arabic-ui .teacher-banner, .arabic-ui .footer-grid { direction: rtl; }
-.arabic-ui .super-admin-portal, .arabic-ui .super-admin-portal * { direction: ltr; font-family: "Plus Jakarta Sans", "Aptos", "Segoe UI", sans-serif !important; }
-.arabic-ui .super-admin-portal .teacher-sidebar { inset: 0 auto 0 0; text-align: left; }
-.arabic-ui .super-admin-portal .teacher-main { margin-right: 0; margin-left: 258px; }
-.arabic-ui .super-admin-portal .teacher-sidebar-profile button { margin-right: 0; margin-left: auto; }
+.arabic-ui .super-admin-portal,
+.arabic-ui .super-admin-portal * { font-family: "Alexandria", "Cairo", sans-serif !important; }
+.arabic-ui .super-admin-portal { direction: rtl; text-align: right; }
+.arabic-ui .super-admin-portal .teacher-sidebar { inset: 0 0 0 auto; text-align: right; }
+.arabic-ui .super-admin-portal .teacher-main { margin-left: 0; margin-right: 258px; }
+.arabic-ui .super-admin-portal .teacher-sidebar-profile button { margin-left: 0; margin-right: auto; }
+.arabic-ui .super-admin-portal .teacher-search input,
+.arabic-ui .super-admin-portal input,
+.arabic-ui .super-admin-portal textarea,
+.arabic-ui .super-admin-portal select { direction: rtl; text-align: right; }
+.arabic-ui .super-admin-portal .super-admin-table th,
+.arabic-ui .super-admin-portal .super-admin-table td { text-align: right; }
+.arabic-ui .super-admin-portal .teacher-nav button.active { box-shadow: inset -3px 0 #ee4b9a, 0 8px 18px rgba(0,0,0,.12); }
 .arabic-ui .plan-paper, .arabic-ui .plan-paper * { direction: ltr; font-family: "Plus Jakarta Sans", "Aptos", "Segoe UI", sans-serif !important; text-align: left; }
 .arabic-ui .plan-paper .paper-header, .arabic-ui .plan-paper .paper-header * { text-align: center !important; }
 .arabic-ui .compact-header, .arabic-ui .plan-toolbar { direction: rtl; text-align: right; }
@@ -1525,6 +1534,7 @@ button, select, input { font: inherit; }
 }
 
 @media (max-width: 760px) {
+  .arabic-ui .super-admin-portal .teacher-main { width: 100%; margin: 0; }
   .super-admin-toolbar { padding: 18px; }
   .super-admin-mobile-search { display: grid; gap: 7px; }
   .super-admin-plans-link { width: 100%; justify-content: center; }

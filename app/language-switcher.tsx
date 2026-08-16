@@ -308,6 +308,150 @@ Object.assign(staffAr, {
   "Thursday": "الخميس"
 });
 
+// Super Admin vocabulary. The Super Admin used to be intentionally English
+// only; it now follows the same saved dashboard-language preference as the
+// teacher and administrator workspaces.
+Object.assign(staffAr, {
+  "Super Admin Control Center": "مركز تحكم المشرف العام",
+  "Super administrator navigation": "التنقل في لوحة المشرف العام",
+  "Super Administration": "الإشراف العام",
+  "Account Approvals": "اعتماد الحسابات",
+  "Review new teacher and administrator account requests.": "راجع طلبات حسابات المعلمين والإداريين الجديدة.",
+  "Live school directory": "دليل المدرسة المباشر",
+  "All Accounts": "جميع الحسابات",
+  "Real teachers and administrators loaded securely from the school database.": "المعلمون والإداريون الحقيقيون محمّلون بأمان من قاعدة بيانات المدرسة.",
+  "Access control": "إدارة الصلاحيات",
+  "Roles & Permissions": "الأدوار والصلاحيات",
+  "See exactly what each school role is allowed to manage.": "اعرض بدقة ما يُسمح لكل دور مدرسي بإدارته.",
+  "Weekly-plan control": "التحكم في الخطط الأسبوعية",
+  "Manage Public Plans": "إدارة الخطط المنشورة",
+  "Review and control the real weekly plans stored in the school database.": "راجع وتحكم في الخطط الأسبوعية الحقيقية المحفوظة بقاعدة بيانات المدرسة.",
+  "School calendar": "التقويم المدرسي",
+  "School Holidays": "الإجازات المدرسية",
+  "School-wide Holidays": "إجازات جميع الفصول",
+  "Mark a day as an official holiday for every class in one school week.": "حدّد يومًا كإجازة رسمية لجميع الفصول في أسبوع دراسي واحد.",
+  "School structure": "هيكل المدرسة",
+  "Classes & Subjects": "الفصول والمواد",
+  "Live classes and weekly-plan subjects available for teacher assignments.": "الفصول والمواد المتاحة مباشرة لتكليفات المعلمين.",
+  "Account history": "سجل الحسابات",
+  "Recent account registration, approval and access activity.": "أحدث أنشطة التسجيل والاعتماد والوصول إلى الحسابات.",
+  "Platform status": "حالة المنصة",
+  "System Settings": "إعدادات النظام",
+  "Review the active platform configuration and connected services.": "راجع إعدادات المنصة الحالية والخدمات المتصلة.",
+  "Primary authority": "الصلاحية الرئيسية",
+  "Approve accounts and control every school workspace.": "اعتمد الحسابات وتحكم في جميع لوحات المدرسة.",
+  "Search real staff names or assignments": "ابحث عن أسماء الموظفين أو التكليفات",
+  "Supabase connected": "متصل بقاعدة Supabase",
+  "Manage public weekly plans": "إدارة الخطط الأسبوعية المنشورة",
+  "Pending approval": "بانتظار الاعتماد",
+  "Waiting for your decision": "بانتظار قرارك",
+  "Active accounts": "الحسابات النشطة",
+  "Can access their workspace": "يمكنهم دخول لوحة التحكم",
+  "Not registered": "غير مسجل",
+  "Not Registered": "غير مسجل",
+  "Listed staff without accounts": "موظفون مدرجون بلا حسابات",
+  "Active admins": "الإداريون النشطون",
+  "Admin Control Center access": "لديهم صلاحية لوحة الإدارة",
+  "Account requests requiring review": "طلبات الحسابات التي تحتاج مراجعة",
+  "Real school staff directory": "دليل موظفي المدرسة الحقيقي",
+  "Loading accounts from Supabase…": "جارٍ تحميل الحسابات من Supabase…",
+  "Search": "بحث",
+  "Name or username": "الاسم أو اسم المستخدم",
+  "Role": "الدور",
+  "All Roles": "جميع الأدوار",
+  "Status": "الحالة",
+  "All Statuses": "جميع الحالات",
+  "Pending": "قيد الانتظار",
+  "Active": "نشط",
+  "Suspended": "موقوف",
+  "Rejected": "مرفوض",
+  "School Staff": "موظف المدرسة",
+  "Department / Assignments": "القسم / التكليفات",
+  "Requested": "تاريخ الطلب",
+  "Last Action": "آخر إجراء",
+  "Loading the real school directory…": "جارٍ تحميل دليل المدرسة الحقيقي…",
+  "Review": "مراجعة",
+  "Manage": "إدارة",
+  "Open workspace": "فتح لوحة التحكم",
+  "Waiting for registration": "بانتظار إنشاء الحساب",
+  "No account requests need your review right now.": "لا توجد طلبات حسابات تحتاج مراجعتك الآن.",
+  "No real staff accounts match the selected filters.": "لا توجد حسابات موظفين تطابق عوامل التصفية المحددة.",
+  "Super Admin": "المشرف العام",
+  "Full school access: approves accounts, assigns classes and subjects, suspends users, manages every plan and controls platform settings.": "صلاحية شاملة: اعتماد الحسابات، وتعيين الفصول والمواد، وإيقاف المستخدمين، وإدارة الخطط وإعدادات المنصة.",
+  "Vice Principal": "وكيل المدرسة",
+  "School-wide administrative review access after account approval. Weekly-plan editing remains limited by the assigned admin scope.": "صلاحية مراجعة إدارية شاملة بعد اعتماد الحساب، مع الالتزام بنطاق التعديل المخصص.",
+  "Department Supervisor": "مشرف الشعبة",
+  "Reviews only the teachers in the supervisor’s own department: English, Arabic & Social Studies, or Math & Science.": "يراجع معلمي شعبته فقط: الإنجليزية، أو العربية والدراسات، أو الرياضيات والعلوم.",
+  "Creates weekly-plan content only for the classes and subjects assigned by the Super Admin.": "يكتب الخطة الأسبوعية للفصول والمواد التي يعيّنها له المشرف العام فقط.",
+  "School week": "الأسبوع الدراسي",
+  "Real weekly-plan directory": "دليل الخطط الأسبوعية الحقيقي",
+  "Open family plan page": "فتح صفحة خطط أولياء الأمور",
+  "Class Teacher": "رائد الفصل",
+  "Entries": "الإدخالات",
+  "Updated": "آخر تحديث",
+  "Super Admin override": "نشر استثنائي من المشرف العام",
+  "Opening…": "جارٍ الفتح…",
+  "Edit plan": "تعديل الخطة",
+  "Remove override": "إلغاء النشر الاستثنائي",
+  "Force publish": "نشر استثنائي",
+  "Delete plan": "حذف الخطة",
+  "No weekly plans were created for the selected school week.": "لم تُنشأ خطط أسبوعية للأسبوع الدراسي المحدد.",
+  "School-wide holiday control": "إدارة الإجازات لجميع الفصول",
+  "A holiday replaces that day's lessons for every class. Saved teacher content is kept safely in the database.": "تحل الإجازة محل حصص اليوم لجميع الفصول، مع الاحتفاظ بكتابات المعلمين بأمان في قاعدة البيانات.",
+  "Day": "اليوم",
+  "Holiday title": "عنوان الإجازة",
+  "Family note": "ملاحظة لأولياء الأمور",
+  "Optional parent-facing note": "ملاحظة اختيارية لأولياء الأمور",
+  "Save holiday": "حفظ الإجازة",
+  "No school-wide holidays are set for this week.": "لا توجد إجازات عامة محددة لهذا الأسبوع.",
+  "School Classes": "فصول المدرسة",
+  "Weekly-plan Subjects": "مواد الخطة الأسبوعية",
+  "Recent Account Activity": "أحدث أنشطة الحسابات",
+  "Registration and approval activity from the live directory.": "أنشطة التسجيل والاعتماد من الدليل المباشر.",
+  "No staff account activity yet": "لا يوجد نشاط لحسابات الموظفين بعد",
+  "New registration requests and your approval actions will appear here.": "ستظهر هنا طلبات التسجيل الجديدة وإجراءات اعتمادك.",
+  "Open or close plan creation for all teachers, then set individual exceptions.": "افتح أو أغلق إنشاء الخطط لجميع المعلمين، ثم حدّد الاستثناءات الفردية.",
+  "Open for teachers": "مفتوح للمعلمين",
+  "Closed for teachers": "مغلق للمعلمين",
+  "Database": "قاعدة البيانات",
+  "Supabase is connected and the protected school directory is available.": "قاعدة Supabase متصلة ودليل المدرسة المحمي متاح.",
+  "Connected": "متصل",
+  "Academic Year": "العام الدراسي",
+  "The dashboard and weekly-plan workspace are prepared for the current school year.": "لوحة التحكم ومساحة الخطط الأسبوعية جاهزتان للعام الدراسي الحالي.",
+  "Grades & Sections": "الصفوف والشعب",
+  "Two sections are available for every grade from Grade 1 through Grade 10.": "تتوفر شعبتان لكل صف من الصف الأول إلى الصف العاشر.",
+  "Security": "الأمان",
+  "Role-based access and Row Level Security protect staff-only database operations.": "تحمي صلاحيات الأدوار وسياسات أمان الصفوف عمليات قاعدة البيانات الخاصة بالموظفين.",
+  "Access control active": "نظام الصلاحيات مفعّل",
+  "Super Admin editor": "محرر المشرف العام",
+  "Changes are saved directly to the approved paper layout. Publication still follows the required supervisor approval workflow.": "تُحفظ التعديلات مباشرة في القالب المعتمد، ويظل النشر خاضعًا لمسار موافقات المشرفين.",
+  "Classera notes": "ملاحظات كلاسيرا",
+  "Super Admin approval": "اعتماد المشرف العام",
+  "Live account management": "إدارة الحساب الفعلي",
+  "Review account request": "مراجعة طلب الحساب",
+  "Manage real staff account": "إدارة حساب الموظف الفعلي",
+  "School role": "الدور المدرسي",
+  "Approving this request creates the real active profile and sends this user to the correct dashboard. The account role comes from the approved school directory and cannot be changed by the applicant.": "اعتماد الطلب ينشئ الملف النشط ويوجه المستخدم إلى لوحته الصحيحة. ويأتي الدور من دليل المدرسة المعتمد ولا يستطيع مقدم الطلب تغييره.",
+  "Teaching Classes & Subjects": "الفصول والمواد التدريسية",
+  "Add & save assignment": "إضافة التكليف وحفظه",
+  "No classes or subjects assigned yet.": "لم تُعيّن فصول أو مواد بعد.",
+  "Every addition or removal is saved to Supabase immediately. The teacher or supervisor will see it after refreshing their workspace.": "تُحفظ كل إضافة أو إزالة فورًا في Supabase، وتظهر للمعلم أو المشرف بعد تحديث لوحته.",
+  "Administrator": "إداري",
+  "Admin scope is assigned from the approved school directory.": "يُحدد نطاق الإداري من دليل المدرسة المعتمد.",
+  "Account recovery": "استعادة الحساب",
+  "Set a temporary password": "تعيين كلمة مرور مؤقتة",
+  "Use this only when a staff member cannot sign in. Share the new password privately; it is never stored in this page.": "استخدم هذا الخيار فقط عند تعذر دخول الموظف، وشاركه كلمة المرور الجديدة بصورة خاصة؛ فهي لا تُحفظ في هذه الصفحة.",
+  "Temporary password": "كلمة المرور المؤقتة",
+  "At least 8 characters": "ثمانية أحرف على الأقل",
+  "Reset password": "إعادة تعيين كلمة المرور",
+  "Reject request": "رفض الطلب",
+  "Reactivate account": "إعادة تنشيط الحساب",
+  "Suspend account": "إيقاف الحساب",
+  "Done": "تم",
+  "Approve account": "اعتماد الحساب",
+  "Close": "إغلاق"
+});
+
 function normalizedText(value: string) {
   return value.replaceAll("â€™", "’").replaceAll("â€”", "—").replaceAll("â€“", "–").replaceAll("â†’", "→").replaceAll("â†“", "↓").replaceAll("آ·", "·");
 }
@@ -347,6 +491,22 @@ function translateDynamicStaffText(value: string) {
   if (match) return `أُرسلت في ${match[1]}`;
   match = value.match(/^(\d+) published plans? shown$/);
   if (match) return `يتم عرض ${match[1]} خطة منشورة`;
+  match = value.match(/^(\d+) staff members? shown$/);
+  if (match) return `يتم عرض ${match[1]} من موظفي المدرسة`;
+  match = value.match(/^(\d+) plans? in this week$/);
+  if (match) return `${match[1]} خطة في هذا الأسبوع`;
+  match = value.match(/^(\d+) plans? stored in Supabase$/);
+  if (match) return `${match[1]} خطة محفوظة في Supabase`;
+  match = value.match(/^(\d+) active class sections?$/);
+  if (match) return `${match[1]} فصلًا نشطًا`;
+  match = value.match(/^(\d+) active subjects? available for assignments$/);
+  if (match) return `${match[1]} مادة نشطة متاحة للتكليفات`;
+  match = value.match(/^Grades (\d+)–(\d+)$/);
+  if (match) return `من الصف ${match[1]} إلى الصف ${match[2]}`;
+  match = value.match(/^Approved (.+)$/);
+  if (match) return `تم الاعتماد في ${match[1]}`;
+  match = value.match(/^Rejected (.+)$/);
+  if (match) return `تم الرفض في ${match[1]}`;
   return undefined;
 }
 
@@ -356,7 +516,7 @@ function translatePage(root: HTMLElement) {
   while (walker.nextNode()) nodes.push(walker.currentNode as Text);
   nodes.forEach((node) => {
     // The timetable is intentionally English-only, including on the Arabic platform.
-    if (node.parentElement?.closest(".plan-paper, .parent-preview-paper, .super-admin-portal, .timetable-grid")) return;
+    if (node.parentElement?.closest(".plan-paper, .parent-preview-paper, .timetable-grid")) return;
     const original = node.nodeValue ?? "";
     const value = original.trim();
     const translated = value.startsWith("Welcome, ")
@@ -365,7 +525,7 @@ function translatePage(root: HTMLElement) {
     if (translated) node.nodeValue = original.replace(value, translated);
   });
   root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input[placeholder], textarea[placeholder]").forEach((field) => {
-    if (field.closest(".plan-paper, .parent-preview-paper, .super-admin-portal, .timetable-grid")) return;
+    if (field.closest(".plan-paper, .parent-preview-paper, .timetable-grid")) return;
     const translated = staffAr[normalizedText(field.placeholder.trim())] ?? homeAr[normalizedText(field.placeholder.trim())] ?? ar[field.placeholder.trim()];
     if (translated) field.placeholder = translated;
   });

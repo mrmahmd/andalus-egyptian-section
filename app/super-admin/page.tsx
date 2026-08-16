@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 type AccountRole = "Teacher" | "Admin";
@@ -642,6 +643,7 @@ export default function SuperAdminPage() {
           {activeSection === "activity" && <section className="teacher-card super-activity-card"><div><h2>Recent Account Activity</h2><p>Registration and approval activity from the live directory.</p></div><ul>{accounts.filter((account) => account.status !== "Not Registered").map((account) => <li key={account.id}><span>{initials(account.name)}</span><div><strong>{account.name}</strong><small>{account.lastAction}</small></div><time>{account.requested}</time></li>)}</ul>{accounts.every((account) => account.status === "Not Registered") && <div className="super-section-empty"><span>LG</span><strong>No staff account activity yet</strong><p>New registration requests and your approval actions will appear here.</p></div>}</section>}
 
           {activeSection === "settings" && <section className="super-admin-section-grid">
+            <StaffLanguagePreference />
             <article className="teacher-card super-system-card super-access-control-card"><span>WP</span><h2>Weekly-plan creation access</h2><p>Open or close plan creation for all teachers, then set individual exceptions.</p><strong>{weeklyPlanCreationOpen ? "Open for teachers" : "Closed for teachers"}</strong><button type="button" disabled={busy} className="teacher-primary-button" onClick={() => void updateWeeklyPlanAccess(!weeklyPlanCreationOpen)}>{weeklyPlanCreationOpen ? "Close creation" : "Open creation"}</button><div className="super-teacher-access-list">{accounts.filter((account) => account.role === "Teacher" && account.userId).map((account) => { const isOpen = teacherPlanAccess[account.userId as string] ?? weeklyPlanCreationOpen; return <label key={account.userId}><span>{account.name}<small>@{account.username}</small></span><input type="checkbox" checked={isOpen} disabled={busy} onChange={(event) => void updateTeacherPlanAccess(account.userId as string, event.target.checked)} /><b>{isOpen ? "Open" : "Closed"}</b></label>; })}</div></article>
             <article className="teacher-card super-system-card connected"><span>DB</span><h2>Database</h2><p>Supabase is connected and the protected school directory is available.</p><strong>Connected</strong></article>
             <article className="teacher-card super-system-card"><span>AY</span><h2>Academic Year</h2><p>The dashboard and weekly-plan workspace are prepared for the current school year.</p><strong>2026–2027</strong></article>
