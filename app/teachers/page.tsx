@@ -293,30 +293,20 @@ export default function TeachersDashboardPage() {
       const departmentTeacherRows = (departmentTeachersResult.data ?? []) as Record<string, unknown>[];
       const departmentTeacherIds = departmentTeacherRows.map((item) => String(item.user_id ?? "")).filter(Boolean);
       const { data: supervisorReviewRows = [], error: supervisorReviewsError } = supervisorAccount && departmentTeacherIds.length
-        ? await supabase.from("plan_submissions")
-          .select("id, weekly_plan_id, status, review_note, submitted_at, teacher_id, subject_id, subjects(name_en), profiles!plan_submissions_teacher_id_fkey(display_name), weekly_plans(id, class_id, school_classes(grade, section), academic_weeks(id, label), plan_entries(day_of_week, period_number, teacher_id, subject_id, classwork, homework, classera_notes), plan_quizzes(teacher_id, subject_id, quiz_date, details, subjects(name_en)), plan_notes(teacher_id, note_text))")
-          .in("teacher_id", departmentTeacherIds)
-          .in("status", ["submitted", "changes_requested", "approved"])
-          .order("submitted_at", { ascending: false })
+        ? await supabase.rpc("get_my_supervisor_review_queue")
         : { data: [], error: null };
       if (supervisorReviewsError) throw supervisorReviewsError;
 
       const realReviews: ReviewItem[] = ((supervisorReviewRows ?? []) as unknown as Record<string, unknown>[]).map((item) => {
-        const subject = one(item.subjects as { name_en: string } | { name_en: string }[] | null);
-        const teacher = one(item.profiles as { display_name: string } | { display_name: string }[] | null);
-        const plan = one(item.weekly_plans as { id: string; class_id: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { id: string; label: string } | { id: string; label: string }[] | null; plan_entries: { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[] | null } | { id: string; class_id: string; school_classes: { grade: number; section: string } | { grade: number; section: string }[] | null; academic_weeks: { id: string; label: string } | { id: string; label: string }[] | null; plan_entries: { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[] | null }[] | null);
-        const schoolClass = one(plan?.school_classes);
-        const week = one(plan?.academic_weeks);
-        const matchingEntries = (plan?.plan_entries ?? [])
-          .filter((entry) => String(entry.teacher_id) === String(item.teacher_id) && String(entry.subject_id) === String(item.subject_id))
+        const matchingEntries = ((item.entries ?? []) as { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[])
           .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
         return {
-          id: String(item.id), weeklyPlanId: String(item.weekly_plan_id ?? plan?.id ?? ""), teacherId: String(item.teacher_id), weekId: String(week?.id ?? ""), classId: String(plan?.class_id ?? ""), teacherName: teacher?.display_name ?? "Teacher", subject: subject?.name_en ?? "Subject",
-          className: `Grade ${schoolClass?.grade ?? ""} · ${schoolClass?.section ?? ""}`, week: week?.label ?? "Academic week",
+          id: String(item.id), weeklyPlanId: String(item.weekly_plan_id ?? ""), teacherId: String(item.teacher_id), weekId: String(item.week_id ?? ""), classId: String(item.class_id ?? ""), teacherName: String(item.teacher_name ?? "Teacher"), subject: String(item.subject_name ?? "Subject"),
+          className: `Grade ${item.grade ?? ""} · ${item.section ?? ""}`, week: String(item.week_label ?? "Academic week"),
           status: String(item.status), note: String(item.review_note ?? ""), submittedAt: item.submitted_at ? formatDate(String(item.submitted_at)) : "Not submitted",
-          entries: matchingEntries.map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", period: entry.period_number, subject: subject?.name_en ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
-          quizzes: (((plan as unknown as { plan_quizzes?: { teacher_id: string; subject_id: string; quiz_date: string | null; details: string; subjects: { name_en: string } | { name_en: string }[] | null }[] } | null)?.plan_quizzes ?? []).filter((quiz) => String(quiz.teacher_id) === String(item.teacher_id) && Boolean(quiz.details)).map((quiz) => ({ subject: one(quiz.subjects)?.name_en ?? "Subject", date: quiz.quiz_date ?? "", details: quiz.details }))),
-          weeklyNotes: (((plan as unknown as { plan_notes?: { teacher_id: string; note_text: string }[] } | null)?.plan_notes ?? []).filter((note) => String(note.teacher_id) === String(item.teacher_id)).map((note) => note.note_text).filter(Boolean)),
+          entries: matchingEntries.map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", period: entry.period_number, subject: String(item.subject_name ?? "Subject"), classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
+          quizzes: ((item.quizzes ?? []) as { subject: string; quiz_date: string | null; details: string }[]).filter((quiz) => Boolean(quiz.details)).map((quiz) => ({ subject: quiz.subject ?? "Subject", date: quiz.quiz_date ?? "", details: quiz.details })),
+          weeklyNotes: ((item.weekly_notes ?? []) as string[]).filter(Boolean),
         };
       });
       const { data: departmentAssignmentRows = [], error: departmentAssignmentError } = departmentTeacherIds.length ? await supabase.from("teacher_assignments").select("id, teacher_id, class_id, subject_id, school_classes(grade, section), subjects(name_en)").in("teacher_id", departmentTeacherIds) : { data: [], error: null };
