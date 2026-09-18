@@ -380,7 +380,7 @@ insert into public.staff_directory (full_name, account_kind, department_id)
 select v.full_name, 'teacher', d.id
 from (values
   ('محمد بدر', 'english'), ('محمد فريد', 'english'), ('عمرو رزق', 'english'),
-  ('محمد عبد الحميد', 'english'), ('محمود السكري', 'english'),
+  ('محمد عبد الحميد', 'english'), ('مؤمن الحداد', 'english'),
   ('محمد النمر', 'english'), ('أسامة حسن', 'english'),
   ('محمد سيد بكر', 'arabic_social'), ('محمد حمد', 'arabic_social'), ('محمد سعيد', 'arabic_social'),
   ('محمد شعبان', 'arabic_social'), ('ماجد موسى', 'arabic_social'), ('أحمد سالم', 'arabic_social'),
