@@ -1,10 +1,9 @@
 {
-  "schemaVersion": "3.0",
-  "purpose": "Independent timetable for every class section. Each class has its own schedule and MUST NOT be merged with another section.",
+  "schemaVersion": "4.0",
+  "purpose": "Official 2026-2027 timetable derived from the verified teacher schedule.",
   "hardRules": {
     "separateSchedulePerClass": true,
     "neverMergeSections": true,
-    "example": "Grade 4A and Grade 4B are two different classes with two independent timetables.",
     "teacherDataIncluded": false
   },
   "classes": {
@@ -20,7 +19,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Maths"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -28,27 +27,27 @@
             },
             {
               "period": 3,
-              "subject": "سباحة"
-            },
-            {
-              "period": 4,
-              "subject": "سباحة"
-            },
-            {
-              "period": 5,
-              "subject": "OL"
-            },
-            {
-              "period": 6,
               "subject": "AL"
             },
             {
-              "period": 7,
+              "period": 4,
               "subject": "عربي"
             },
             {
+              "period": 5,
+              "subject": "سباحة"
+            },
+            {
+              "period": 6,
+              "subject": "سباحة"
+            },
+            {
+              "period": 7,
+              "subject": "Science"
+            },
+            {
               "period": 8,
-              "subject": "عربي"
+              "subject": "Maths"
             }
           ]
         },
@@ -57,7 +56,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "Maths"
             },
             {
               "period": 2,
@@ -65,19 +64,19 @@
             },
             {
               "period": 3,
-              "subject": "Maths"
+              "subject": "AL"
             },
             {
               "period": 4,
-              "subject": "AL"
+              "subject": "دين"
             },
             {
               "period": 5,
-              "subject": "AL"
+              "subject": "خط"
             },
             {
               "period": 6,
-              "subject": "خ/م"
+              "subject": "AL"
             },
             {
               "period": 7,
@@ -94,6 +93,80 @@
           "periods": [
             {
               "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "دين"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "بدنية"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "ICT"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "OL"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
               "subject": "دين"
             },
             {
@@ -102,7 +175,90 @@
             },
             {
               "period": 3,
-              "subject": "Discover"
+              "subject": "حاسب"
+            },
+            {
+              "period": 4,
+              "subject": "OL"
+            },
+            {
+              "period": 5,
+              "subject": "فنية"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        }
+      }
+    },
+    "Grade 1B": {
+      "classId": "grade-1-b",
+      "className": "Grade 1B",
+      "grade": 1,
+      "section": "B",
+      "independentSchedule": true,
+      "schedule": {
+        "sunday": {
+          "dayLabel": "الأحد",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دين"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "سباحة"
+            },
+            {
+              "period": 6,
+              "subject": "سباحة"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "ICT"
             },
             {
               "period": 4,
@@ -118,7 +274,7 @@
             },
             {
               "period": 7,
-              "subject": "OL"
+              "subject": "AL"
             },
             {
               "period": 8,
@@ -126,45 +282,8 @@
             }
           ]
         },
-        "wednesday": {
-          "dayLabel": "الأربعاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "Computer"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "عربي"
-            },
-            {
-              "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
-              "subject": "AL"
-            },
-            {
-              "period": 6,
-              "subject": "OL"
-            },
-            {
-              "period": 7,
-              "subject": "بدنية"
-            },
-            {
-              "period": 8,
-              "subject": "دين"
-            }
-          ]
-        },
-        "thursday": {
-          "dayLabel": "الخميس",
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
           "periods": [
             {
               "period": 1,
@@ -176,11 +295,85 @@
             },
             {
               "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "خط"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
               "subject": "عربي"
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "بدنية"
+            },
+            {
+              "period": 8,
+              "subject": "حاسب"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "Science"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
             },
             {
               "period": 5,
@@ -192,11 +385,11 @@
             },
             {
               "period": 7,
-              "subject": "ICT"
+              "subject": "عربي"
             },
             {
               "period": 8,
-              "subject": "Discover"
+              "subject": "عربي"
             }
           ]
         }
@@ -214,7 +407,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "دين"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -222,11 +415,11 @@
             },
             {
               "period": 3,
-              "subject": "AL"
+              "subject": "ICT"
             },
             {
               "period": 4,
-              "subject": "Discover"
+              "subject": "Maths"
             },
             {
               "period": 5,
@@ -238,11 +431,11 @@
             },
             {
               "period": 7,
-              "subject": "عربي"
+              "subject": "AL"
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "AL"
             }
           ]
         },
@@ -263,11 +456,11 @@
             },
             {
               "period": 4,
-              "subject": "ICT"
+              "subject": "AL"
             },
             {
               "period": 5,
-              "subject": "عربي"
+              "subject": "دين"
             },
             {
               "period": 6,
@@ -275,11 +468,11 @@
             },
             {
               "period": 7,
-              "subject": "OL"
+              "subject": "عربي"
             },
             {
               "period": 8,
-              "subject": "AL"
+              "subject": "Science"
             }
           ]
         },
@@ -288,7 +481,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "AL"
+              "subject": "دين"
             },
             {
               "period": 2,
@@ -296,7 +489,7 @@
             },
             {
               "period": 3,
-              "subject": "عربي"
+              "subject": "OL"
             },
             {
               "period": 4,
@@ -304,15 +497,15 @@
             },
             {
               "period": 5,
-              "subject": "Computer"
+              "subject": "عربي"
             },
             {
               "period": 6,
-              "subject": "OL"
+              "subject": "AL"
             },
             {
               "period": 7,
-              "subject": "خ/م"
+              "subject": "بدنية"
             },
             {
               "period": 8,
@@ -325,7 +518,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "فنية"
+              "subject": "Maths"
             },
             {
               "period": 2,
@@ -333,27 +526,27 @@
             },
             {
               "period": 3,
-              "subject": "عربي"
+              "subject": "فنية"
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "OL"
             },
             {
               "period": 5,
-              "subject": "دين"
+              "subject": "عربي"
             },
             {
               "period": 6,
-              "subject": "Maths"
+              "subject": "عربي"
             },
             {
               "period": 7,
-              "subject": "AL"
+              "subject": "OL"
             },
             {
               "period": 8,
-              "subject": "OL"
+              "subject": "خط"
             }
           ]
         },
@@ -374,170 +567,13 @@
             },
             {
               "period": 4,
-              "subject": "Discover"
+              "subject": "OL"
             },
             {
               "period": 5,
-              "subject": "بدنية"
-            },
-            {
-              "period": 6,
-              "subject": "OL"
-            },
-            {
-              "period": 7,
-              "subject": "عربي"
-            },
-            {
-              "period": 8,
-              "subject": "عربي"
-            }
-          ]
-        }
-      }
-    },
-    "Grade 2B": {
-      "classId": "grade-2-b",
-      "className": "Grade 2B",
-      "grade": 2,
-      "section": "B",
-      "independentSchedule": true,
-      "schedule": {
-        "sunday": {
-          "dayLabel": "الأحد",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "OL"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "OL"
-            },
-            {
-              "period": 4,
               "subject": "دين"
             },
             {
-              "period": 5,
-              "subject": "سباحة"
-            },
-            {
-              "period": 6,
-              "subject": "سباحة"
-            },
-            {
-              "period": 7,
-              "subject": "AL"
-            },
-            {
-              "period": 8,
-              "subject": "Maths"
-            }
-          ]
-        },
-        "monday": {
-          "dayLabel": "الاثنين",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "Discover"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "عربي"
-            },
-            {
-              "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
-              "subject": "خ/م"
-            },
-            {
-              "period": 6,
-              "subject": "AL"
-            },
-            {
-              "period": 7,
-              "subject": "عربي"
-            },
-            {
-              "period": 8,
-              "subject": "عربي"
-            }
-          ]
-        },
-        "tuesday": {
-          "dayLabel": "الثلاثاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "Maths"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "OL"
-            },
-            {
-              "period": 4,
-              "subject": "Discover"
-            },
-            {
-              "period": 5,
-              "subject": "عربي"
-            },
-            {
-              "period": 6,
-              "subject": "عربي"
-            },
-            {
-              "period": 7,
-              "subject": "AL"
-            },
-            {
-              "period": 8,
-              "subject": "فنية"
-            }
-          ]
-        },
-        "wednesday": {
-          "dayLabel": "الأربعاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "OL"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "بدنية"
-            },
-            {
-              "period": 4,
-              "subject": "Maths"
-            },
-            {
-              "period": 5,
-              "subject": "AL"
-            },
-            {
               "period": 6,
               "subject": "عربي"
             },
@@ -547,44 +583,7 @@
             },
             {
               "period": 8,
-              "subject": "Computer"
-            }
-          ]
-        },
-        "thursday": {
-          "dayLabel": "الخميس",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "AL"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "عربي"
-            },
-            {
-              "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
-              "subject": "ICT"
-            },
-            {
-              "period": 6,
-              "subject": "دين"
-            },
-            {
-              "period": 7,
-              "subject": "Maths"
-            },
-            {
-              "period": 8,
-              "subject": "OL"
+              "subject": "حاسب"
             }
           ]
         }
@@ -602,7 +601,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "خ/م"
+              "subject": "Maths"
             },
             {
               "period": 2,
@@ -610,27 +609,27 @@
             },
             {
               "period": 3,
-              "subject": "Maths"
+              "subject": "OL"
             },
             {
               "period": 4,
-              "subject": "دين"
+              "subject": "Science"
             },
             {
               "period": 5,
-              "subject": "Discover"
+              "subject": "عربي"
             },
             {
               "period": 6,
-              "subject": "AL"
+              "subject": "عربي"
             },
             {
               "period": 7,
-              "subject": "عربي"
+              "subject": "سباحة"
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "سباحة"
             }
           ]
         },
@@ -639,7 +638,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "AL"
             },
             {
               "period": 2,
@@ -647,27 +646,27 @@
             },
             {
               "period": 3,
-              "subject": "AL"
+              "subject": "خط"
             },
             {
               "period": 4,
-              "subject": "OL"
+              "subject": "دين"
             },
             {
               "period": 5,
-              "subject": "سباحة"
+              "subject": "Maths"
             },
             {
               "period": 6,
-              "subject": "سباحة"
+              "subject": "عربي"
             },
             {
               "period": 7,
-              "subject": "عربي"
+              "subject": "AL"
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "OL"
             }
           ]
         },
@@ -684,7 +683,7 @@
             },
             {
               "period": 3,
-              "subject": "عربي"
+              "subject": "بدنية"
             },
             {
               "period": 4,
@@ -692,19 +691,19 @@
             },
             {
               "period": 5,
-              "subject": "فنية"
+              "subject": "عربي"
             },
             {
               "period": 6,
-              "subject": "OL"
-            },
-            {
-              "period": 7,
               "subject": "AL"
             },
             {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
               "period": 8,
-              "subject": "ICT"
+              "subject": "فنية"
             }
           ]
         },
@@ -713,7 +712,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "دين"
             },
             {
               "period": 2,
@@ -725,11 +724,11 @@
             },
             {
               "period": 4,
-              "subject": "بدنية"
+              "subject": "AI"
             },
             {
               "period": 5,
-              "subject": "Computer"
+              "subject": "OL"
             },
             {
               "period": 6,
@@ -750,7 +749,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "ICT"
             },
             {
               "period": 2,
@@ -758,27 +757,27 @@
             },
             {
               "period": 3,
-              "subject": "AL"
-            },
-            {
-              "period": 4,
               "subject": "دين"
             },
             {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
               "period": 5,
-              "subject": "Discover"
+              "subject": "عربي"
             },
             {
               "period": 6,
-              "subject": "Maths"
+              "subject": "AL"
             },
             {
               "period": 7,
-              "subject": "عربي"
+              "subject": "OL"
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "Maths"
             }
           ]
         }
@@ -796,7 +795,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "دين"
             },
             {
               "period": 2,
@@ -804,27 +803,27 @@
             },
             {
               "period": 3,
-              "subject": "Discover"
-            },
-            {
-              "period": 4,
-              "subject": "خ/م"
-            },
-            {
-              "period": 5,
-              "subject": "عربي"
-            },
-            {
-              "period": 6,
-              "subject": "عربي"
-            },
-            {
-              "period": 7,
               "subject": "Maths"
             },
             {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "سباحة"
+            },
+            {
               "period": 8,
-              "subject": "فنية"
+              "subject": "سباحة"
             }
           ]
         },
@@ -833,7 +832,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Maths"
+              "subject": "دين"
             },
             {
               "period": 2,
@@ -841,27 +840,27 @@
             },
             {
               "period": 3,
-              "subject": "عربي"
+              "subject": "Maths"
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "AL"
             },
             {
               "period": 5,
-              "subject": "سباحة"
-            },
-            {
-              "period": 6,
-              "subject": "سباحة"
-            },
-            {
-              "period": 7,
               "subject": "OL"
             },
             {
+              "period": 6,
+              "subject": "فنية"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
               "period": 8,
-              "subject": "AL"
+              "subject": "عربي"
             }
           ]
         },
@@ -870,7 +869,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Discover"
+              "subject": "Science"
             },
             {
               "period": 2,
@@ -878,19 +877,19 @@
             },
             {
               "period": 3,
-              "subject": "AL"
-            },
-            {
-              "period": 4,
-              "subject": "OL"
-            },
-            {
-              "period": 5,
               "subject": "دين"
             },
             {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "Maths"
+            },
+            {
               "period": 6,
-              "subject": "Computer"
+              "subject": "عربي"
             },
             {
               "period": 7,
@@ -898,7 +897,7 @@
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "OL"
             }
           ]
         },
@@ -907,7 +906,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Maths"
+              "subject": "OL"
             },
             {
               "period": 2,
@@ -923,15 +922,15 @@
             },
             {
               "period": 5,
-              "subject": "OL"
+              "subject": "Maths"
             },
             {
               "period": 6,
-              "subject": "دين"
+              "subject": "خط"
             },
             {
               "period": 7,
-              "subject": "AL"
+              "subject": "حاسب"
             },
             {
               "period": 8,
@@ -944,7 +943,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "ICT"
+              "subject": "بدنية"
             },
             {
               "period": 2,
@@ -952,15 +951,15 @@
             },
             {
               "period": 3,
-              "subject": "Maths"
+              "subject": "AL"
             },
             {
               "period": 4,
-              "subject": "بدنية"
+              "subject": "Maths"
             },
             {
               "period": 5,
-              "subject": "عربي"
+              "subject": "ICT"
             },
             {
               "period": 6,
@@ -968,11 +967,11 @@
             },
             {
               "period": 7,
-              "subject": "OL"
+              "subject": "عربي"
             },
             {
               "period": 8,
-              "subject": "AL"
+              "subject": "OL"
             }
           ]
         }
@@ -990,7 +989,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -998,11 +997,11 @@
             },
             {
               "period": 3,
-              "subject": "Science"
+              "subject": "OL"
             },
             {
               "period": 4,
-              "subject": "AI"
+              "subject": "دراسات"
             },
             {
               "period": 5,
@@ -1014,11 +1013,11 @@
             },
             {
               "period": 7,
-              "subject": "سباحة"
+              "subject": "Science"
             },
             {
               "period": 8,
-              "subject": "سباحة"
+              "subject": "AL"
             }
           ]
         },
@@ -1035,27 +1034,27 @@
             },
             {
               "period": 3,
-              "subject": "Science"
+              "subject": "عربي"
             },
             {
               "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
               "subject": "فنية"
             },
             {
+              "period": 5,
+              "subject": "سباحة"
+            },
+            {
               "period": 6,
-              "subject": "ICT"
+              "subject": "سباحة"
             },
             {
               "period": 7,
-              "subject": "مهارات مهنية"
+              "subject": "عربي"
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "Maths"
             }
           ]
         },
@@ -1064,7 +1063,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Maths"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -1072,27 +1071,27 @@
             },
             {
               "period": 3,
-              "subject": "دراسات"
-            },
-            {
-              "period": 4,
-              "subject": "Science"
-            },
-            {
-              "period": 5,
               "subject": "AL"
             },
             {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
               "period": 6,
-              "subject": "OL"
+              "subject": "Science"
             },
             {
               "period": 7,
-              "subject": "عربي"
+              "subject": "AI"
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "دراسات"
             }
           ]
         },
@@ -1101,7 +1100,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "دراسات"
+              "subject": "Maths"
             },
             {
               "period": 2,
@@ -1109,27 +1108,27 @@
             },
             {
               "period": 3,
-              "subject": "Maths"
-            },
-            {
-              "period": 4,
               "subject": "دين"
             },
             {
-              "period": 5,
-              "subject": "AL"
-            },
-            {
-              "period": 6,
-              "subject": "OL"
-            },
-            {
-              "period": 7,
+              "period": 4,
               "subject": "عربي"
             },
             {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "ICT"
+            },
+            {
+              "period": 7,
+              "subject": "Science"
+            },
+            {
               "period": 8,
-              "subject": "بدنية"
+              "subject": "OL"
             }
           ]
         },
@@ -1138,7 +1137,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "دين"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -1146,11 +1145,11 @@
             },
             {
               "period": 3,
-              "subject": "AL"
+              "subject": "OL"
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "AL"
             },
             {
               "period": 5,
@@ -1158,7 +1157,7 @@
             },
             {
               "period": 6,
-              "subject": "AL"
+              "subject": "دين"
             },
             {
               "period": 7,
@@ -1166,7 +1165,7 @@
             },
             {
               "period": 8,
-              "subject": "OL"
+              "subject": "بدنية"
             }
           ]
         }
@@ -1184,7 +1183,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "دراسات"
+              "subject": "بدنية"
             },
             {
               "period": 2,
@@ -1192,27 +1191,27 @@
             },
             {
               "period": 3,
-              "subject": "OL"
-            },
-            {
-              "period": 4,
               "subject": "Maths"
             },
             {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
               "period": 5,
-              "subject": "AL"
+              "subject": "AI"
             },
             {
               "period": 6,
-              "subject": "عربي"
+              "subject": "دين"
             },
             {
               "period": 7,
-              "subject": "سباحة"
+              "subject": "AL"
             },
             {
               "period": 8,
-              "subject": "سباحة"
+              "subject": "عربي"
             }
           ]
         },
@@ -1221,7 +1220,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "ICT"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -1229,27 +1228,27 @@
             },
             {
               "period": 3,
-              "subject": "عربي"
-            },
-            {
-              "period": 4,
-              "subject": "AL"
-            },
-            {
-              "period": 5,
-              "subject": "بدنية"
-            },
-            {
-              "period": 6,
-              "subject": "OL"
-            },
-            {
-              "period": 7,
               "subject": "Maths"
             },
             {
+              "period": 4,
+              "subject": "دراسات"
+            },
+            {
+              "period": 5,
+              "subject": "سباحة"
+            },
+            {
+              "period": 6,
+              "subject": "سباحة"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
               "period": 8,
-              "subject": "Science"
+              "subject": "عربي"
             }
           ]
         },
@@ -1258,7 +1257,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "Maths"
             },
             {
               "period": 2,
@@ -1266,27 +1265,27 @@
             },
             {
               "period": 3,
-              "subject": "AL"
-            },
-            {
-              "period": 4,
-              "subject": "دين"
-            },
-            {
-              "period": 5,
               "subject": "عربي"
             },
             {
+              "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "دراسات"
+            },
+            {
               "period": 6,
-              "subject": "Science"
+              "subject": "عربي"
             },
             {
               "period": 7,
-              "subject": "فنية"
+              "subject": "Science"
             },
             {
               "period": 8,
-              "subject": "Maths"
+              "subject": "OL"
             }
           ]
         },
@@ -1303,7 +1302,7 @@
             },
             {
               "period": 3,
-              "subject": "AI"
+              "subject": "دراسات"
             },
             {
               "period": 4,
@@ -1311,19 +1310,19 @@
             },
             {
               "period": 5,
-              "subject": "Science"
+              "subject": "ICT"
             },
             {
               "period": 6,
-              "subject": "عربي"
+              "subject": "OL"
             },
             {
               "period": 7,
-              "subject": "دراسات"
+              "subject": "Maths"
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "دين"
             }
           ]
         },
@@ -1332,7 +1331,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "Maths"
             },
             {
               "period": 2,
@@ -1340,27 +1339,27 @@
             },
             {
               "period": 3,
-              "subject": "Maths"
-            },
-            {
-              "period": 4,
-              "subject": "AL"
-            },
-            {
-              "period": 5,
               "subject": "عربي"
             },
             {
+              "period": 4,
+              "subject": "فنية"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
               "period": 6,
-              "subject": "مهارات مهنية"
+              "subject": "AL"
             },
             {
               "period": 7,
-              "subject": "دين"
+              "subject": "عربي"
             },
             {
               "period": 8,
-              "subject": "دراسات"
+              "subject": "OL"
             }
           ]
         }
@@ -1378,7 +1377,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "دين"
+              "subject": "OL"
             },
             {
               "period": 2,
@@ -1386,27 +1385,27 @@
             },
             {
               "period": 3,
-              "subject": "Maths"
+              "subject": "دراسات"
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "AL"
             },
             {
               "period": 5,
-              "subject": "عربي"
+              "subject": "دين"
             },
             {
               "period": 6,
-              "subject": "OL"
+              "subject": "Science"
             },
             {
               "period": 7,
-              "subject": "OL"
+              "subject": "عربي"
             },
             {
               "period": 8,
-              "subject": "دراسات"
+              "subject": "Maths"
             }
           ]
         },
@@ -1415,7 +1414,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "فنية"
+              "subject": "Maths"
             },
             {
               "period": 2,
@@ -1423,19 +1422,56 @@
             },
             {
               "period": 3,
-              "subject": "سباحة"
-            },
-            {
-              "period": 4,
-              "subject": "سباحة"
-            },
-            {
-              "period": 5,
               "subject": "عربي"
             },
             {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
               "period": 6,
-              "subject": "مهارات مهنية"
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "سباحة"
+            },
+            {
+              "period": 8,
+              "subject": "سباحة"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "دراسات"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
             },
             {
               "period": 7,
@@ -1447,49 +1483,12 @@
             }
           ]
         },
-        "tuesday": {
-          "dayLabel": "الثلاثاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "بدنية"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "عربي"
-            },
-            {
-              "period": 4,
-              "subject": "Maths"
-            },
-            {
-              "period": 5,
-              "subject": "Science"
-            },
-            {
-              "period": 6,
-              "subject": "AL"
-            },
-            {
-              "period": 7,
-              "subject": "OL"
-            },
-            {
-              "period": 8,
-              "subject": "عربي"
-            }
-          ]
-        },
         "wednesday": {
           "dayLabel": "الأربعاء",
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "AL"
             },
             {
               "period": 2,
@@ -1497,27 +1496,27 @@
             },
             {
               "period": 3,
-              "subject": "Science"
+              "subject": "عربي"
             },
             {
               "period": 4,
-              "subject": "Maths"
+              "subject": "فنية"
             },
             {
               "period": 5,
-              "subject": "French"
+              "subject": "OL"
             },
             {
               "period": 6,
-              "subject": "دراسات"
+              "subject": "بدنية"
             },
             {
               "period": 7,
-              "subject": "دين"
+              "subject": "دراسات"
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "Maths"
             }
           ]
         },
@@ -1526,7 +1525,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Science"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -1534,27 +1533,27 @@
             },
             {
               "period": 3,
-              "subject": "AL"
+              "subject": "French"
             },
             {
               "period": 4,
-              "subject": "AL"
+              "subject": "OL"
             },
             {
               "period": 5,
-              "subject": "Maths"
-            },
-            {
-              "period": 6,
               "subject": "دراسات"
             },
             {
+              "period": 6,
+              "subject": "ICT"
+            },
+            {
               "period": 7,
-              "subject": "عربي"
+              "subject": "AL"
             },
             {
               "period": 8,
-              "subject": "ICT"
+              "subject": "عربي"
             }
           ]
         }
@@ -1572,7 +1571,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "عربي"
+              "subject": "دراسات"
             },
             {
               "period": 2,
@@ -1580,27 +1579,27 @@
             },
             {
               "period": 3,
-              "subject": "دراسات"
-            },
-            {
-              "period": 4,
-              "subject": "Science"
-            },
-            {
-              "period": 5,
-              "subject": "AL"
-            },
-            {
-              "period": 6,
               "subject": "Maths"
             },
             {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
               "period": 7,
-              "subject": "مهارات مهنية"
+              "subject": "فنية"
             },
             {
               "period": 8,
-              "subject": "OL"
+              "subject": "عربي"
             }
           ]
         },
@@ -1609,7 +1608,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Maths"
+              "subject": "Science"
             },
             {
               "period": 2,
@@ -1617,27 +1616,27 @@
             },
             {
               "period": 3,
-              "subject": "سباحة"
-            },
-            {
-              "period": 4,
-              "subject": "سباحة"
-            },
-            {
-              "period": 5,
-              "subject": "AL"
-            },
-            {
-              "period": 6,
-              "subject": "عربي"
-            },
-            {
-              "period": 7,
               "subject": "دين"
             },
             {
+              "period": 4,
+              "subject": "AI"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "سباحة"
+            },
+            {
               "period": 8,
-              "subject": "OL"
+              "subject": "سباحة"
             }
           ]
         },
@@ -1646,7 +1645,44 @@
           "periods": [
             {
               "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
               "subject": "دراسات"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "بدنية"
             },
             {
               "period": 2,
@@ -1658,7 +1694,7 @@
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "Maths"
             },
             {
               "period": 5,
@@ -1666,52 +1702,15 @@
             },
             {
               "period": 6,
-              "subject": "Maths"
-            },
-            {
-              "period": 7,
-              "subject": "Science"
-            },
-            {
-              "period": 8,
-              "subject": "بدنية"
-            }
-          ]
-        },
-        "wednesday": {
-          "dayLabel": "الأربعاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "عربي"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "فنية"
-            },
-            {
-              "period": 4,
-              "subject": "AL"
-            },
-            {
-              "period": 5,
-              "subject": "عربي"
-            },
-            {
-              "period": 6,
-              "subject": "OL"
-            },
-            {
-              "period": 7,
-              "subject": "Maths"
-            },
-            {
-              "period": 8,
               "subject": "دراسات"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "Science"
             }
           ]
         },
@@ -1720,7 +1719,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "عربي"
+              "subject": "OL"
             },
             {
               "period": 2,
@@ -1728,15 +1727,15 @@
             },
             {
               "period": 3,
-              "subject": "AI"
+              "subject": "Science"
             },
             {
               "period": 4,
-              "subject": "دين"
+              "subject": "عربي"
             },
             {
               "period": 5,
-              "subject": "Science"
+              "subject": "Maths"
             },
             {
               "period": 6,
@@ -1748,7 +1747,7 @@
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "دراسات"
             }
           ]
         }
@@ -1766,7 +1765,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "عربي"
+              "subject": "دراسات"
             },
             {
               "period": 2,
@@ -1774,27 +1773,27 @@
             },
             {
               "period": 3,
-              "subject": "AL"
-            },
-            {
-              "period": 4,
-              "subject": "دين"
-            },
-            {
-              "period": 5,
-              "subject": "دراسات"
-            },
-            {
-              "period": 6,
-              "subject": "عربي"
-            },
-            {
-              "period": 7,
               "subject": "Science"
             },
             {
-              "period": 8,
+              "period": 4,
               "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "دين"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
             }
           ]
         },
@@ -1803,7 +1802,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "دين"
+              "subject": "AI"
             },
             {
               "period": 2,
@@ -1811,27 +1810,27 @@
             },
             {
               "period": 3,
-              "subject": "ICT"
+              "subject": "سباحة"
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "سباحة"
             },
             {
               "period": 5,
-              "subject": "OL"
+              "subject": "دراسات"
             },
             {
               "period": 6,
-              "subject": "Maths"
+              "subject": "عربي"
             },
             {
               "period": 7,
-              "subject": "سباحة"
+              "subject": "OL"
             },
             {
               "period": 8,
-              "subject": "سباحة"
+              "subject": "Science"
             }
           ]
         },
@@ -1840,7 +1839,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "French"
+              "subject": "Maths"
             },
             {
               "period": 2,
@@ -1848,7 +1847,7 @@
             },
             {
               "period": 3,
-              "subject": "OL"
+              "subject": "AL"
             },
             {
               "period": 4,
@@ -1856,11 +1855,11 @@
             },
             {
               "period": 5,
-              "subject": "دراسات"
+              "subject": "دين"
             },
             {
               "period": 6,
-              "subject": "عربي"
+              "subject": "ICT"
             },
             {
               "period": 7,
@@ -1868,7 +1867,7 @@
             },
             {
               "period": 8,
-              "subject": "AL"
+              "subject": "دراسات"
             }
           ]
         },
@@ -1877,7 +1876,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "عربي"
+              "subject": "Maths"
             },
             {
               "period": 2,
@@ -1885,48 +1884,11 @@
             },
             {
               "period": 3,
-              "subject": "دراسات"
+              "subject": "French"
             },
             {
               "period": 4,
-              "subject": "AI"
-            },
-            {
-              "period": 5,
-              "subject": "OL"
-            },
-            {
-              "period": 6,
-              "subject": "Maths"
-            },
-            {
-              "period": 7,
-              "subject": "فنية"
-            },
-            {
-              "period": 8,
               "subject": "Science"
-            }
-          ]
-        },
-        "thursday": {
-          "dayLabel": "الخميس",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "OL"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "مهارات مهنية"
-            },
-            {
-              "period": 4,
-              "subject": "Maths"
             },
             {
               "period": 5,
@@ -1938,11 +1900,48 @@
             },
             {
               "period": 7,
-              "subject": "بدنية"
+              "subject": "عربي"
             },
             {
               "period": 8,
-              "subject": "Science"
+              "subject": "OL"
+            }
+          ]
+        },
+        "thursday": {
+          "dayLabel": "الخميس",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "بدنية"
+            },
+            {
+              "period": 7,
+              "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "فنية"
             }
           ]
         }
@@ -1960,7 +1959,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "مهارات مهنية"
+              "subject": "Maths"
             },
             {
               "period": 2,
@@ -1968,27 +1967,27 @@
             },
             {
               "period": 3,
-              "subject": "Maths"
+              "subject": "دراسات"
             },
             {
               "period": 4,
-              "subject": "فنية"
+              "subject": "عربي"
             },
             {
               "period": 5,
-              "subject": "AL"
-            },
-            {
-              "period": 6,
               "subject": "Science"
             },
             {
-              "period": 7,
+              "period": 6,
               "subject": "عربي"
             },
             {
+              "period": 7,
+              "subject": "AI"
+            },
+            {
               "period": 8,
-              "subject": "عربي"
+              "subject": "OL"
             }
           ]
         },
@@ -1997,7 +1996,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "دراسات"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -2005,7 +2004,44 @@
             },
             {
               "period": 3,
+              "subject": "سباحة"
+            },
+            {
+              "period": 4,
+              "subject": "سباحة"
+            },
+            {
+              "period": 5,
+              "subject": "AL"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "فنية"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
               "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "French"
             },
             {
               "period": 4,
@@ -2017,52 +2053,15 @@
             },
             {
               "period": 6,
-              "subject": "AL"
+              "subject": "دين"
             },
             {
               "period": 7,
-              "subject": "سباحة"
-            },
-            {
-              "period": 8,
-              "subject": "سباحة"
-            }
-          ]
-        },
-        "tuesday": {
-          "dayLabel": "الثلاثاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "AL"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
               "subject": "عربي"
             },
             {
-              "period": 4,
-              "subject": "AI"
-            },
-            {
-              "period": 5,
-              "subject": "Maths"
-            },
-            {
-              "period": 6,
-              "subject": "OL"
-            },
-            {
-              "period": 7,
-              "subject": "دراسات"
-            },
-            {
               "period": 8,
-              "subject": "عربي"
+              "subject": "بدنية"
             }
           ]
         },
@@ -2071,7 +2070,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "بدنية"
+              "subject": "AL"
             },
             {
               "period": 2,
@@ -2079,11 +2078,11 @@
             },
             {
               "period": 3,
-              "subject": "Science"
+              "subject": "عربي"
             },
             {
               "period": 4,
-              "subject": "دين"
+              "subject": "عربي"
             },
             {
               "period": 5,
@@ -2091,15 +2090,15 @@
             },
             {
               "period": 6,
-              "subject": "French"
+              "subject": "OL"
             },
             {
               "period": 7,
-              "subject": "عربي"
+              "subject": "دراسات"
             },
             {
               "period": 8,
-              "subject": "OL"
+              "subject": "دين"
             }
           ]
         },
@@ -2108,7 +2107,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Maths"
+              "subject": "AL"
             },
             {
               "period": 2,
@@ -2120,7 +2119,7 @@
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "OL"
             },
             {
               "period": 5,
@@ -2128,15 +2127,15 @@
             },
             {
               "period": 6,
-              "subject": "AL"
+              "subject": "Maths"
             },
             {
               "period": 7,
-              "subject": "OL"
+              "subject": "Science"
             },
             {
               "period": 8,
-              "subject": "دين"
+              "subject": "عربي"
             }
           ]
         }
@@ -2154,7 +2153,118 @@
           "periods": [
             {
               "period": 1,
+              "subject": "عربي"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "AL"
+            },
+            {
+              "period": 4,
+              "subject": "دين"
+            },
+            {
+              "period": 5,
+              "subject": "French"
+            },
+            {
+              "period": 6,
+              "subject": "دراسات"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "بدنية"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "Maths"
+            },
+            {
+              "period": 4,
+              "subject": "بدنية"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
+              "period": 7,
               "subject": "OL"
+            },
+            {
+              "period": 8,
+              "subject": "French"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "OL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "ICT"
+            },
+            {
+              "period": 4,
+              "subject": "Science"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "دراسات"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
             },
             {
               "period": 2,
@@ -2166,134 +2276,23 @@
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "Science"
             },
             {
               "period": 5,
-              "subject": "دراسات"
-            },
-            {
-              "period": 6,
               "subject": "عربي"
             },
             {
-              "period": 7,
-              "subject": "AL"
-            },
-            {
-              "period": 8,
-              "subject": "Science"
-            }
-          ]
-        },
-        "monday": {
-          "dayLabel": "الاثنين",
-          "periods": [
-            {
-              "period": 1,
+              "period": 6,
               "subject": "دين"
             },
             {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "عربي"
-            },
-            {
-              "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
-              "subject": "دراسات"
-            },
-            {
-              "period": 6,
-              "subject": "Maths"
-            },
-            {
               "period": 7,
-              "subject": "Science"
-            },
-            {
-              "period": 8,
-              "subject": "بدنية"
-            }
-          ]
-        },
-        "tuesday": {
-          "dayLabel": "الثلاثاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "دين"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "عربي"
-            },
-            {
-              "period": 4,
-              "subject": "AL"
-            },
-            {
-              "period": 5,
-              "subject": "Maths"
-            },
-            {
-              "period": 6,
-              "subject": "بدنية"
-            },
-            {
-              "period": 7,
-              "subject": "Science"
-            },
-            {
-              "period": 8,
-              "subject": "French"
-            }
-          ]
-        },
-        "wednesday": {
-          "dayLabel": "الأربعاء",
-          "periods": [
-            {
-              "period": 1,
               "subject": "OL"
             },
             {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "Maths"
-            },
-            {
-              "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
-              "subject": "فنية"
-            },
-            {
-              "period": 6,
-              "subject": "دراسات"
-            },
-            {
-              "period": 7,
-              "subject": "AL"
-            },
-            {
               "period": 8,
-              "subject": "French"
+              "subject": "دراسات"
             }
           ]
         },
@@ -2314,15 +2313,15 @@
             },
             {
               "period": 4,
-              "subject": "ICT"
+              "subject": "Maths"
             },
             {
               "period": 5,
-              "subject": "Science"
+              "subject": "AL"
             },
             {
               "period": 6,
-              "subject": "Maths"
+              "subject": "فنية"
             },
             {
               "period": 7,
@@ -2330,7 +2329,7 @@
             },
             {
               "period": 8,
-              "subject": "AL"
+              "subject": "Science"
             }
           ]
         }
@@ -2348,7 +2347,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "ICT"
+              "subject": "French"
             },
             {
               "period": 2,
@@ -2356,19 +2355,19 @@
             },
             {
               "period": 3,
-              "subject": "AL"
+              "subject": "French"
             },
             {
               "period": 4,
-              "subject": "Science"
+              "subject": "AI"
             },
             {
               "period": 5,
-              "subject": "عربي"
+              "subject": "AL"
             },
             {
               "period": 6,
-              "subject": "بدنية"
+              "subject": "Science"
             },
             {
               "period": 7,
@@ -2376,7 +2375,7 @@
             },
             {
               "period": 8,
-              "subject": "French"
+              "subject": "OL"
             }
           ]
         },
@@ -2385,7 +2384,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "بدنية"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -2397,23 +2396,23 @@
             },
             {
               "period": 4,
-              "subject": "دراسات"
+              "subject": "Maths"
             },
             {
               "period": 5,
-              "subject": "عربي"
+              "subject": "دين"
             },
             {
               "period": 6,
-              "subject": "AL"
+              "subject": "بدنية"
             },
             {
               "period": 7,
-              "subject": "OL"
+              "subject": "دراسات"
             },
             {
               "period": 8,
-              "subject": "Maths"
+              "subject": "AL"
             }
           ]
         },
@@ -2422,7 +2421,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "AL"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -2430,27 +2429,27 @@
             },
             {
               "period": 3,
-              "subject": "فنية"
+              "subject": "عربي"
             },
             {
               "period": 4,
-              "subject": "Science"
+              "subject": "دراسات"
             },
             {
               "period": 5,
-              "subject": "عربي"
-            },
-            {
-              "period": 6,
-              "subject": "عربي"
-            },
-            {
-              "period": 7,
               "subject": "Maths"
             },
             {
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
+              "subject": "ICT"
+            },
+            {
               "period": 8,
-              "subject": "دراسات"
+              "subject": "AL"
             }
           ]
         },
@@ -2459,7 +2458,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "عربي"
+              "subject": "فنية"
             },
             {
               "period": 2,
@@ -2467,27 +2466,27 @@
             },
             {
               "period": 3,
-              "subject": "دين"
-            },
-            {
-              "period": 4,
-              "subject": "AL"
-            },
-            {
-              "period": 5,
-              "subject": "عربي"
-            },
-            {
-              "period": 6,
-              "subject": "OL"
-            },
-            {
-              "period": 7,
               "subject": "Maths"
             },
             {
-              "period": 8,
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
               "subject": "Science"
+            },
+            {
+              "period": 7,
+              "subject": "عربي"
+            },
+            {
+              "period": 8,
+              "subject": "بدنية"
             }
           ]
         },
@@ -2496,7 +2495,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "French"
+              "subject": "OL"
             },
             {
               "period": 2,
@@ -2504,19 +2503,19 @@
             },
             {
               "period": 3,
-              "subject": "دين"
-            },
-            {
-              "period": 4,
-              "subject": "AI"
-            },
-            {
-              "period": 5,
               "subject": "دراسات"
             },
             {
-              "period": 6,
+              "period": 4,
               "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "Science"
+            },
+            {
+              "period": 6,
+              "subject": "دين"
             },
             {
               "period": 7,
@@ -2524,7 +2523,7 @@
             },
             {
               "period": 8,
-              "subject": "OL"
+              "subject": "AL"
             }
           ]
         }
@@ -2542,7 +2541,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Maths"
+              "subject": "AI"
             },
             {
               "period": 2,
@@ -2550,23 +2549,23 @@
             },
             {
               "period": 3,
-              "subject": "French"
+              "subject": "فنية"
             },
             {
               "period": 4,
-              "subject": "Science"
-            },
-            {
-              "period": 5,
               "subject": "عربي"
             },
             {
+              "period": 5,
+              "subject": "دراسات"
+            },
+            {
               "period": 6,
-              "subject": "AL"
+              "subject": "OL"
             },
             {
               "period": 7,
-              "subject": "OL"
+              "subject": "دين"
             },
             {
               "period": 8,
@@ -2587,27 +2586,27 @@
             },
             {
               "period": 3,
-              "subject": "بدنية"
-            },
-            {
-              "period": 4,
-              "subject": "فنية"
-            },
-            {
-              "period": 5,
-              "subject": "Science"
-            },
-            {
-              "period": 6,
-              "subject": "دراسات"
-            },
-            {
-              "period": 7,
               "subject": "AL"
             },
             {
-              "period": 8,
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
               "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "Science"
+            },
+            {
+              "period": 7,
+              "subject": "French"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
             }
           ]
         },
@@ -2616,7 +2615,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Maths"
+              "subject": "AL"
             },
             {
               "period": 2,
@@ -2624,27 +2623,27 @@
             },
             {
               "period": 3,
-              "subject": "دين"
+              "subject": "عربي"
             },
             {
               "period": 4,
-              "subject": "OL"
+              "subject": "بدنية"
             },
             {
               "period": 5,
-              "subject": "عربي"
+              "subject": "OL"
             },
             {
               "period": 6,
-              "subject": "عربي"
+              "subject": "Maths"
             },
             {
               "period": 7,
-              "subject": "ICT"
+              "subject": "Science"
             },
             {
               "period": 8,
-              "subject": "Science"
+              "subject": "عربي"
             }
           ]
         },
@@ -2653,7 +2652,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "AL"
+              "subject": "Science"
             },
             {
               "period": 2,
@@ -2661,27 +2660,27 @@
             },
             {
               "period": 3,
-              "subject": "عربي"
+              "subject": "بدنية"
             },
             {
               "period": 4,
-              "subject": "دراسات"
+              "subject": "Maths"
             },
             {
               "period": 5,
-              "subject": "دين"
-            },
-            {
-              "period": 6,
               "subject": "عربي"
             },
             {
+              "period": 6,
+              "subject": "دراسات"
+            },
+            {
               "period": 7,
-              "subject": "AI"
+              "subject": "AL"
             },
             {
               "period": 8,
-              "subject": "Maths"
+              "subject": "French"
             }
           ]
         },
@@ -2690,7 +2689,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "دراسات"
+              "subject": "OL"
             },
             {
               "period": 2,
@@ -2698,7 +2697,7 @@
             },
             {
               "period": 3,
-              "subject": "French"
+              "subject": "دين"
             },
             {
               "period": 4,
@@ -2710,15 +2709,15 @@
             },
             {
               "period": 6,
-              "subject": "OL"
+              "subject": "Maths"
             },
             {
               "period": 7,
-              "subject": "عربي"
+              "subject": "ICT"
             },
             {
               "period": 8,
-              "subject": "Maths"
+              "subject": "دراسات"
             }
           ]
         }
@@ -2736,7 +2735,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "AL"
+              "subject": "Science"
             },
             {
               "period": 2,
@@ -2748,15 +2747,15 @@
             },
             {
               "period": 4,
-              "subject": "دراسات"
-            },
-            {
-              "period": 5,
               "subject": "Maths"
             },
             {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
               "period": 6,
-              "subject": "Science"
+              "subject": "عربي"
             },
             {
               "period": 7,
@@ -2764,7 +2763,7 @@
             },
             {
               "period": 8,
-              "subject": "دين"
+              "subject": "AI"
             }
           ]
         },
@@ -2781,44 +2780,7 @@
             },
             {
               "period": 3,
-              "subject": "Maths"
-            },
-            {
-              "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
-              "subject": "OL"
-            },
-            {
-              "period": 6,
-              "subject": "French"
-            },
-            {
-              "period": 7,
-              "subject": "عربي"
-            },
-            {
-              "period": 8,
               "subject": "Science"
-            }
-          ]
-        },
-        "tuesday": {
-          "dayLabel": "الثلاثاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "AI"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "عربي"
             },
             {
               "period": 4,
@@ -2826,131 +2788,11 @@
             },
             {
               "period": 5,
-              "subject": "Science"
+              "subject": "عربي"
             },
             {
               "period": 6,
-              "subject": "OL"
-            },
-            {
-              "period": 7,
-              "subject": "عربي"
-            },
-            {
-              "period": 8,
-              "subject": "Maths"
-            }
-          ]
-        },
-        "wednesday": {
-          "dayLabel": "الأربعاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "عربي"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
               "subject": "دراسات"
-            },
-            {
-              "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
-              "subject": "AL"
-            },
-            {
-              "period": 6,
-              "subject": "OL"
-            },
-            {
-              "period": 7,
-              "subject": "دين"
-            },
-            {
-              "period": 8,
-              "subject": "Science"
-            }
-          ]
-        },
-        "thursday": {
-          "dayLabel": "الخميس",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "Maths"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "عربي"
-            },
-            {
-              "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
-              "subject": "فنية"
-            },
-            {
-              "period": 6,
-              "subject": "ICT"
-            },
-            {
-              "period": 7,
-              "subject": "دراسات"
-            },
-            {
-              "period": 8,
-              "subject": "AL"
-            }
-          ]
-        }
-      }
-    },
-    "Grade 8C": {
-      "classId": "grade-8-c",
-      "className": "Grade 8C",
-      "grade": 8,
-      "section": "C",
-      "independentSchedule": true,
-      "schedule": {
-        "sunday": {
-          "dayLabel": "الأحد",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "دراسات"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "Science"
-            },
-            {
-              "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
-              "subject": "French"
-            },
-            {
-              "period": 6,
-              "subject": "عربي"
             },
             {
               "period": 7,
@@ -2958,61 +2800,24 @@
             },
             {
               "period": 8,
-              "subject": "AL"
-            }
-          ]
-        },
-        "monday": {
-          "dayLabel": "الاثنين",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "دراسات"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "AL"
-            },
-            {
-              "period": 4,
-              "subject": "OL"
-            },
-            {
-              "period": 5,
-              "subject": "عربي"
-            },
-            {
-              "period": 6,
-              "subject": "عربي"
-            },
-            {
-              "period": 7,
-              "subject": "French"
-            },
-            {
-              "period": 8,
-              "subject": "Maths"
-            }
-          ]
-        },
-        "tuesday": {
-          "dayLabel": "الثلاثاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "فنية"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
               "subject": "بدنية"
+            }
+          ]
+        },
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "ICT"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "OL"
             },
             {
               "period": 4,
@@ -3020,19 +2825,19 @@
             },
             {
               "period": 5,
-              "subject": "AL"
+              "subject": "فنية"
             },
             {
               "period": 6,
-              "subject": "Science"
+              "subject": "AL"
             },
             {
               "period": 7,
-              "subject": "OL"
+              "subject": "دين"
             },
             {
               "period": 8,
-              "subject": "دين"
+              "subject": "French"
             }
           ]
         },
@@ -3041,7 +2846,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "دراسات"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -3057,11 +2862,11 @@
             },
             {
               "period": 5,
-              "subject": "Maths"
+              "subject": "دراسات"
             },
             {
               "period": 6,
-              "subject": "AI"
+              "subject": "AL"
             },
             {
               "period": 7,
@@ -3069,7 +2874,7 @@
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "Maths"
             }
           ]
         },
@@ -3078,7 +2883,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "AL"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -3086,11 +2891,11 @@
             },
             {
               "period": 3,
-              "subject": "Maths"
+              "subject": "AL"
             },
             {
               "period": 4,
-              "subject": "OL"
+              "subject": "دراسات"
             },
             {
               "period": 5,
@@ -3102,7 +2907,7 @@
             },
             {
               "period": 7,
-              "subject": "ICT"
+              "subject": "Maths"
             },
             {
               "period": 8,
@@ -3124,7 +2929,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "عربي"
+              "subject": "AL"
             },
             {
               "period": 2,
@@ -3132,27 +2937,27 @@
             },
             {
               "period": 3,
-              "subject": "دراسات"
+              "subject": "OL"
             },
             {
               "period": 4,
-              "subject": "بدنية"
+              "subject": "French"
             },
             {
               "period": 5,
-              "subject": "ICT"
+              "subject": "بدنية"
             },
             {
               "period": 6,
-              "subject": "ICT"
-            },
-            {
-              "period": 7,
               "subject": "عربي"
             },
             {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
               "period": 8,
-              "subject": "OL"
+              "subject": "عربي"
             }
           ]
         },
@@ -3161,7 +2966,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "عربي"
+              "subject": "دراسات"
             },
             {
               "period": 2,
@@ -3169,27 +2974,27 @@
             },
             {
               "period": 3,
-              "subject": "عربي"
+              "subject": "OL"
             },
             {
               "period": 4,
-              "subject": "AL"
+              "subject": "دين"
             },
             {
               "period": 5,
-              "subject": "French"
+              "subject": "ICT"
             },
             {
               "period": 6,
-              "subject": "Science"
+              "subject": "ICT"
             },
             {
               "period": 7,
-              "subject": "بدنية"
+              "subject": "Science"
             },
             {
               "period": 8,
-              "subject": "Maths"
+              "subject": "عربي"
             }
           ]
         },
@@ -3198,7 +3003,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "دراسات"
+              "subject": "Science"
             },
             {
               "period": 2,
@@ -3206,19 +3011,19 @@
             },
             {
               "period": 3,
-              "subject": "دين"
+              "subject": "دراسات"
             },
             {
               "period": 4,
-              "subject": "Maths"
+              "subject": "OL"
             },
             {
               "period": 5,
-              "subject": "عربي"
+              "subject": "Maths"
             },
             {
               "period": 6,
-              "subject": "Science"
+              "subject": "فنية"
             },
             {
               "period": 7,
@@ -3226,7 +3031,7 @@
             },
             {
               "period": 8,
-              "subject": "OL"
+              "subject": "عربي"
             }
           ]
         },
@@ -3235,7 +3040,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Science"
+              "subject": "French"
             },
             {
               "period": 2,
@@ -3243,27 +3048,27 @@
             },
             {
               "period": 3,
-              "subject": "عربي"
-            },
-            {
-              "period": 4,
-              "subject": "فنية"
-            },
-            {
-              "period": 5,
               "subject": "دراسات"
             },
             {
-              "period": 6,
-              "subject": "عربي"
+              "period": 4,
+              "subject": "Science"
             },
             {
-              "period": 7,
+              "period": 5,
               "subject": "Maths"
             },
             {
-              "period": 8,
+              "period": 6,
+              "subject": "OL"
+            },
+            {
+              "period": 7,
               "subject": "AL"
+            },
+            {
+              "period": 8,
+              "subject": "عربي"
             }
           ]
         },
@@ -3272,7 +3077,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "AL"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -3280,15 +3085,15 @@
             },
             {
               "period": 3,
-              "subject": "OL"
+              "subject": "AL"
             },
             {
               "period": 4,
-              "subject": "Science"
+              "subject": "Maths"
             },
             {
               "period": 5,
-              "subject": "عربي"
+              "subject": "بدنية"
             },
             {
               "period": 6,
@@ -3296,11 +3101,11 @@
             },
             {
               "period": 7,
-              "subject": "Maths"
+              "subject": "Science"
             },
             {
               "period": 8,
-              "subject": "French"
+              "subject": "عربي"
             }
           ]
         }
@@ -3318,7 +3123,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "Maths"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -3326,19 +3131,56 @@
             },
             {
               "period": 3,
-              "subject": "Science"
+              "subject": "بدنية"
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "OL"
             },
             {
               "period": 5,
-              "subject": "عربي"
+              "subject": "فنية"
             },
             {
               "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
               "subject": "دراسات"
+            },
+            {
+              "period": 8,
+              "subject": "Maths"
+            }
+          ]
+        },
+        "monday": {
+          "dayLabel": "الاثنين",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "AL"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "عربي"
+            },
+            {
+              "period": 4,
+              "subject": "Maths"
+            },
+            {
+              "period": 5,
+              "subject": "OL"
+            },
+            {
+              "period": 6,
+              "subject": "Science"
             },
             {
               "period": 7,
@@ -3350,8 +3192,8 @@
             }
           ]
         },
-        "monday": {
-          "dayLabel": "الاثنين",
+        "tuesday": {
+          "dayLabel": "الثلاثاء",
           "periods": [
             {
               "period": 1,
@@ -3363,60 +3205,23 @@
             },
             {
               "period": 3,
-              "subject": "Maths"
+              "subject": "عربي"
             },
             {
               "period": 4,
-              "subject": "French"
-            },
-            {
-              "period": 5,
               "subject": "دين"
             },
             {
-              "period": 6,
-              "subject": "عربي"
-            },
-            {
-              "period": 7,
-              "subject": "دراسات"
-            },
-            {
-              "period": 8,
-              "subject": "AL"
-            }
-          ]
-        },
-        "tuesday": {
-          "dayLabel": "الثلاثاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "عربي"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "عربي"
-            },
-            {
-              "period": 4,
-              "subject": "AL"
-            },
-            {
               "period": 5,
-              "subject": "French"
-            },
-            {
-              "period": 6,
               "subject": "دراسات"
             },
             {
+              "period": 6,
+              "subject": "عربي"
+            },
+            {
               "period": 7,
-              "subject": "Maths"
+              "subject": "بدنية"
             },
             {
               "period": 8,
@@ -3429,7 +3234,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "Science"
             },
             {
               "period": 2,
@@ -3437,27 +3242,27 @@
             },
             {
               "period": 3,
-              "subject": "دين"
+              "subject": "عربي"
             },
             {
               "period": 4,
-              "subject": "Science"
-            },
-            {
-              "period": 5,
               "subject": "Maths"
             },
             {
+              "period": 5,
+              "subject": "French"
+            },
+            {
               "period": 6,
-              "subject": "بدنية"
+              "subject": "دين"
             },
             {
               "period": 7,
-              "subject": "AL"
+              "subject": "عربي"
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "AL"
             }
           ]
         },
@@ -3466,7 +3271,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "عربي"
+              "subject": "Science"
             },
             {
               "period": 2,
@@ -3474,27 +3279,27 @@
             },
             {
               "period": 3,
-              "subject": "Science"
-            },
-            {
-              "period": 4,
               "subject": "عربي"
             },
             {
-              "period": 5,
+              "period": 4,
               "subject": "AL"
             },
             {
-              "period": 6,
-              "subject": "بدنية"
-            },
-            {
-              "period": 7,
+              "period": 5,
               "subject": "OL"
             },
             {
+              "period": 6,
+              "subject": "دراسات"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
               "period": 8,
-              "subject": "فنية"
+              "subject": "French"
             }
           ]
         }
@@ -3524,15 +3329,15 @@
             },
             {
               "period": 4,
-              "subject": "دين"
+              "subject": "عربي"
             },
             {
               "period": 5,
-              "subject": "بدنية"
+              "subject": "Maths"
             },
             {
               "period": 6,
-              "subject": "Maths"
+              "subject": "تاريخ"
             },
             {
               "period": 7,
@@ -3540,7 +3345,7 @@
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "French"
             }
           ]
         },
@@ -3549,7 +3354,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "OL"
+              "subject": "AL"
             },
             {
               "period": 2,
@@ -3557,19 +3362,19 @@
             },
             {
               "period": 3,
-              "subject": "French"
+              "subject": "بدنية"
             },
             {
               "period": 4,
-              "subject": "عربي"
+              "subject": "INT Science"
             },
             {
               "period": 5,
-              "subject": "Maths"
+              "subject": "تاريخ"
             },
             {
               "period": 6,
-              "subject": "فلسفة"
+              "subject": "Maths"
             },
             {
               "period": 7,
@@ -3577,12 +3382,49 @@
             },
             {
               "period": 8,
-              "subject": "INT Science"
+              "subject": "OL"
             }
           ]
         },
         "tuesday": {
           "dayLabel": "الثلاثاء",
+          "periods": [
+            {
+              "period": 1,
+              "subject": "INT Science"
+            },
+            {
+              "period": 2,
+              "subject": "قرأن"
+            },
+            {
+              "period": 3,
+              "subject": "فلسفة"
+            },
+            {
+              "period": 4,
+              "subject": "عربي"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "AL"
+            },
+            {
+              "period": 7,
+              "subject": "Maths"
+            },
+            {
+              "period": 8,
+              "subject": "OL"
+            }
+          ]
+        },
+        "wednesday": {
+          "dayLabel": "الأربعاء",
           "periods": [
             {
               "period": 1,
@@ -3594,64 +3436,27 @@
             },
             {
               "period": 3,
-              "subject": "AL"
+              "subject": "INT Science"
             },
             {
               "period": 4,
+              "subject": "AL"
+            },
+            {
+              "period": 5,
+              "subject": "عربي"
+            },
+            {
+              "period": 6,
+              "subject": "Maths"
+            },
+            {
+              "period": 7,
               "subject": "بدنية"
             },
             {
-              "period": 5,
-              "subject": "INT Science"
-            },
-            {
-              "period": 6,
-              "subject": "تاريخ"
-            },
-            {
-              "period": 7,
-              "subject": "وطنية"
-            },
-            {
               "period": 8,
               "subject": "عربي"
-            }
-          ]
-        },
-        "wednesday": {
-          "dayLabel": "الأربعاء",
-          "periods": [
-            {
-              "period": 1,
-              "subject": "OL"
-            },
-            {
-              "period": 2,
-              "subject": "قرأن"
-            },
-            {
-              "period": 3,
-              "subject": "French"
-            },
-            {
-              "period": 4,
-              "subject": "عربي"
-            },
-            {
-              "period": 5,
-              "subject": "AL"
-            },
-            {
-              "period": 6,
-              "subject": "INT Science"
-            },
-            {
-              "period": 7,
-              "subject": "عربي"
-            },
-            {
-              "period": 8,
-              "subject": "Maths"
             }
           ]
         },
@@ -3660,7 +3465,7 @@
           "periods": [
             {
               "period": 1,
-              "subject": "AL"
+              "subject": "عربي"
             },
             {
               "period": 2,
@@ -3668,27 +3473,27 @@
             },
             {
               "period": 3,
-              "subject": "ICT"
+              "subject": "فلسفة"
             },
             {
               "period": 4,
-              "subject": "Maths"
+              "subject": "ICT"
             },
             {
               "period": 5,
-              "subject": "OL"
+              "subject": "دين"
             },
             {
               "period": 6,
-              "subject": "INT Science"
+              "subject": "Maths"
             },
             {
               "period": 7,
-              "subject": "عربي"
+              "subject": "French"
             },
             {
               "period": 8,
-              "subject": "عربي"
+              "subject": "OL"
             }
           ]
         }
