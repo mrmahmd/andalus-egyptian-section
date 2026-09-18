@@ -868,7 +868,11 @@ on conflict (teacher_id, class_id, subject_id) do nothing;
 
 -- Replace the full 18-class timetable with all 720 verified lesson slots.
 delete from public.timetable_slots
-where class_id in (select id from public.school_classes where grade between 1 and 10 and section in ('A', 'B'));
+where class_id in (select id from public.school_classes where grade between 1 and 10);
+
+-- Grade 8/C is no longer part of the verified school structure.
+delete from public.school_classes
+where grade = 8 and section = 'C';
 
 insert into public.timetable_slots (class_id, subject_id, teacher_id, day_of_week, period_number, requires_weekly_plan_submission)
 select school_class.id, subject_record.id, profile.user_id, source.day_of_week, source.period_number, source.requires_weekly_plan_submission
