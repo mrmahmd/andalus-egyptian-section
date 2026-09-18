@@ -281,7 +281,8 @@ Object.assign(staffAr, {
   "Biology": "الأحياء",
   "Integrated Science": "العلوم المتكاملة",
   "English programme": "برنامج اللغة الإنجليزية",
-  "The programme name is added automatically before Classwork.": "يُضاف اسم البرنامج تلقائيًا قبل عمل الحصة.",
+  "Select AL or OL": "اختر AL أو OL",
+  "AL or OL is added automatically before Classwork using the format: AL - Classwork.": "يُضاف AL أو OL تلقائيًا قبل عمل الحصة بالصيغة: AL - عمل الحصة.",
   "Lesson, unit and pages": "اكتب الدرس والوحدة والصفحات",
   "Homework for this lesson": "اكتب واجب هذه الحصة",
   "Reminder or materials": "اكتب التذكير أو الأدوات المطلوبة",
@@ -491,6 +492,8 @@ function normalizedText(value: string) {
 function translateDynamicStaffText(value: string) {
   let match = value.match(/^Period (\d+)$/);
   if (match) return `الحصة ${match[1]}`;
+  match = value.match(/^Choose AL or OL for (Sunday|Monday|Tuesday|Wednesday|Thursday) · Period (\d+) before saving Classwork\.$/);
+  if (match) return `اختر AL أو OL لحصة ${ar[match[1]] ?? match[1]} رقم ${match[2]} قبل حفظ عمل الحصة.`;
   match = value.match(/^(\d+) lessons?$/);
   if (match) return `${match[1]} حصة`;
   match = value.match(/^(\d+) lessons? ready for this week$/);

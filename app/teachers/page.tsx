@@ -126,21 +126,23 @@ type WeeklyPlanRow = { planId: string; classId: string; weekId: string; classNam
 
 const emptySlotDraft = (): SlotDraft => ({ classwork: "", homework: "", classeraNotes: "", englishProgramme: "", scienceComponent: "" });
 const scienceComponents = ["Chemistry", "Physics", "Biology"];
-const englishSubjectNames = new Set(["English", "Connect Plus", "English Hello", "Hello Plus", "Hello", "Upstream"]);
+const englishProgrammes = ["AL", "OL"];
 
-function englishProgrammesForGrade(grade: number) {
-  if (grade >= 1 && grade <= 6) return ["English", "Connect Plus"];
-  if (grade >= 7 && grade <= 9) return ["Hello", "Hello Plus"];
-  if (grade === 10) return ["Hello", "Upstream"];
-  return [];
+function isEnglishSubject(subject: string) {
+  return subject === "English" || subject.startsWith("English ") || ["Connect Plus", "Hello Plus", "Hello", "Upstream"].includes(subject);
 }
 
-function defaultEnglishProgramme(grade: number, subject: string) {
-  if (subject === "Connect Plus") return "Connect Plus";
-  if (subject === "Hello Plus") return "Hello Plus";
-  if (subject === "Upstream") return "Upstream";
-  if (subject === "English Hello" || subject === "Hello") return "Hello";
-  return englishProgrammesForGrade(grade)[0] ?? "";
+function splitEnglishClasswork(value: string) {
+  const match = value.match(/^(AL|OL)\s*(?:—|-)\s*/i);
+  return {
+    programme: match?.[1]?.toUpperCase() ?? "",
+    classwork: match ? value.slice(match[0].length) : value,
+  };
+}
+
+function formatEnglishClasswork(programme: string, value: string) {
+  const classwork = splitEnglishClasswork(value.trim()).classwork.trim();
+  return programme && classwork ? `${programme} - ${classwork}` : classwork;
 }
 
 function one<T>(value: T | T[] | null | undefined): T | null {
@@ -418,9 +420,10 @@ export default function TeachersDashboardPage() {
         let classwork = row.classwork ?? "";
         let englishProgramme = "";
         let scienceComponent = "";
-        if (englishSubjectNames.has(assignment?.subject ?? "")) {
-          englishProgramme = englishProgrammesForGrade(assignment?.grade ?? 0).find((programme) => classwork.startsWith(`${programme} — `)) ?? "";
-          if (englishProgramme) classwork = classwork.slice(englishProgramme.length + 3);
+        if (isEnglishSubject(assignment?.subject ?? "")) {
+          const parsedClasswork = splitEnglishClasswork(classwork);
+          englishProgramme = parsedClasswork.programme;
+          classwork = parsedClasswork.classwork;
         }
         if (assignment?.subject === "Integrated Science") {
           scienceComponent = scienceComponents.find((component) => classwork.startsWith(`${component} — `)) ?? "";
@@ -483,11 +486,8 @@ export default function TeachersDashboardPage() {
   const previewClasswork = (slot: TimetableSlot) => {
     const assignment = assignmentForSlot(slot);
     const draft = slotDraftFor(slot);
-    const prefix = assignment?.subject === "Integrated Science"
-      ? draft.scienceComponent
-      : englishSubjectNames.has(assignment?.subject ?? "")
-        ? draft.englishProgramme || defaultEnglishProgramme(assignment?.grade ?? 0, assignment?.subject ?? "")
-        : "";
+    if (isEnglishSubject(assignment?.subject ?? "")) return formatEnglishClasswork(draft.englishProgramme, draft.classwork);
+    const prefix = assignment?.subject === "Integrated Science" ? draft.scienceComponent : "";
     return [prefix, draft.classwork.trim()].filter(Boolean).join(" — ");
   };
 
@@ -543,6 +543,19 @@ export default function TeachersDashboardPage() {
       setMessageTone("error");
       return;
     }
+    const englishSlotMissingProgramme = editableClassSlots.find((slot) => {
+      const assignment = assignmentForSlot(slot);
+      const draft = slotDraftFor(slot);
+      return isEnglishSubject(assignment?.subject ?? "") && Boolean(draft.classwork.trim()) && !draft.englishProgramme;
+    });
+    if (englishSlotMissingProgramme) {
+      if (silent) setAutoSaveState("idle");
+      else {
+        setMessage(`Choose AL or OL for ${dayNames[englishSlotMissingProgramme.day_of_week]} · Period ${englishSlotMissingProgramme.period_number} before saving Classwork.`);
+        setMessageTone("error");
+      }
+      return;
+    }
 
     setSaving(true);
     if (silent) setAutoSaveState("saving");
@@ -566,7 +579,8 @@ export default function TeachersDashboardPage() {
         const assignment = assignmentForSlot(slot);
         const draft = slotDraftFor(slot);
         const classwork = draft.classwork.trim();
-        const prefix = assignment?.subject === "Integrated Science" ? draft.scienceComponent : englishSubjectNames.has(assignment?.subject ?? "") ? draft.englishProgramme || defaultEnglishProgramme(assignment?.grade ?? 0, assignment?.subject ?? "") : "";
+        const isEnglish = isEnglishSubject(assignment?.subject ?? "");
+        const prefix = assignment?.subject === "Integrated Science" ? draft.scienceComponent : "";
         return {
           weekly_plan_id: weeklyPlanId,
           timetable_slot_id: slot.id,
@@ -574,7 +588,7 @@ export default function TeachersDashboardPage() {
           subject_id: slot.subject_id,
           day_of_week: slot.day_of_week,
           period_number: slot.period_number,
-          classwork: prefix && classwork ? `${prefix} — ${classwork}` : classwork,
+          classwork: isEnglish ? formatEnglishClasswork(draft.englishProgramme, classwork) : prefix && classwork ? `${prefix} — ${classwork}` : classwork,
           homework: draft.homework.trim(),
           classera_notes: draft.classeraNotes.trim(),
           updated_at: new Date().toISOString(),
@@ -1054,7 +1068,7 @@ export default function TeachersDashboardPage() {
         <form onSubmit={(event) => { event.preventDefault(); void saveWholeWeek(false); }}>
           {builderStatus !== "new" && <div className={`weekly-builder-review-state ${builderStatus}`}><strong>{builderStatus === "approved" ? "Published for families" : "Saved"}</strong><span>{builderStatus === "approved" ? "This class plan is now visible to families." : "Your work is saved and will publish automatically once the remaining assigned lessons for this class and week are completed."}</span></div>}
           <div className="weekly-builder-toolbar"><label>1. Academic week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><label>2. Class<select value={selectedClassId} onChange={(event) => { setSelectedClassId(event.target.value); setSlotDrafts({}); setQuizSubjectId(""); }}>{Array.from(new Map(assignments.map((assignment) => [assignment.classId, assignment])).values()).map((assignment) => <option key={assignment.classId} value={assignment.classId}>Grade {assignment.grade} · {assignment.section}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedClassSlots.length > 0 ? "ready" : "missing"}`}>{selectedClassSlots.length > 0 ? `${selectedClassSlots.length} lessons ready for this week` : "Timetable connection required"}</span></div>
-          <div className={`weekly-builder-days days-${activeDayIndexes.length}`}>{activeDayIndexes.map((index) => { const day = dayNames[index]; const daySlots = selectedClassSlots.filter((slot) => slot.day_of_week === index); return <section className="weekly-builder-day" key={day}><header><strong>{day}</strong><small>{daySlots.length} lesson{daySlots.length === 1 ? "" : "s"}</small></header>{daySlots.map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = englishSubjectNames.has(assignment?.subject ?? ""); return <article key={slot.id}><header><span>Period {slot.period_number}</span><strong>{assignment?.subject ?? "Subject"}</strong></header>{assignment?.subject === "Integrated Science" && <label>Science component<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>English programme<select value={draft.englishProgramme || defaultEnglishProgramme(assignment?.grade ?? 0, assignment?.subject ?? "")} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}>{englishProgrammesForGrade(assignment?.grade ?? 0).map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">The programme name is added automatically before Classwork.</p>}<label>Classwork<textarea rows={3} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={3} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder="Homework for this lesson" /></label><label>Classera notes<textarea rows={3} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>})}</section>})}</div>
+          <div className={`weekly-builder-days days-${activeDayIndexes.length}`}>{activeDayIndexes.map((index) => { const day = dayNames[index]; const daySlots = selectedClassSlots.filter((slot) => slot.day_of_week === index); return <section className="weekly-builder-day" key={day}><header><strong>{day}</strong><small>{daySlots.length} lesson{daySlots.length === 1 ? "" : "s"}</small></header>{daySlots.map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = isEnglishSubject(assignment?.subject ?? ""); return <article key={slot.id}><header><span>Period {slot.period_number}</span><strong>{isEnglish ? "English" : assignment?.subject ?? "Subject"}</strong></header>{assignment?.subject === "Integrated Science" && <label>Science component<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>English programme<select value={draft.englishProgramme} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}><option value="">Select AL or OL</option>{englishProgrammes.map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">AL or OL is added automatically before Classwork using the format: AL - Classwork.</p>}<label>Classwork<textarea rows={3} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={3} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder="Homework for this lesson" /></label><label>Classera notes<textarea rows={3} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>})}</section>})}</div>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Choose the subject, then add the quiz for this class.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Subject<select value={quizSubjectId} onChange={(event) => setQuizSubjectId(event.target.value)}><option value="">Select subject</option>{selectedClassAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>NT</span><div><strong>Weekly notes for families</strong><small>Spelling words, reminders or important announcements.</small></div></div></div><textarea className="weekly-builder-notes" rows={3} value={weeklyNote} onChange={(event) => setWeeklyNote(event.target.value)} placeholder="Weekly notes" /></section>
           <section className="weekly-copy-panel"><div><strong>Copy this subject plan to other classes</strong><p>{savedPlanId ? "Only classes in the same grade where you teach the same subject appear here. The copied plans are saved as drafts; quizzes and weekly notes stay with the original class." : "Save this class as a draft first, then you can copy one subject plan to your other eligible classes."}</p></div><button type="button" className="teacher-secondary-button" disabled={saving || !savedPlanId || builderStatus === "approved"} onClick={() => { setCopyPanelOpen((open) => !open); setCopySubjectId((current) => current || sourceSubjectAssignments[0]?.subjectId || ""); }}>Copy plan</button>{savedPlanId && copyPanelOpen && <div className="weekly-copy-controls"><label>Subject to copy<select value={copySubjectId} onChange={(event) => { setCopySubjectId(event.target.value); setCopyTargetClassIds([]); }}><option value="">Select subject</option>{sourceSubjectAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><div className="weekly-copy-targets">{copyTargetClasses.map((target) => <label key={target.classId}><input type="checkbox" checked={copyTargetClassIds.includes(target.classId)} onChange={() => toggleCopyTarget(target.classId)} /><span><strong>Grade {target.grade} · {target.section}</strong><small>{target.lessonCount} matching timetable lesson{target.lessonCount === 1 ? "" : "s"}</small></span></label>)}{copySubjectId && copyTargetClasses.length === 0 && <p>No other eligible class is assigned to you for this subject and grade.</p>}</div><div className="weekly-copy-actions"><small>Different lesson dates or periods are matched by lesson order: first lesson to first lesson, second to second, and so on.</small><button type="button" className="teacher-primary-button" disabled={saving || !copySubjectId || copyTargetClassIds.length === 0} onClick={() => void copyPlanToOtherClasses()}>Save copied drafts</button></div></div>}</section>
