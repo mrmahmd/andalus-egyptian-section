@@ -726,6 +726,11 @@ button, select, input { font: inherit; }
 .weekly-builder-review-state { padding: 13px 15px; border: 1px solid #d9e4ef; border-radius: 12px; display: grid; gap: 4px; background: #f7fbff; color: #52677f; }
 .weekly-builder-review-state strong { color: #163d70; font-size: 14px; }.weekly-builder-review-state span { font-size: 12px; line-height: 1.55; }
 .weekly-builder-review-state.submitted { border-color: #c3d8eb; background: #eef7ff; }.weekly-builder-review-state.changes_requested { border-color: #ecd6a7; background: #fff9ec; }.weekly-builder-review-state.approved { border-color: #bee2d1; background: #effaf4; }
+.weekly-send-confirmation-backdrop { position: fixed; inset: 0; z-index: 160; padding: 20px; display: grid; place-items: center; background: rgba(4,16,39,.7); backdrop-filter: blur(6px); }
+.weekly-send-confirmation { width: min(460px, 100%); padding: 30px; border: 1px solid #d9e5ef; border-radius: 22px; background: #fff; box-shadow: 0 28px 80px rgba(4,16,39,.34); text-align: center; }
+.weekly-send-confirmation > span { width: 54px; height: 54px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center; background: #e8f7f1; color: #218160; font-size: 25px; font-weight: 900; }
+.weekly-send-confirmation h3 { margin: 0; color: #102f5d; font-size: 22px; }.weekly-send-confirmation p { margin: 12px 0 22px; color: #60738b; font-size: 14px; line-height: 1.75; }
+.weekly-send-confirmation > div { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }.weekly-send-confirmation button { min-width: 150px; }
 .weekly-copy-panel { padding: 16px; border: 1px solid #cddfec; border-radius: 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 13px; align-items: start; background: linear-gradient(125deg, #f0f8ff, #fcf7fb); }
 .weekly-copy-panel > div > strong { display: block; color: #153869; font-size: 15px; }.weekly-copy-panel > div > p { margin: 5px 0 0; color: #667991; font-size: 12px; line-height: 1.55; }
 .weekly-copy-controls { grid-column: 1 / -1; display: grid; gap: 12px; }.weekly-copy-controls > label { max-width: 360px; }
