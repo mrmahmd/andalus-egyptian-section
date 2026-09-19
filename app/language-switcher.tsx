@@ -498,6 +498,8 @@ Object.assign(staffAr, {
   "100% teacher completion": "اكتمال المعلمين بنسبة 100%",
   "Every assigned teacher sent a weekly plan": "أرسل كل معلمي الفصل خططهم الأسبوعية",
   "School publication rate": "نسبة النشر على مستوى المدرسة",
+  "School weekly-plan completion": "نسبة إنجاز الخطة الأسبوعية للمدرسة",
+  "Selected week:": "الأسبوع المحدد:",
   "Weekly school publication report": "التقرير الأسبوعي لنشر خطط المدرسة",
   "Teacher completion counts each teacher once, regardless of how many subjects they teach.": "تُحسب نسبة الإنجاز لكل معلم مرة واحدة مهما كان عدد المواد التي يدرسها.",
   "Open family plan page": "فتح صفحة خطة ولي الأمر",

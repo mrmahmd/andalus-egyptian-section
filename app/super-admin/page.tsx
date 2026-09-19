@@ -477,6 +477,11 @@ export default function SuperAdminPage() {
   const publishedClassCount = weeklyClassCoverage.filter((coverage) => coverage.plan?.status === "published").length;
   const unpublishedClassCount = weeklyClassCoverage.length - publishedClassCount;
   const fullyCompletedClassCount = weeklyClassCoverage.filter((coverage) => coverage.completionPercent === 100).length;
+  const selectedPlanWeek = academicWeeks.find((week) => week.id === selectedPlanWeekId) ?? null;
+  const requiredTeacherClassCount = weeklyClassCoverage.reduce((total, coverage) => total + coverage.requiredTeachers.length, 0);
+  const completedTeacherClassCount = weeklyClassCoverage.reduce((total, coverage) => total + coverage.completedTeachers.length, 0);
+  const schoolWeeklyCompletionPercent = requiredTeacherClassCount > 0 ? Math.round((completedTeacherClassCount / requiredTeacherClassCount) * 100) : 0;
+  const schoolWeeklyPublicationPercent = weeklyClassCoverage.length ? Math.round((publishedClassCount / weeklyClassCoverage.length) * 100) : 0;
   const bulkPublishCandidates = weeklyClassCoverage.filter((coverage) => coverage.plan && coverage.plan.entries > 0 && coverage.plan.status !== "published");
   const holidaysForSelectedWeek = useMemo(() => schoolHolidays.filter((holiday) => holiday.week_id === selectedHolidayWeekId), [schoolHolidays, selectedHolidayWeekId]);
 
@@ -775,7 +780,8 @@ export default function SuperAdminPage() {
               <article><small>Published classes</small><strong>{publishedClassCount}<em> / {weeklyClassCoverage.length}</em></strong><p>Visible to families</p></article>
               <article><small>Not published</small><strong>{unpublishedClassCount}</strong><p>Includes missing and incomplete plans</p></article>
               <article><small>100% teacher completion</small><strong>{fullyCompletedClassCount}</strong><p>Every assigned teacher sent a weekly plan</p></article>
-              <article className="overall"><small>School publication rate</small><strong>{weeklyClassCoverage.length ? Math.round((publishedClassCount / weeklyClassCoverage.length) * 100) : 0}%</strong><div><i style={{ width: `${weeklyClassCoverage.length ? Math.round((publishedClassCount / weeklyClassCoverage.length) * 100) : 0}%` }} /></div></article>
+              <article className="overall completion"><small>School weekly-plan completion</small><strong>{schoolWeeklyCompletionPercent}%</strong><div><i style={{ width: `${schoolWeeklyCompletionPercent}%` }} /></div><p>Selected week: <b>{selectedPlanWeek?.label || `Week ${selectedPlanWeek?.week_number ?? "—"}`}</b></p></article>
+              <article className="overall publication"><small>School publication rate</small><strong>{schoolWeeklyPublicationPercent}%</strong><div><i style={{ width: `${schoolWeeklyPublicationPercent}%` }} /></div><p>Selected week: <b>{selectedPlanWeek?.label || `Week ${selectedPlanWeek?.week_number ?? "—"}`}</b></p></article>
             </section>
 
             <section className="teacher-card super-admin-accounts-card super-plan-report-card">

@@ -231,6 +231,8 @@ test("adds Super Admin teacher completion reporting, self password change and bu
   const languageSource = await readFile(new URL("../app/language-switcher.tsx", import.meta.url), "utf8");
 
   assert.match(source, /completionPercent: requiredTeachers\.length > 0/);
+  assert.match(source, /schoolWeeklyCompletionPercent = requiredTeacherClassCount > 0/);
+  assert.match(source, /Selected week:/);
   assert.match(source, /new Set\(requirements\.map\(\(requirement\) => requirement\.teacherId\)\)/);
   assert.match(source, /submission\.status === "submitted" \|\| submission\.status === "approved"/);
   assert.match(source, /Weekly school publication report/);
@@ -239,6 +241,7 @@ test("adds Super Admin teacher completion reporting, self password change and bu
   assert.match(source, /Change my password/);
   assert.match(source, /current_password: ownPassword\.current/);
   assert.match(languageSource, /"School publication rate": "نسبة النشر على مستوى المدرسة"/);
+  assert.match(languageSource, /"School weekly-plan completion": "نسبة إنجاز الخطة الأسبوعية للمدرسة"/);
   assert.match(languageSource, /"Approve & publish all school plans": "اعتماد ونشر جميع خطط المدرسة"/);
   assert.match(languageSource, /"All sections": "كل الشعب"/);
   assert.match(languageSource, /"Change my password": "تغيير كلمة المرور"/);

@@ -1449,12 +1449,13 @@ button, select, input { font: inherit; }
 .super-admin-filters label { display: grid; gap: 6px; }
 .super-admin-filters select, .super-admin-mobile-search input { height: 43px; padding: 0 11px; border: 1px solid #d2dce7; border-radius: 9px; outline: 0; background: #fbfcfe; color: #172640; font: inherit; font-size: 13px; }
 .super-admin-filters select:focus, .super-admin-mobile-search input:focus { border-color: #b31b78; box-shadow: 0 0 0 3px rgba(179,27,120,.1); }
-.super-plan-report-summary { margin-top: 20px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.super-plan-report-summary { margin-top: 20px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
 .super-plan-report-summary article { min-height: 132px; padding: 18px; border: 1px solid #e0e7ef; border-radius: 15px; background: linear-gradient(140deg, #fff, #f7fafd); box-shadow: 0 8px 24px rgba(23,47,79,.05); }
 .super-plan-report-summary small { display: block; color: #74849a; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 .super-plan-report-summary strong { display: block; margin: 11px 0 7px; color: #152b4a; font-size: 30px; line-height: 1; }.super-plan-report-summary strong em { color: #8996a8; font-size: 14px; font-style: normal; }
 .super-plan-report-summary p { margin: 0; color: #738298; font-size: 12px; line-height: 1.45; }
 .super-plan-report-summary .overall { background: linear-gradient(135deg, #1c2758, #8d226f); }.super-plan-report-summary .overall small, .super-plan-report-summary .overall p { color: #d9deed; }.super-plan-report-summary .overall strong { color: #fff; }
+.super-plan-report-summary .overall.completion { background: linear-gradient(135deg, #075b79, #128fa3); }.super-plan-report-summary .overall p { margin-top: 9px; }.super-plan-report-summary .overall p b { color: #fff; }
 .super-plan-report-summary .overall > div, .super-class-completion > div { height: 7px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.2); }.super-plan-report-summary .overall i, .super-class-completion i { height: 100%; display: block; border-radius: inherit; background: linear-gradient(90deg, #1aa2bd, #efaa47); }
 .super-plan-report-toolbar { align-items: center; }.super-plan-report-actions { display: flex; flex-wrap: wrap; gap: 9px; }.super-plan-report-actions .teacher-secondary-button { min-height: 45px; display: inline-flex; align-items: center; text-decoration: none; }
 .super-bulk-publish-button { background: linear-gradient(120deg, #9e1f6c, #d56a38); box-shadow: 0 8px 20px rgba(158,31,108,.17); }
