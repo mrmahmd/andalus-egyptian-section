@@ -233,6 +233,11 @@ test("adds Super Admin teacher completion reporting, self password change and bu
   assert.match(source, /completionPercent: requiredTeachers\.length > 0/);
   assert.match(source, /schoolWeeklyCompletionPercent = requiredTeacherClassCount > 0/);
   assert.match(source, /Selected week:/);
+  assert.match(source, /supervisor_staff_links/);
+  assert.match(source, /submitted_at, reviewed_at, updated_at/);
+  assert.match(source, /Track every teacher plan/);
+  assert.match(source, /Waiting for \$\{row\.supervisorName\}/);
+  assert.match(source, /View route/);
   assert.match(source, /new Set\(requirements\.map\(\(requirement\) => requirement\.teacherId\)\)/);
   assert.match(source, /submission\.status === "submitted" \|\| submission\.status === "approved"/);
   assert.match(source, /Weekly school publication report/);
@@ -245,6 +250,8 @@ test("adds Super Admin teacher completion reporting, self password change and bu
   assert.match(languageSource, /"Approve & publish all school plans": "اعتماد ونشر جميع خطط المدرسة"/);
   assert.match(languageSource, /"All sections": "كل الشعب"/);
   assert.match(languageSource, /"Change my password": "تغيير كلمة المرور"/);
+  assert.match(languageSource, /"Track every teacher plan": "متابعة مسار خطة كل معلم"/);
+  assert.match(languageSource, /في انتظار اعتماد/);
 });
 
 test("adds French and the new English-department teachers", async () => {

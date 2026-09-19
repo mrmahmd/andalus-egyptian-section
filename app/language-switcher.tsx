@@ -544,7 +544,35 @@ Object.assign(staffAr, {
   "New password": "كلمة المرور الجديدة",
   "Confirm new password": "تأكيد كلمة المرور الجديدة",
   "Updating…": "جارٍ التحديث…",
-  "PW": "سر"
+  "PW": "سر",
+  "Plan approval route": "مسار اعتماد الخطة",
+  "Track every teacher plan": "متابعة مسار خطة كل معلم",
+  "See whether the next action belongs to the teacher, the supervisor, or the remaining class team.": "اعرف هل الإجراء التالي مطلوب من المعلم أو المشرف أو بقية معلمي الفصل.",
+  "Route status": "حالة المسار",
+  "All route statuses": "كل حالات المسار",
+  "Draft — not sent": "مسودة — لم تُرسل",
+  "Waiting for supervisor": "بانتظار المشرف",
+  "Returned for changes": "أُعيدت للتعديل",
+  "Approved — waiting for class": "معتمدة — تنتظر الفصل",
+  "Published for families": "منشورة لأولياء الأمور",
+  "Drafts not sent": "مسودات لم تُرسل",
+  "Approved, class incomplete": "معتمدة والفصل غير مكتمل",
+  "Show all": "عرض الكل",
+  "Teacher": "المعلم",
+  "Class & subjects": "الفصل والمواد",
+  "Responsible supervisor": "المشرف المسؤول",
+  "Current stage": "المرحلة الحالية",
+  "Sent / waiting": "الإرسال والانتظار",
+  "Plan route": "مسار الخطة",
+  "Approved — waiting for the rest of the class": "اعتمدها المشرف — تنتظر باقي معلمي الفصل",
+  "Not sent": "لم تُرسل",
+  "Supervisor note:": "ملاحظة المشرف:",
+  "View route": "عرض المسار",
+  "Plan started": "بدأ كتابة الخطة",
+  "Sent to supervisor": "أرسلها إلى المشرف",
+  "Supervisor decision": "قرار المشرف",
+  "Not assigned": "لم يُعيّن مشرف",
+  "No teacher plans match the selected route filters.": "لا توجد خطط معلمين مطابقة لفلاتر المسار المحددة."
 });
 
 function normalizedText(value: string) {
@@ -600,6 +628,13 @@ function translateDynamicStaffText(value: string) {
   if (match) return `أكمل ${match[1]} من أصل ${match[2]} معلمين`;
   match = value.match(/^Section ([A-Za-z])$/);
   if (match) return `الشعبة ${match[1]}`;
+  match = value.match(/^Waiting for (.+)$/);
+  if (match) return `في انتظار اعتماد ${match[1]}`;
+  match = value.match(/^(\d+) hours waiting$/);
+  if (match) return `في الانتظار منذ ${match[1]} ساعة`;
+  match = value.match(/^(\d+) (?:day|days) waiting$/);
+  if (match) return `في الانتظار منذ ${match[1]} يوم`;
+  if (value === "Less than one hour") return "في الانتظار منذ أقل من ساعة";
   match = value.match(/^(\d+) active class sections?$/);
   if (match) return `${match[1]} فصلًا نشطًا`;
   match = value.match(/^(\d+) active subjects? available for assignments$/);

@@ -63,12 +63,39 @@ type TimetableRequirement = {
   classId: string;
   teacherId: string;
   department: string;
+  subjectId: string;
+  subjectName: string;
 };
 
 type PlanSubmissionSummary = {
+  id: string;
   weeklyPlanId: string;
   teacherId: string;
+  subjectId: string;
+  subjectName: string;
   status: "draft" | "submitted" | "changes_requested" | "approved";
+  reviewNote: string;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  updatedAt: string;
+};
+
+type SupervisorLink = { supervisorStaffId: string; teacherStaffId: string };
+type PlanTrackingStatus = "not_started" | "draft" | "submitted" | "changes_requested" | "approved_waiting" | "published";
+
+type PlanTrackingRow = {
+  key: string;
+  classId: string;
+  grade: number;
+  section: string;
+  teacher: ManagedAccount;
+  supervisorName: string;
+  department: string;
+  subjects: string[];
+  status: PlanTrackingStatus;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  reviewNote: string;
 };
 
 type ClassCoverage = {
@@ -99,6 +126,20 @@ function formatDate(value: string | null | undefined) {
   return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value));
 }
 
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+}
+
+function waitingDuration(value: string | null) {
+  if (!value) return "—";
+  const hours = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 3_600_000));
+  if (hours < 1) return "Less than one hour";
+  if (hours < 24) return `${hours} hours waiting`;
+  const days = Math.floor(hours / 24);
+  return `${days} ${days === 1 ? "day" : "days"} waiting`;
+}
+
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("");
 }
@@ -111,6 +152,7 @@ export default function SuperAdminPage() {
   const [weeklyPlans, setWeeklyPlans] = useState<ManagedPlan[]>([]);
   const [timetableRequirements, setTimetableRequirements] = useState<TimetableRequirement[]>([]);
   const [planSubmissions, setPlanSubmissions] = useState<PlanSubmissionSummary[]>([]);
+  const [supervisorLinks, setSupervisorLinks] = useState<SupervisorLink[]>([]);
   const [academicWeeks, setAcademicWeeks] = useState<AcademicWeekOption[]>([]);
   const [schoolHolidays, setSchoolHolidays] = useState<SchoolHoliday[]>([]);
   const [selectedPlanWeekId, setSelectedPlanWeekId] = useState("");
@@ -118,6 +160,7 @@ export default function SuperAdminPage() {
   const [planSectionFilter, setPlanSectionFilter] = useState("all");
   const [planDepartmentFilter, setPlanDepartmentFilter] = useState("all");
   const [planPublicationFilter, setPlanPublicationFilter] = useState("all");
+  const [planTrackingStatusFilter, setPlanTrackingStatusFilter] = useState("all");
   const [bulkPublishConfirmationOpen, setBulkPublishConfirmationOpen] = useState(false);
   const [selectedHolidayWeekId, setSelectedHolidayWeekId] = useState("");
   const [holidayDraft, setHolidayDraft] = useState({ dayOfWeek: "0", title: "Official Holiday", note: "" });
@@ -170,7 +213,7 @@ export default function SuperAdminPage() {
       setCurrentAdminId(userData.user.id);
       setCurrentAdminName(ownerProfile.display_name || "Mohamed Farid");
 
-      const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult, plansResult, accessResult, teacherAccessResult, weeksResult, holidaysResult, timetableResult, submissionsResult] = await Promise.all([
+      const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult, plansResult, accessResult, teacherAccessResult, weeksResult, holidaysResult, timetableResult, submissionsResult, supervisorLinksResult] = await Promise.all([
         supabase.from("staff_directory").select("id, full_name, account_kind, administrative_role, department_id, departments(name_en)").eq("is_active", true).order("full_name"),
         supabase.from("registration_requests").select("id, user_id, staff_id, username, status, requested_at, reviewed_at").order("requested_at", { ascending: false }),
         supabase.from("profiles").select("user_id, staff_id, username, display_name, role, status, approved_at, updated_at"),
@@ -182,11 +225,12 @@ export default function SuperAdminPage() {
         supabase.from("weekly_plan_teacher_access").select("teacher_id, is_open"),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
         supabase.from("weekly_plan_holidays").select("id, week_id, day_of_week, title, note").order("day_of_week"),
-        supabase.from("timetable_slots").select("class_id, teacher_id, requires_weekly_plan_submission").eq("requires_weekly_plan_submission", true),
-        supabase.from("plan_submissions").select("weekly_plan_id, teacher_id, status"),
+        supabase.from("timetable_slots").select("class_id, teacher_id, subject_id, requires_weekly_plan_submission, subjects(name_en)").eq("requires_weekly_plan_submission", true),
+        supabase.from("plan_submissions").select("id, weekly_plan_id, teacher_id, subject_id, status, review_note, submitted_at, reviewed_at, updated_at, subjects(name_en)"),
+        supabase.from("supervisor_staff_links").select("supervisor_staff_id, teacher_staff_id"),
       ]);
 
-      const firstError = [directoryResult.error, requestsResult.error, profilesResult.error, assignmentsResult.error, subjectsResult.error, classesResult.error, plansResult.error, weeksResult.error, holidaysResult.error, timetableResult.error, submissionsResult.error].find(Boolean);
+      const firstError = [directoryResult.error, requestsResult.error, profilesResult.error, assignmentsResult.error, subjectsResult.error, classesResult.error, plansResult.error, weeksResult.error, holidaysResult.error, timetableResult.error, submissionsResult.error, supervisorLinksResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const requestsByStaff = new Map<string, Record<string, unknown>>();
@@ -261,13 +305,22 @@ export default function SuperAdminPage() {
       setTimetableRequirements((timetableResult.data ?? []).flatMap((slot) => {
         const teacherId = slot.teacher_id ? String(slot.teacher_id) : "";
         const account = activeAccountsByUser.get(teacherId);
-        return teacherId && account ? [{ classId: String(slot.class_id), teacherId, department: account.department }] : [];
+        const subject = singleRelation(slot.subjects as { name_en: string } | { name_en: string }[] | null);
+        return teacherId && account ? [{ classId: String(slot.class_id), teacherId, department: account.department, subjectId: String(slot.subject_id), subjectName: subject?.name_en ?? "Subject" }] : [];
       }));
       setPlanSubmissions((submissionsResult.data ?? []).map((submission) => ({
+        id: String(submission.id),
         weeklyPlanId: String(submission.weekly_plan_id),
         teacherId: String(submission.teacher_id),
+        subjectId: String(submission.subject_id),
+        subjectName: singleRelation(submission.subjects as { name_en: string } | { name_en: string }[] | null)?.name_en ?? "Subject",
         status: submission.status as PlanSubmissionSummary["status"],
+        reviewNote: String(submission.review_note ?? ""),
+        submittedAt: submission.submitted_at ? String(submission.submitted_at) : null,
+        reviewedAt: submission.reviewed_at ? String(submission.reviewed_at) : null,
+        updatedAt: String(submission.updated_at),
       })));
+      setSupervisorLinks((supervisorLinksResult.data ?? []).map((link) => ({ supervisorStaffId: String(link.supervisor_staff_id), teacherStaffId: String(link.teacher_staff_id) })));
       setWeeklyPlanCreationOpen(accessResult.data?.is_open ?? true);
       setTeacherPlanAccess(Object.fromEntries((teacherAccessResult.data ?? []).map((row) => [String(row.teacher_id), Boolean(row.is_open)])));
       setSubjects((subjectsResult.data ?? []) as SubjectOption[]);
@@ -467,6 +520,68 @@ export default function SuperAdminPage() {
       };
     }).sort((a, b) => a.grade - b.grade || a.section.localeCompare(b.section));
   }, [accounts, classes, planSubmissions, selectedPlanWeekId, timetableRequirements, weeklyPlans]);
+  const planTrackingRows = useMemo<PlanTrackingRow[]>(() => {
+    const accountsByUser = new Map(accounts.filter((account) => account.userId).map((account) => [account.userId as string, account]));
+    const accountsByStaff = new Map(accounts.map((account) => [account.staffId, account]));
+    const planByClass = new Map(weeklyPlans.filter((plan) => plan.weekId === selectedPlanWeekId).map((plan) => [plan.classId, plan]));
+    const classById = new Map(classes.map((schoolClass) => [schoolClass.id, schoolClass]));
+    const supervisorNamesByTeacherStaff = new Map<string, string[]>();
+    supervisorLinks.forEach((link) => {
+      const supervisor = accountsByStaff.get(link.supervisorStaffId);
+      if (!supervisor) return;
+      const names = supervisorNamesByTeacherStaff.get(link.teacherStaffId) ?? [];
+      if (!names.includes(supervisor.name)) names.push(supervisor.name);
+      supervisorNamesByTeacherStaff.set(link.teacherStaffId, names);
+    });
+
+    const teacherClassRequirements = new Map<string, TimetableRequirement[]>();
+    timetableRequirements.forEach((requirement) => {
+      const key = `${requirement.classId}:${requirement.teacherId}`;
+      const rows = teacherClassRequirements.get(key) ?? [];
+      rows.push(requirement);
+      teacherClassRequirements.set(key, rows);
+    });
+
+    return Array.from(teacherClassRequirements.entries()).flatMap(([key, requirements]) => {
+      const first = requirements[0];
+      const teacher = accountsByUser.get(first.teacherId);
+      const schoolClass = classById.get(first.classId);
+      if (!teacher || !schoolClass) return [];
+      const plan = planByClass.get(first.classId) ?? null;
+      const submissions = planSubmissions.filter((submission) => submission.weeklyPlanId === plan?.id && submission.teacherId === first.teacherId);
+      const latestSubmission = submissions.slice().sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+      let status: PlanTrackingStatus = "not_started";
+      if (submissions.some((submission) => submission.status === "changes_requested")) status = "changes_requested";
+      else if (submissions.some((submission) => submission.status === "submitted")) status = "submitted";
+      else if (submissions.some((submission) => submission.status === "draft")) status = "draft";
+      else if (submissions.some((submission) => submission.status === "approved")) status = plan?.status === "published" ? "published" : "approved_waiting";
+      const submittedDates = submissions.map((submission) => submission.submittedAt).filter((value): value is string => Boolean(value)).sort();
+      const reviewedDates = submissions.map((submission) => submission.reviewedAt).filter((value): value is string => Boolean(value)).sort();
+      return [{
+        key,
+        classId: first.classId,
+        grade: schoolClass.grade,
+        section: schoolClass.section,
+        teacher,
+        supervisorName: (supervisorNamesByTeacherStaff.get(teacher.staffId) ?? []).join(" + ") || "Not assigned",
+        department: teacher.department,
+        subjects: Array.from(new Set([...requirements.map((requirement) => requirement.subjectName), ...submissions.map((submission) => submission.subjectName)])).sort(),
+        status,
+        submittedAt: submittedDates.at(-1) ?? null,
+        reviewedAt: reviewedDates.at(-1) ?? null,
+        reviewNote: latestSubmission?.reviewNote ?? "",
+      }];
+    }).sort((a, b) => a.grade - b.grade || a.section.localeCompare(b.section) || a.teacher.name.localeCompare(b.teacher.name));
+  }, [accounts, classes, planSubmissions, selectedPlanWeekId, supervisorLinks, timetableRequirements, weeklyPlans]);
+  const filteredPlanTrackingRows = useMemo(() => planTrackingRows.filter((row) => (
+    (planGradeFilter === "all" || String(row.grade) === planGradeFilter)
+    && (planSectionFilter === "all" || row.section === planSectionFilter)
+    && (planDepartmentFilter === "all" || row.department === planDepartmentFilter)
+    && (planTrackingStatusFilter === "all" || row.status === planTrackingStatusFilter)
+  )), [planDepartmentFilter, planGradeFilter, planSectionFilter, planTrackingRows, planTrackingStatusFilter]);
+  const trackingStatusCounts = useMemo(() => planTrackingRows.reduce<Record<PlanTrackingStatus, number>>((counts, row) => ({ ...counts, [row.status]: counts[row.status] + 1 }), {
+    not_started: 0, draft: 0, submitted: 0, changes_requested: 0, approved_waiting: 0, published: 0,
+  }), [planTrackingRows]);
   const filteredClassCoverage = useMemo(() => weeklyClassCoverage.filter((coverage) => {
     const published = coverage.plan?.status === "published";
     return (planGradeFilter === "all" || String(coverage.grade) === planGradeFilter)
@@ -802,6 +917,32 @@ export default function SuperAdminPage() {
                   return <tr key={coverage.classId}><td><strong>Grade {coverage.grade} · {coverage.section}</strong><small className="super-plan-class-departments">{coverage.departments.join(" · ") || "No required weekly-plan teachers"}</small></td><td><div className="super-class-completion"><strong>{coverage.completionPercent}%</strong><div><i style={{ width: `${coverage.completionPercent}%` }} /></div><small>{coverage.completedTeachers.length} of {coverage.requiredTeachers.length} teachers completed</small></div></td><td><details className="super-plan-teacher-details"><summary>View teacher status</summary><div>{coverage.completedTeachers.map((teacher) => <span className="complete" key={teacher.userId}>✓ {teacher.name}</span>)}{coverage.missingTeachers.map((teacher) => <span className="missing" key={teacher.userId}>○ {teacher.name}</span>)}{coverage.requiredTeachers.length === 0 && <span>No assigned teachers</span>}</div></details></td><td><span className={`super-account-status ${published ? "published" : "draft"}`}><i />{statusLabel}</span>{plan?.manualPublicationOverride ? <small className="super-plan-override-note">Super Admin override</small> : null}</td><td>{plan?.entries ?? 0}</td><td>{plan?.updated ?? "—"}</td><td>{plan ? <div className="super-row-actions"><Link href={`/weekly-plan/?grade=${coverage.grade}&section=${coverage.section}&week=${academicWeeks.find((week) => week.id === selectedPlanWeekId)?.week_number ?? 1}`}>View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit"}</button><button disabled={busy} className={plan.manualPublicationOverride ? "super-plan-delete" : "review"} onClick={() => void setPlanPublicationOverride(plan, !plan.manualPublicationOverride)}>{plan.manualPublicationOverride ? "Remove override" : "Force publish"}</button><button disabled={busy} className="super-plan-delete" onClick={() => void removeWeeklyPlan(plan)}>Delete</button></div> : <span className="super-waiting-registration">Waiting for teachers</span>}</td></tr>;
                 })}
                 {!loading && filteredClassCoverage.length === 0 && <tr><td className="super-empty" colSpan={7}>No classes match the selected filters.</td></tr>}
+              </tbody></table></div>
+            </section>
+
+            <section className="teacher-card super-admin-accounts-card super-plan-tracking-card">
+              <div className="super-admin-toolbar super-plan-tracking-heading"><div><p className="teacher-kicker">Plan approval route</p><h2>Track every teacher plan</h2><span>See whether the next action belongs to the teacher, the supervisor, or the remaining class team.</span></div><label>Route status<select value={planTrackingStatusFilter} onChange={(event) => setPlanTrackingStatusFilter(event.target.value)}><option value="all">All route statuses</option><option value="not_started">Not started</option><option value="draft">Draft — not sent</option><option value="submitted">Waiting for supervisor</option><option value="changes_requested">Returned for changes</option><option value="approved_waiting">Approved — waiting for class</option><option value="published">Published for families</option></select></label></div>
+              <div className="super-plan-tracking-counts" aria-label="Teacher plan route summary">
+                <button type="button" className={planTrackingStatusFilter === "not_started" ? "active not-started" : "not-started"} onClick={() => setPlanTrackingStatusFilter("not_started")}><strong>{trackingStatusCounts.not_started}</strong><span>Not started</span></button>
+                <button type="button" className={planTrackingStatusFilter === "draft" ? "active draft" : "draft"} onClick={() => setPlanTrackingStatusFilter("draft")}><strong>{trackingStatusCounts.draft}</strong><span>Drafts not sent</span></button>
+                <button type="button" className={planTrackingStatusFilter === "submitted" ? "active submitted" : "submitted"} onClick={() => setPlanTrackingStatusFilter("submitted")}><strong>{trackingStatusCounts.submitted}</strong><span>Waiting for supervisor</span></button>
+                <button type="button" className={planTrackingStatusFilter === "changes_requested" ? "active changes" : "changes"} onClick={() => setPlanTrackingStatusFilter("changes_requested")}><strong>{trackingStatusCounts.changes_requested}</strong><span>Returned for changes</span></button>
+                <button type="button" className={planTrackingStatusFilter === "approved_waiting" ? "active approved" : "approved"} onClick={() => setPlanTrackingStatusFilter("approved_waiting")}><strong>{trackingStatusCounts.approved_waiting}</strong><span>Approved, class incomplete</span></button>
+                <button type="button" className={planTrackingStatusFilter === "published" ? "active published" : "published"} onClick={() => setPlanTrackingStatusFilter("published")}><strong>{trackingStatusCounts.published}</strong><span>Published</span></button>
+                {planTrackingStatusFilter !== "all" && <button type="button" className="clear" onClick={() => setPlanTrackingStatusFilter("all")}><strong>×</strong><span>Show all</span></button>}
+              </div>
+              <div className="super-admin-table-wrap"><table className="super-admin-table super-plan-tracking-table"><thead><tr><th>Teacher</th><th>Class & subjects</th><th>Responsible supervisor</th><th>Current stage</th><th>Sent / waiting</th><th>Plan route</th></tr></thead><tbody>
+                {filteredPlanTrackingRows.map((row) => {
+                  const stageLabel = row.status === "not_started" ? "Not started"
+                    : row.status === "draft" ? "Draft — not sent"
+                      : row.status === "submitted" ? `Waiting for ${row.supervisorName}`
+                        : row.status === "changes_requested" ? "Returned for changes"
+                          : row.status === "approved_waiting" ? "Approved — waiting for the rest of the class"
+                            : "Published for families";
+                  const sent = row.submittedAt ? formatDateTime(row.submittedAt) : "Not sent";
+                  return <tr key={row.key}><td><div className="super-account-name"><span>{initials(row.teacher.name)}</span><div><strong>{row.teacher.name}</strong><small>{row.department}</small></div></div></td><td><strong>Grade {row.grade} · {row.section}</strong><small className="super-plan-class-departments">{row.subjects.join(" · ")}</small></td><td><strong>{row.supervisorName}</strong></td><td><span className={`super-tracking-status ${row.status}`}><i />{stageLabel}</span>{row.reviewNote && <small className="super-tracking-review-note">Supervisor note: {row.reviewNote}</small>}</td><td><strong>{sent}</strong>{row.status === "submitted" && <small className="super-tracking-wait">{waitingDuration(row.submittedAt)}</small>}</td><td><details className="super-plan-route"><summary>View route</summary><ol><li className={row.status !== "not_started" ? "done" : "current"}><i />Plan started</li><li className={["submitted", "changes_requested", "approved_waiting", "published"].includes(row.status) ? "done" : row.status === "draft" ? "current" : ""}><i />Sent to supervisor</li><li className={["approved_waiting", "published"].includes(row.status) ? "done" : ["submitted", "changes_requested"].includes(row.status) ? "current" : ""}><i />Supervisor decision{row.reviewedAt ? <small>{formatDateTime(row.reviewedAt)}</small> : null}</li><li className={row.status === "published" ? "done" : row.status === "approved_waiting" ? "current" : ""}><i />Published for families</li></ol></details></td></tr>;
+                })}
+                {!loading && filteredPlanTrackingRows.length === 0 && <tr><td className="super-empty" colSpan={6}>No teacher plans match the selected route filters.</td></tr>}
               </tbody></table></div>
             </section>
           </>}
