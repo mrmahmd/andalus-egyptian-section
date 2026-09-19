@@ -59,6 +59,30 @@ type ManagedPlan = {
   updated: string;
 };
 
+type TimetableRequirement = {
+  classId: string;
+  teacherId: string;
+  department: string;
+};
+
+type PlanSubmissionSummary = {
+  weeklyPlanId: string;
+  teacherId: string;
+  status: "draft" | "submitted" | "changes_requested" | "approved";
+};
+
+type ClassCoverage = {
+  classId: string;
+  grade: number;
+  section: string;
+  plan: ManagedPlan | null;
+  requiredTeachers: ManagedAccount[];
+  completedTeachers: ManagedAccount[];
+  missingTeachers: ManagedAccount[];
+  completionPercent: number;
+  departments: string[];
+};
+
 type AcademicWeekOption = { id: string; week_number: number; label: string; starts_on: string; ends_on: string; is_current: boolean };
 type SchoolHoliday = { id: string; week_id: string; day_of_week: number; title: string; note: string | null };
 type EditableEntry = { id: string; day_of_week: number; period_number: number; course: string; classwork: string; homework: string; classeraNotes: string };
@@ -85,9 +109,16 @@ export default function SuperAdminPage() {
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [weeklyPlans, setWeeklyPlans] = useState<ManagedPlan[]>([]);
+  const [timetableRequirements, setTimetableRequirements] = useState<TimetableRequirement[]>([]);
+  const [planSubmissions, setPlanSubmissions] = useState<PlanSubmissionSummary[]>([]);
   const [academicWeeks, setAcademicWeeks] = useState<AcademicWeekOption[]>([]);
   const [schoolHolidays, setSchoolHolidays] = useState<SchoolHoliday[]>([]);
   const [selectedPlanWeekId, setSelectedPlanWeekId] = useState("");
+  const [planGradeFilter, setPlanGradeFilter] = useState("all");
+  const [planSectionFilter, setPlanSectionFilter] = useState("all");
+  const [planDepartmentFilter, setPlanDepartmentFilter] = useState("all");
+  const [planPublicationFilter, setPlanPublicationFilter] = useState("all");
+  const [bulkPublishConfirmationOpen, setBulkPublishConfirmationOpen] = useState(false);
   const [selectedHolidayWeekId, setSelectedHolidayWeekId] = useState("");
   const [holidayDraft, setHolidayDraft] = useState({ dayOfWeek: "0", title: "Official Holiday", note: "" });
   const [editingPlan, setEditingPlan] = useState<EditablePlan | null>(null);
@@ -107,6 +138,9 @@ export default function SuperAdminPage() {
   const [temporaryPassword, setTemporaryPassword] = useState("");
   const [passwordResetMessage, setPasswordResetMessage] = useState("");
   const [passwordResetTone, setPasswordResetTone] = useState<"success" | "error" | "info">("info");
+  const [ownPassword, setOwnPassword] = useState({ current: "", next: "", confirm: "" });
+  const [ownPasswordMessage, setOwnPasswordMessage] = useState("");
+  const [ownPasswordTone, setOwnPasswordTone] = useState<"success" | "error" | "info">("info");
   const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
   const [teacherPlanAccess, setTeacherPlanAccess] = useState<Record<string, boolean>>({});
 
@@ -136,7 +170,7 @@ export default function SuperAdminPage() {
       setCurrentAdminId(userData.user.id);
       setCurrentAdminName(ownerProfile.display_name || "Mohamed Farid");
 
-      const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult, plansResult, accessResult, teacherAccessResult, weeksResult, holidaysResult] = await Promise.all([
+      const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult, plansResult, accessResult, teacherAccessResult, weeksResult, holidaysResult, timetableResult, submissionsResult] = await Promise.all([
         supabase.from("staff_directory").select("id, full_name, account_kind, administrative_role, department_id, departments(name_en)").eq("is_active", true).order("full_name"),
         supabase.from("registration_requests").select("id, user_id, staff_id, username, status, requested_at, reviewed_at").order("requested_at", { ascending: false }),
         supabase.from("profiles").select("user_id, staff_id, username, display_name, role, status, approved_at, updated_at"),
@@ -148,9 +182,11 @@ export default function SuperAdminPage() {
         supabase.from("weekly_plan_teacher_access").select("teacher_id, is_open"),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current").order("week_number"),
         supabase.from("weekly_plan_holidays").select("id, week_id, day_of_week, title, note").order("day_of_week"),
+        supabase.from("timetable_slots").select("class_id, teacher_id, requires_weekly_plan_submission").eq("requires_weekly_plan_submission", true),
+        supabase.from("plan_submissions").select("weekly_plan_id, teacher_id, status"),
       ]);
 
-      const firstError = [directoryResult.error, requestsResult.error, profilesResult.error, assignmentsResult.error, subjectsResult.error, classesResult.error, plansResult.error, weeksResult.error, holidaysResult.error].find(Boolean);
+      const firstError = [directoryResult.error, requestsResult.error, profilesResult.error, assignmentsResult.error, subjectsResult.error, classesResult.error, plansResult.error, weeksResult.error, holidaysResult.error, timetableResult.error, submissionsResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const requestsByStaff = new Map<string, Record<string, unknown>>();
@@ -221,6 +257,17 @@ export default function SuperAdminPage() {
       });
 
       setAccounts(realAccounts);
+      const activeAccountsByUser = new Map(realAccounts.filter((account) => account.userId && account.status === "Active").map((account) => [account.userId as string, account]));
+      setTimetableRequirements((timetableResult.data ?? []).flatMap((slot) => {
+        const teacherId = slot.teacher_id ? String(slot.teacher_id) : "";
+        const account = activeAccountsByUser.get(teacherId);
+        return teacherId && account ? [{ classId: String(slot.class_id), teacherId, department: account.department }] : [];
+      }));
+      setPlanSubmissions((submissionsResult.data ?? []).map((submission) => ({
+        weeklyPlanId: String(submission.weekly_plan_id),
+        teacherId: String(submission.teacher_id),
+        status: submission.status as PlanSubmissionSummary["status"],
+      })));
       setWeeklyPlanCreationOpen(accessResult.data?.is_open ?? true);
       setTeacherPlanAccess(Object.fromEntries((teacherAccessResult.data ?? []).map((row) => [String(row.teacher_id), Boolean(row.is_open)])));
       setSubjects((subjectsResult.data ?? []) as SubjectOption[]);
@@ -393,8 +440,106 @@ export default function SuperAdminPage() {
     setSuccessMessage("");
   };
 
-  const plansForSelectedWeek = useMemo(() => weeklyPlans.filter((plan) => plan.weekId === selectedPlanWeekId), [selectedPlanWeekId, weeklyPlans]);
+  const planDepartments = useMemo(() => Array.from(new Set(timetableRequirements.map((requirement) => requirement.department))).sort(), [timetableRequirements]);
+  const weeklyClassCoverage = useMemo<ClassCoverage[]>(() => {
+    const plansByClass = new Map(weeklyPlans.filter((plan) => plan.weekId === selectedPlanWeekId).map((plan) => [plan.classId, plan]));
+    const accountsByUser = new Map(accounts.filter((account) => account.userId).map((account) => [account.userId as string, account]));
+    return classes.map((schoolClass) => {
+      const requirements = timetableRequirements.filter((requirement) => requirement.classId === schoolClass.id);
+      const requiredTeacherIds = Array.from(new Set(requirements.map((requirement) => requirement.teacherId)));
+      const plan = plansByClass.get(schoolClass.id) ?? null;
+      const completedTeacherIds = new Set(planSubmissions
+        .filter((submission) => submission.weeklyPlanId === plan?.id && (submission.status === "submitted" || submission.status === "approved"))
+        .map((submission) => submission.teacherId));
+      const requiredTeachers = requiredTeacherIds.flatMap((teacherId) => accountsByUser.get(teacherId) ? [accountsByUser.get(teacherId) as ManagedAccount] : []);
+      const completedTeachers = requiredTeachers.filter((teacher) => teacher.userId && completedTeacherIds.has(teacher.userId));
+      const missingTeachers = requiredTeachers.filter((teacher) => !teacher.userId || !completedTeacherIds.has(teacher.userId));
+      return {
+        classId: schoolClass.id,
+        grade: schoolClass.grade,
+        section: schoolClass.section,
+        plan,
+        requiredTeachers,
+        completedTeachers,
+        missingTeachers,
+        completionPercent: requiredTeachers.length > 0 ? Math.round((completedTeachers.length / requiredTeachers.length) * 100) : 0,
+        departments: Array.from(new Set(requirements.map((requirement) => requirement.department))).sort(),
+      };
+    }).sort((a, b) => a.grade - b.grade || a.section.localeCompare(b.section));
+  }, [accounts, classes, planSubmissions, selectedPlanWeekId, timetableRequirements, weeklyPlans]);
+  const filteredClassCoverage = useMemo(() => weeklyClassCoverage.filter((coverage) => {
+    const published = coverage.plan?.status === "published";
+    return (planGradeFilter === "all" || String(coverage.grade) === planGradeFilter)
+      && (planSectionFilter === "all" || coverage.section === planSectionFilter)
+      && (planDepartmentFilter === "all" || coverage.departments.includes(planDepartmentFilter))
+      && (planPublicationFilter === "all" || (planPublicationFilter === "published" ? published : !published));
+  }), [planDepartmentFilter, planGradeFilter, planPublicationFilter, planSectionFilter, weeklyClassCoverage]);
+  const publishedClassCount = weeklyClassCoverage.filter((coverage) => coverage.plan?.status === "published").length;
+  const unpublishedClassCount = weeklyClassCoverage.length - publishedClassCount;
+  const fullyCompletedClassCount = weeklyClassCoverage.filter((coverage) => coverage.completionPercent === 100).length;
+  const bulkPublishCandidates = weeklyClassCoverage.filter((coverage) => coverage.plan && coverage.plan.entries > 0 && coverage.plan.status !== "published");
   const holidaysForSelectedWeek = useMemo(() => schoolHolidays.filter((holiday) => holiday.week_id === selectedHolidayWeekId), [schoolHolidays, selectedHolidayWeekId]);
+
+  const changeOwnPassword = async () => {
+    setOwnPasswordMessage("");
+    if (!ownPassword.current) {
+      setOwnPasswordTone("error");
+      setOwnPasswordMessage("Enter your current password.");
+      return;
+    }
+    if (ownPassword.next.length < 8) {
+      setOwnPasswordTone("error");
+      setOwnPasswordMessage("The new password must contain at least 8 characters.");
+      return;
+    }
+    if (ownPassword.next !== ownPassword.confirm) {
+      setOwnPasswordTone("error");
+      setOwnPasswordMessage("The new password and confirmation do not match.");
+      return;
+    }
+    setBusy(true);
+    setOwnPasswordTone("info");
+    setOwnPasswordMessage("Updating your password securely…");
+    try {
+      const { error } = await getSupabaseBrowserClient().auth.updateUser({ password: ownPassword.next, current_password: ownPassword.current });
+      if (error) throw error;
+      setOwnPassword({ current: "", next: "", confirm: "" });
+      setOwnPasswordTone("success");
+      setOwnPasswordMessage("Your Super Admin password was changed successfully.");
+    } catch (error) {
+      setOwnPasswordTone("error");
+      setOwnPasswordMessage(error instanceof Error ? error.message : "Your password could not be changed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const publishAllSchoolPlans = async () => {
+    if (!selectedPlanWeekId) return;
+    setBulkPublishConfirmationOpen(false);
+    setBusy(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const results = await Promise.all(bulkPublishCandidates.map((coverage) => supabase.rpc("set_weekly_plan_publication_override", {
+        target_plan_id: coverage.plan?.id as string,
+        should_publish: true,
+      })));
+      const failedResults = results.filter((result) => result.error);
+      const publishedCount = results.length - failedResults.length;
+      await loadDashboard();
+      if (failedResults.length > 0) {
+        setErrorMessage(`${publishedCount} plans were published, but ${failedResults.length} plans could not be published. ${failedResults[0].error?.message ?? "Please try those plans again."}`);
+      } else {
+        setSuccessMessage(`${publishedCount} non-empty class plans were approved and published by Super Admin override. Empty and unstarted classes remain unpublished.`);
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "The school-wide publication action could not be completed.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const reviewRequest = async (status: "approved" | "rejected") => {
     if (!reviewAccount?.requestId || !currentAdminId) return;
@@ -624,14 +769,35 @@ export default function SuperAdminPage() {
             <article className="teacher-card super-system-card"><span>TC</span><h2>Teacher</h2><p>Creates weekly-plan content only for the classes and subjects assigned by the Super Admin.</p><strong>{accounts.filter((account) => account.role === "Teacher").length} listed teachers</strong></article>
           </section>}
 
-          {activeSection === "plans" && <section className="teacher-card super-admin-accounts-card">
-            <div className="super-admin-filters"><label>School week<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label || `Week ${week.week_number}`}</option>)}</select></label><span className="super-waiting-registration">{plansForSelectedWeek.length} plans in this week</span></div>
-            <div className="super-admin-toolbar"><div><h2>Real weekly-plan directory</h2><p>{weeklyPlans.length} plans stored in Supabase</p></div><Link className="teacher-primary-button super-admin-plans-link" href="/weekly-plan">Open family plan page <span>→</span></Link></div>
-            <div className="super-admin-table-wrap"><table className="super-admin-table"><thead><tr><th>Week</th><th>Class</th><th>Class Teacher</th><th>Entries</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
-              {plansForSelectedWeek.map((plan) => <tr key={plan.id}><td><strong>{plan.week}</strong></td><td>{plan.className}</td><td>{plan.classTeacher}</td><td>{plan.entries}</td><td><span className={`super-account-status ${plan.status}`}><i />{plan.status}</span>{plan.manualPublicationOverride ? <small className="super-plan-override-note">Super Admin override</small> : null}</td><td>{plan.updated}</td><td><div className="super-row-actions"><Link href="/weekly-plan">View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit plan"}</button><button disabled={busy} className={plan.manualPublicationOverride ? "super-plan-delete" : "review"} onClick={() => void setPlanPublicationOverride(plan, !plan.manualPublicationOverride)}>{plan.manualPublicationOverride ? "Remove override" : "Force publish"}</button><button disabled={busy} className="super-plan-delete" onClick={() => void removeWeeklyPlan(plan)}>Delete plan</button></div></td></tr>)}
-              {!loading && plansForSelectedWeek.length === 0 && <tr><td className="super-empty" colSpan={7}>No weekly plans were created for the selected school week.</td></tr>}
-            </tbody></table></div>
-          </section>}
+          {activeSection === "plans" && <>
+            <section className="super-plan-report-summary" aria-label="Weekly publication report">
+              <article><small>Published classes</small><strong>{publishedClassCount}<em> / {weeklyClassCoverage.length}</em></strong><p>Visible to families</p></article>
+              <article><small>Not published</small><strong>{unpublishedClassCount}</strong><p>Includes missing and incomplete plans</p></article>
+              <article><small>100% teacher completion</small><strong>{fullyCompletedClassCount}</strong><p>Every assigned teacher sent a weekly plan</p></article>
+              <article className="overall"><small>School publication rate</small><strong>{weeklyClassCoverage.length ? Math.round((publishedClassCount / weeklyClassCoverage.length) * 100) : 0}%</strong><div><i style={{ width: `${weeklyClassCoverage.length ? Math.round((publishedClassCount / weeklyClassCoverage.length) * 100) : 0}%` }} /></div></article>
+            </section>
+
+            <section className="teacher-card super-admin-accounts-card super-plan-report-card">
+              <div className="super-admin-toolbar super-plan-report-toolbar"><div><h2>Weekly school publication report</h2><p>Teacher completion counts each teacher once, regardless of how many subjects they teach.</p></div><div className="super-plan-report-actions"><Link className="teacher-secondary-button" href="/weekly-plan">Open family plan page</Link><button type="button" className="teacher-primary-button super-bulk-publish-button" disabled={busy || bulkPublishCandidates.length === 0} onClick={() => setBulkPublishConfirmationOpen(true)}>Approve & publish all school plans</button></div></div>
+              <div className="super-admin-filters super-plan-report-filters">
+                <label>School week<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label || `Week ${week.week_number}`}</option>)}</select></label>
+                <label>Grade<select value={planGradeFilter} onChange={(event) => setPlanGradeFilter(event.target.value)}><option value="all">All grades</option>{Array.from(new Set(classes.map((schoolClass) => schoolClass.grade))).map((grade) => <option key={grade} value={grade}>Grade {grade}</option>)}</select></label>
+                <label>Section<select value={planSectionFilter} onChange={(event) => setPlanSectionFilter(event.target.value)}><option value="all">All sections</option>{Array.from(new Set(classes.map((schoolClass) => schoolClass.section))).sort().map((section) => <option key={section} value={section}>Section {section}</option>)}</select></label>
+                <label>Department<select value={planDepartmentFilter} onChange={(event) => setPlanDepartmentFilter(event.target.value)}><option value="all">All departments</option>{planDepartments.map((department) => <option key={department} value={department}>{department}</option>)}</select></label>
+                <label>Publication<select value={planPublicationFilter} onChange={(event) => setPlanPublicationFilter(event.target.value)}><option value="all">All classes</option><option value="published">Published only</option><option value="unpublished">Not published</option></select></label>
+                <span className="super-waiting-registration">{filteredClassCoverage.length} classes shown</span>
+              </div>
+              <div className="super-admin-table-wrap"><table className="super-admin-table super-plan-report-table"><thead><tr><th>Class</th><th>Teacher completion</th><th>Teachers</th><th>Publication</th><th>Entries</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
+                {filteredClassCoverage.map((coverage) => {
+                  const plan = coverage.plan;
+                  const published = plan?.status === "published";
+                  const statusLabel = published ? "Published" : plan ? coverage.completedTeachers.length > 0 ? "Awaiting publication" : "Draft started" : "Not started";
+                  return <tr key={coverage.classId}><td><strong>Grade {coverage.grade} · {coverage.section}</strong><small className="super-plan-class-departments">{coverage.departments.join(" · ") || "No required weekly-plan teachers"}</small></td><td><div className="super-class-completion"><strong>{coverage.completionPercent}%</strong><div><i style={{ width: `${coverage.completionPercent}%` }} /></div><small>{coverage.completedTeachers.length} of {coverage.requiredTeachers.length} teachers completed</small></div></td><td><details className="super-plan-teacher-details"><summary>View teacher status</summary><div>{coverage.completedTeachers.map((teacher) => <span className="complete" key={teacher.userId}>✓ {teacher.name}</span>)}{coverage.missingTeachers.map((teacher) => <span className="missing" key={teacher.userId}>○ {teacher.name}</span>)}{coverage.requiredTeachers.length === 0 && <span>No assigned teachers</span>}</div></details></td><td><span className={`super-account-status ${published ? "published" : "draft"}`}><i />{statusLabel}</span>{plan?.manualPublicationOverride ? <small className="super-plan-override-note">Super Admin override</small> : null}</td><td>{plan?.entries ?? 0}</td><td>{plan?.updated ?? "—"}</td><td>{plan ? <div className="super-row-actions"><Link href={`/weekly-plan/?grade=${coverage.grade}&section=${coverage.section}&week=${academicWeeks.find((week) => week.id === selectedPlanWeekId)?.week_number ?? 1}`}>View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit"}</button><button disabled={busy} className={plan.manualPublicationOverride ? "super-plan-delete" : "review"} onClick={() => void setPlanPublicationOverride(plan, !plan.manualPublicationOverride)}>{plan.manualPublicationOverride ? "Remove override" : "Force publish"}</button><button disabled={busy} className="super-plan-delete" onClick={() => void removeWeeklyPlan(plan)}>Delete</button></div> : <span className="super-waiting-registration">Waiting for teachers</span>}</td></tr>;
+                })}
+                {!loading && filteredClassCoverage.length === 0 && <tr><td className="super-empty" colSpan={7}>No classes match the selected filters.</td></tr>}
+              </tbody></table></div>
+            </section>
+          </>}
 
           {activeSection === "holidays" && <section className="teacher-card super-admin-accounts-card">
             <div className="super-admin-toolbar"><div><h2>School-wide holiday control</h2><p>A holiday replaces that day&apos;s lessons for every class. Saved teacher content is kept safely in the database.</p></div></div>
@@ -648,6 +814,7 @@ export default function SuperAdminPage() {
 
           {activeSection === "settings" && <section className="super-admin-section-grid">
             <StaffLanguagePreference />
+            <article className="teacher-card super-system-card super-own-password-card"><span>PW</span><h2>Change my password</h2><p>Confirm your current password, then choose a new password for this Super Admin account.</p><div className="super-own-password-fields"><label>Current password<input type="password" value={ownPassword.current} onChange={(event) => setOwnPassword({ ...ownPassword, current: event.target.value })} autoComplete="current-password" /></label><label>New password<input type="password" value={ownPassword.next} onChange={(event) => setOwnPassword({ ...ownPassword, next: event.target.value })} minLength={8} autoComplete="new-password" /></label><label>Confirm new password<input type="password" value={ownPassword.confirm} onChange={(event) => setOwnPassword({ ...ownPassword, confirm: event.target.value })} minLength={8} autoComplete="new-password" /></label></div><button type="button" disabled={busy || !ownPassword.current || ownPassword.next.length < 8 || ownPassword.next !== ownPassword.confirm} className="teacher-primary-button" onClick={() => void changeOwnPassword()}>{busy ? "Updating…" : "Change my password"}</button>{ownPasswordMessage && <div className={`super-password-reset-message ${ownPasswordTone}`} role={ownPasswordTone === "error" ? "alert" : "status"}>{ownPasswordMessage}</div>}</article>
             <article className="teacher-card super-system-card super-access-control-card"><span>WP</span><h2>Weekly-plan creation access</h2><p>Open or close plan creation for all teachers, then set individual exceptions.</p><strong>{weeklyPlanCreationOpen ? "Open for teachers" : "Closed for teachers"}</strong><button type="button" disabled={busy} className="teacher-primary-button" onClick={() => void updateWeeklyPlanAccess(!weeklyPlanCreationOpen)}>{weeklyPlanCreationOpen ? "Close creation" : "Open creation"}</button><div className="super-teacher-access-list">{accounts.filter((account) => account.role === "Teacher" && account.userId).map((account) => { const isOpen = teacherPlanAccess[account.userId as string] ?? weeklyPlanCreationOpen; return <label key={account.userId}><span>{account.name}<small>@{account.username}</small></span><input type="checkbox" checked={isOpen} disabled={busy} onChange={(event) => void updateTeacherPlanAccess(account.userId as string, event.target.checked)} /><b>{isOpen ? "Open" : "Closed"}</b></label>; })}</div></article>
             <article className="teacher-card super-system-card connected"><span>DB</span><h2>Database</h2><p>Supabase is connected and the protected school directory is available.</p><strong>Connected</strong></article>
             <article className="teacher-card super-system-card"><span>AY</span><h2>Academic Year</h2><p>The dashboard and weekly-plan workspace are prepared for the current school year.</p><strong>2026–2027</strong></article>
@@ -656,6 +823,8 @@ export default function SuperAdminPage() {
           </section>}
         </div>
       </section>
+
+      {bulkPublishConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setBulkPublishConfirmationOpen(false)}><section className="weekly-send-confirmation super-bulk-publish-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="bulk-school-publish-title"><span aria-hidden="true">SA</span><h3 id="bulk-school-publish-title">Approve and publish the whole school week?</h3><p>This Super Admin override will publish every non-empty class plan in <strong>{academicWeeks.find((week) => week.id === selectedPlanWeekId)?.label ?? "the selected week"}</strong>. Empty or unstarted classes remain unpublished, and the teacher-completion report remains unchanged so missing teachers stay visible.</p><div className="super-bulk-publish-summary"><strong>{bulkPublishCandidates.length}<small>plans ready to force publish</small></strong><strong>{unpublishedClassCount}<small>classes currently not published</small></strong><strong>{weeklyClassCoverage.filter((coverage) => coverage.completionPercent < 100).length}<small>classes below 100% teacher completion</small></strong></div><div><button type="button" className="teacher-secondary-button" onClick={() => setBulkPublishConfirmationOpen(false)}>Cancel</button><button type="button" className="teacher-primary-button" disabled={busy || bulkPublishCandidates.length === 0} onClick={() => void publishAllSchoolPlans()}>Yes, approve and publish</button></div></section></div>}
 
       {editingPlan && (
         <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !busy && setEditingPlan(null)}>

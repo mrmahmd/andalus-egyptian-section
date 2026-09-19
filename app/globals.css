@@ -1449,6 +1449,21 @@ button, select, input { font: inherit; }
 .super-admin-filters label { display: grid; gap: 6px; }
 .super-admin-filters select, .super-admin-mobile-search input { height: 43px; padding: 0 11px; border: 1px solid #d2dce7; border-radius: 9px; outline: 0; background: #fbfcfe; color: #172640; font: inherit; font-size: 13px; }
 .super-admin-filters select:focus, .super-admin-mobile-search input:focus { border-color: #b31b78; box-shadow: 0 0 0 3px rgba(179,27,120,.1); }
+.super-plan-report-summary { margin-top: 20px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.super-plan-report-summary article { min-height: 132px; padding: 18px; border: 1px solid #e0e7ef; border-radius: 15px; background: linear-gradient(140deg, #fff, #f7fafd); box-shadow: 0 8px 24px rgba(23,47,79,.05); }
+.super-plan-report-summary small { display: block; color: #74849a; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.super-plan-report-summary strong { display: block; margin: 11px 0 7px; color: #152b4a; font-size: 30px; line-height: 1; }.super-plan-report-summary strong em { color: #8996a8; font-size: 14px; font-style: normal; }
+.super-plan-report-summary p { margin: 0; color: #738298; font-size: 12px; line-height: 1.45; }
+.super-plan-report-summary .overall { background: linear-gradient(135deg, #1c2758, #8d226f); }.super-plan-report-summary .overall small, .super-plan-report-summary .overall p { color: #d9deed; }.super-plan-report-summary .overall strong { color: #fff; }
+.super-plan-report-summary .overall > div, .super-class-completion > div { height: 7px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.2); }.super-plan-report-summary .overall i, .super-class-completion i { height: 100%; display: block; border-radius: inherit; background: linear-gradient(90deg, #1aa2bd, #efaa47); }
+.super-plan-report-toolbar { align-items: center; }.super-plan-report-actions { display: flex; flex-wrap: wrap; gap: 9px; }.super-plan-report-actions .teacher-secondary-button { min-height: 45px; display: inline-flex; align-items: center; text-decoration: none; }
+.super-bulk-publish-button { background: linear-gradient(120deg, #9e1f6c, #d56a38); box-shadow: 0 8px 20px rgba(158,31,108,.17); }
+.super-plan-report-filters { padding: 16px 22px; border-bottom: 1px solid #e7ebf1; flex-wrap: wrap; background: #fbfcfe; }.super-plan-report-filters select { min-width: 130px; }
+.super-plan-report-table td:first-child strong { color: #172c4b; white-space: nowrap; }.super-plan-class-departments { margin-top: 5px; display: block; max-width: 210px; color: #7a889c; font-size: 10px; line-height: 1.45; }
+.super-class-completion { min-width: 175px; }.super-class-completion > strong { color: #173b69; font-size: 19px; }.super-class-completion > div { margin: 7px 0; background: #e7edf3; }.super-class-completion small { color: #708097; font-size: 10px; }
+.super-plan-teacher-details { min-width: 170px; }.super-plan-teacher-details summary { color: #23617d; font-size: 11px; font-weight: 850; cursor: pointer; }.super-plan-teacher-details > div { margin-top: 8px; display: grid; gap: 5px; }.super-plan-teacher-details span { padding: 5px 7px; border-radius: 7px; font-size: 10px; font-weight: 750; }.super-plan-teacher-details .complete { background: #e8f7ef; color: #207157; }.super-plan-teacher-details .missing { background: #fff1e5; color: #9a5a1b; }
+.super-bulk-publish-confirmation { width: min(650px, calc(100% - 30px)); }.super-bulk-publish-confirmation > span { font-size: 11px; }.super-bulk-publish-confirmation > p strong { color: #172e55; }
+.super-bulk-publish-summary { width: 100%; display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }.super-bulk-publish-summary > strong { padding: 11px; border-radius: 10px; display: grid; gap: 4px; background: #f1f6fa; color: #14375f; font-size: 20px; }.super-bulk-publish-summary small { color: #6f8097; font-size: 10px; line-height: 1.4; }
 .super-admin-table-wrap { max-width: 100%; overflow-x: auto; }
 .super-admin-table { width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 13px; }
 .super-admin-table th { padding: 13px 15px; background: #f6f8fb; color: #778499; text-align: left; text-transform: uppercase; letter-spacing: .07em; font-size: 10px; }
@@ -1520,6 +1535,7 @@ button, select, input { font: inherit; }
 .super-password-reset { padding: 16px; border: 1px solid #cfe3ed; border-radius: 12px; display: grid; grid-template-columns: 1.15fr minmax(190px, .85fr) auto; align-items: end; gap: 13px; background: linear-gradient(135deg, #f0f9fc, #f9fcff); }
 .super-password-reset small { color: #17647b; font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }.super-password-reset h3 { margin: 4px 0; color: #122b4d; font-size: 17px; }.super-password-reset p { margin: 0; color: #687992; font-size: 12px; line-height: 1.5; }.super-password-reset label { display: grid; gap: 7px; color: #28435f; font-size: 12px; font-weight: 800; }.super-password-reset input { min-height: 44px; padding: 0 11px; border: 1px solid #cbdbe8; border-radius: 9px; background: #fff; color: #142a48; font: inherit; font-size: 14px; }.super-password-reset .teacher-primary-button { min-height: 44px; white-space: nowrap; }
 .super-password-reset-message { grid-column: 1 / -1; padding: 10px 12px; border-radius: 8px; font-weight: 750; }.super-password-reset-message.info { background: #eaf6fb; color: #185e79; }.super-password-reset-message.success { background: #eaf8f0; color: #19734d; }.super-password-reset-message.error { background: #fff0f3; color: #a22058; }
+.super-own-password-card { min-height: auto; }.super-own-password-card > p { min-height: 0; }.super-own-password-fields { display: grid; gap: 10px; margin-bottom: 14px; }.super-own-password-fields label { display: grid; gap: 6px; color: #344862; font-size: 11px; font-weight: 800; }.super-own-password-fields input { min-height: 43px; padding: 0 11px; border: 1px solid #cfd9e5; border-radius: 9px; color: #142b4a; font: inherit; }.super-own-password-card .teacher-primary-button { width: fit-content; }.super-own-password-card .super-password-reset-message { margin-top: 12px; }
 .super-assignment-help { margin: -7px 0 0; padding: 9px 11px; border-left: 3px solid #1b91ac; background: #f0f9fb; color: #547083; font-size: 12px; line-height: 1.55; }
 .super-assignment-manager { display: grid; gap: 10px; }
 .super-assignment-manager > label { color: #31435d; font-size: 14px; font-weight: 800; }
@@ -1542,6 +1558,7 @@ button, select, input { font: inherit; }
   .super-admin-filters { display: grid; grid-template-columns: 1fr 1fr; }
   .super-admin-filters select { width: 100%; }
   .super-admin-structure-layout { grid-template-columns: 1fr; }
+  .super-plan-report-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
@@ -1553,6 +1570,9 @@ button, select, input { font: inherit; }
   .super-password-reset { grid-template-columns: 1fr; }.super-password-reset .teacher-primary-button { width: 100%; }
   .super-admin-section-grid { grid-template-columns: 1fr; }
   .super-class-chip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .super-plan-report-summary { grid-template-columns: 1fr; }
+  .super-plan-report-actions { display: grid; width: 100%; }.super-plan-report-actions .teacher-primary-button, .super-plan-report-actions .teacher-secondary-button { width: 100%; justify-content: center; }
+  .super-bulk-publish-summary { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 420px) {

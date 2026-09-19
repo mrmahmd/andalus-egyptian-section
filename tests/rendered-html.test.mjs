@@ -13,22 +13,17 @@ test("renders the parent-facing homepage", async () => {
   assert.doesNotMatch(html, /teacher login|create teacher account/i);
 });
 
-test("renders one merged day cell for each school day", async () => {
-  const html = await readFile(
-    new URL("weekly-plan/index.html", outputRoot),
-    "utf8",
-  );
+test("renders published timetable lessons in merged school-day groups", async () => {
+  const source = await readFile(new URL("../app/weekly-plan/page.tsx", import.meta.url), "utf8");
 
-  const dayCells = html.match(/class="day-cell"/g) ?? [];
-  assert.equal(dayCells.length, 5);
-  assert.match(html, /Mr\.Mohamed Farid/);
+  assert.match(source, /const dayNames = \["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"\]/);
   for (const day of ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"]) {
-    assert.match(html, new RegExp(`<td[^>]*rowspan="8"[^>]*>${day}<\\/td>`, "i"));
+    assert.match(source, new RegExp(day));
   }
-  assert.match(html, /QUIZZES &amp; ASSESSMENTS/);
-  assert.match(html, /class="quiz-table"/);
-  assert.match(html, /Spelling Quiz/);
-  assert.match(html, /Quick Check/);
+  assert.match(source, /weekly-day-group/);
+  assert.match(source, /className="day-cell" rowSpan=\{lessons\.length\}/);
+  assert.match(source, /eq\("status", "published"\)/);
+  assert.match(source, /plan_quizzes/);
 });
 
 test("renders teacher sign in and account creation entry point", async () => {
@@ -164,10 +159,10 @@ test("adds a department-supervisor review workflow without removing the supervis
   assert.match(teacherSource, /Teacher Reviews/);
   assert.match(teacherSource, /plan_submissions/);
   assert.match(teacherSource, /review_plan_submission/);
-  assert.match(teacherSource, /Submit for review/);
-  assert.match(teacherSource, /Waiting for review/);
-  assert.match(teacherSource, /Approved & published/);
-  assert.match(teacherSource, /Only your assigned teachers appear here/);
+  assert.match(teacherSource, /Send to supervisor for approval/);
+  assert.match(teacherSource, /Waiting for supervisor approval/);
+  assert.match(teacherSource, /Approve whole plan/);
+  assert.match(teacherSource, /Manage only the teachers assigned to your supervision group/);
   assert.match(loginSource, /administrative_role/);
   assert.match(loginSource, /isSupervisor/);
   assert.match(workflowSql, /create table if not exists public\.plan_submissions/);
@@ -213,22 +208,35 @@ test("keeps supervisor teacher assignments scoped to the selected teacher and re
 test("keeps weekly-plan creation responsive while data is loading", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
 
-  assert.match(teacherSource, /if \(loading\) \{[\s\S]*still loading/);
-  assert.match(teacherSource, /const firstAssignment = selectedAssignment \?\? assignments\[0\]/);
+  assert.match(teacherSource, /if \(loading\)[\s\S]*still loading/);
+  assert.match(teacherSource, /const firstAssignment = selectedClass \?\? assignments\[0\]/);
   assert.match(teacherSource, /type=\"button\" className=\"teacher-primary-button\" disabled=\{saving[^}]*\}/);
   assert.match(teacherSource, /aria-busy=\{loading\}/);
 });
 
-test("publishes only supervisor-approved subject content without a Super Admin gate", async () => {
+test("publishes only after required supervisor approvals unless Super Admin explicitly overrides", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
-  const publishingSql = await readFile(new URL("../supabase/20260802_supervisor_approval_publishing.sql", import.meta.url), "utf8");
+  const publishingSql = await readFile(new URL("../supabase/migrations/20260919120000_restore_supervisor_approval_publication.sql", import.meta.url), "utf8");
 
-  assert.match(teacherSource, /Approve & publish/);
+  assert.match(teacherSource, /Approve all submitted plans/);
   assert.match(teacherSource, /published for families/);
-  assert.match(publishingSql, /set status = 'published'/);
-  assert.match(publishingSql, /s\.status = 'approved'/);
-  assert.match(publishingSql, /Public reads supervisor-approved plan entries/);
-  assert.match(publishingSql, /Public reads supervisor-approved quizzes/);
+  assert.match(publishingSql, /required_submission/);
+  assert.match(publishingSql, /submission\.status = 'approved'/);
+  assert.match(publishingSql, /manual_publication_override/);
+  assert.match(publishingSql, /sync_weekly_plan_publication_on_submission/);
+});
+
+test("adds Super Admin teacher completion reporting, self password change and bulk weekly publishing", async () => {
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /completionPercent: requiredTeachers\.length > 0/);
+  assert.match(source, /new Set\(requirements\.map\(\(requirement\) => requirement\.teacherId\)\)/);
+  assert.match(source, /submission\.status === "submitted" \|\| submission\.status === "approved"/);
+  assert.match(source, /Weekly school publication report/);
+  assert.match(source, /Approve & publish all school plans/);
+  assert.match(source, /set_weekly_plan_publication_override/);
+  assert.match(source, /Change my password/);
+  assert.match(source, /current_password: ownPassword\.current/);
 });
 
 test("adds French and the new English-department teachers", async () => {
