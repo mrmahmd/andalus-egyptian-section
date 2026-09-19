@@ -295,3 +295,17 @@ test("adds French and the new English-department teachers", async () => {
   assert.match(migration, /'أسامة حسن'/);
   assert.match(migration, /supervisor\.full_name = 'محمود حلمي'/);
 });
+
+test("routes Moamen El Haddad submissions to Mahmoud Helmy", async () => {
+  const migration = await readFile(
+    new URL("../supabase/migrations/20260919200946_link_moamen_to_mahmoud_helmy.sql", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(migration, /teacher\.username = 'moamen'/);
+  assert.match(migration, /supervisor\.username = 'mhelmy'/);
+  assert.match(migration, /teacher\.role = 'teacher'/);
+  assert.match(migration, /supervisor\.role = 'admin'/);
+  assert.match(migration, /insert into public\.supervisor_staff_links/);
+  assert.match(migration, /on conflict \(supervisor_staff_id, teacher_staff_id\) do nothing/);
+});
