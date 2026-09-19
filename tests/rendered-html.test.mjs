@@ -240,6 +240,9 @@ test("queues supervisor submission behind autosave and auto-approves supervisors
   assert.match(migration, /teacher_id = \(select auth\.uid\(\)\)/);
   assert.match(migration, /reviewed_by = \(select auth\.uid\(\)\)/);
   assert.match(migration, /staff\.administrative_role like '%Supervisor%'/);
+  assert.match(migration, /slot\.teacher_id = \(select auth\.uid\(\)\)/);
+  assert.match(migration, /slot\.subject_id = plan_submissions\.subject_id/);
+  assert.match(migration, /plan\.id = plan_submissions\.weekly_plan_id/);
 });
 
 test("keeps Mohamed Hamad's complete verified Grade 4 timetable", async () => {

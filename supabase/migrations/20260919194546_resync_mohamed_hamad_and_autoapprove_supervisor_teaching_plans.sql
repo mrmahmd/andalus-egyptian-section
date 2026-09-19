@@ -132,6 +132,16 @@ with check (
       and staff.is_active
       and staff.administrative_role like '%Supervisor%'
   )
+  and exists (
+    select 1
+    from public.weekly_plans plan
+    join public.timetable_slots slot
+      on slot.class_id = plan.class_id
+     and slot.teacher_id = (select auth.uid())
+     and slot.subject_id = plan_submissions.subject_id
+     and slot.requires_weekly_plan_submission
+    where plan.id = plan_submissions.weekly_plan_id
+  )
 );
 
 drop policy if exists "Supervisors update their own approved teaching submissions" on public.plan_submissions;
@@ -165,6 +175,16 @@ with check (
       and supervisor.status = 'active'
       and staff.is_active
       and staff.administrative_role like '%Supervisor%'
+  )
+  and exists (
+    select 1
+    from public.weekly_plans plan
+    join public.timetable_slots slot
+      on slot.class_id = plan.class_id
+     and slot.teacher_id = (select auth.uid())
+     and slot.subject_id = plan_submissions.subject_id
+     and slot.requires_weekly_plan_submission
+    where plan.id = plan_submissions.weekly_plan_id
   )
 );
 
