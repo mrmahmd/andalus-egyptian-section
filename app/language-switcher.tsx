@@ -490,6 +490,61 @@ Object.assign(staffAr, {
   ,"Remove this school-wide holiday? Existing teacher content will remain saved.": "إزالة هذه الإجازة العامة؟ سيظل محتوى المعلمين محفوظًا."
 });
 
+Object.assign(staffAr, {
+  "Published classes": "الفصول المنشورة",
+  "Visible to families": "ظاهرة لأولياء الأمور",
+  "Not published": "غير منشور",
+  "Includes missing and incomplete plans": "يشمل الخطط الناقصة وغير المكتملة",
+  "100% teacher completion": "اكتمال المعلمين بنسبة 100%",
+  "Every assigned teacher sent a weekly plan": "أرسل كل معلمي الفصل خططهم الأسبوعية",
+  "School publication rate": "نسبة النشر على مستوى المدرسة",
+  "Weekly school publication report": "التقرير الأسبوعي لنشر خطط المدرسة",
+  "Teacher completion counts each teacher once, regardless of how many subjects they teach.": "تُحسب نسبة الإنجاز لكل معلم مرة واحدة مهما كان عدد المواد التي يدرسها.",
+  "Open family plan page": "فتح صفحة خطة ولي الأمر",
+  "Approve & publish all school plans": "اعتماد ونشر جميع خطط المدرسة",
+  "School week": "الأسبوع الدراسي",
+  "All grades": "كل الصفوف",
+  "Section": "الشعبة",
+  "All sections": "كل الشعب",
+  "Department": "القسم",
+  "All departments": "كل الأقسام",
+  "Publication": "حالة النشر",
+  "All classes": "كل الفصول",
+  "Published only": "المنشور فقط",
+  "Teacher completion": "اكتمال المعلمين",
+  "Teachers": "المعلمون",
+  "Entries": "الإدخالات",
+  "Updated": "آخر تحديث",
+  "Awaiting publication": "بانتظار النشر",
+  "Draft started": "بدأت المسودة",
+  "Not started": "لم تبدأ",
+  "No required weekly-plan teachers": "لا يوجد معلمون مطلوب منهم خطة أسبوعية",
+  "View teacher status": "عرض حالة المعلمين",
+  "No assigned teachers": "لا يوجد معلمون مكلفون",
+  "Super Admin override": "نشر استثنائي من السوبر أدمن",
+  "Opening…": "جارٍ الفتح…",
+  "Remove override": "إلغاء النشر الاستثنائي",
+  "Force publish": "نشر استثنائي",
+  "Waiting for teachers": "بانتظار المعلمين",
+  "No classes match the selected filters.": "لا توجد فصول مطابقة للفلاتر المحددة.",
+  "Approve and publish the whole school week?": "اعتماد ونشر خطط المدرسة للأسبوع بالكامل؟",
+  "This Super Admin override will publish every non-empty class plan in": "سيقوم هذا الإجراء الاستثنائي من السوبر أدمن بنشر كل خطة فصل تحتوي على حصص محفوظة في",
+  ". Empty or unstarted classes remain unpublished, and the teacher-completion report remains unchanged so missing teachers stay visible.": ". ستظل الفصول الفارغة أو التي لم تبدأ غير منشورة، وسيبقى تقرير اكتمال المعلمين كما هو حتى يظل المعلمون المتأخرون ظاهرين.",
+  "plans ready to force publish": "خطط جاهزة للنشر الاستثنائي",
+  "classes currently not published": "فصول غير منشورة حاليًا",
+  "classes below 100% teacher completion": "فصول لم يكتمل جميع معلميها",
+  "the selected week": "الأسبوع المحدد",
+  "Cancel": "إلغاء",
+  "Yes, approve and publish": "نعم، اعتماد ونشر",
+  "Change my password": "تغيير كلمة المرور",
+  "Confirm your current password, then choose a new password for this Super Admin account.": "أدخل كلمة المرور الحالية، ثم اختر كلمة مرور جديدة لحساب السوبر أدمن.",
+  "Current password": "كلمة المرور الحالية",
+  "New password": "كلمة المرور الجديدة",
+  "Confirm new password": "تأكيد كلمة المرور الجديدة",
+  "Updating…": "جارٍ التحديث…",
+  "PW": "سر"
+});
+
 function normalizedText(value: string) {
   return value.replaceAll("â€™", "’").replaceAll("â€”", "—").replaceAll("â€“", "–").replaceAll("â†’", "→").replaceAll("â†“", "↓").replaceAll("آ·", "·");
 }
@@ -537,6 +592,12 @@ function translateDynamicStaffText(value: string) {
   if (match) return `${match[1]} خطة في هذا الأسبوع`;
   match = value.match(/^(\d+) plans? stored in Supabase$/);
   if (match) return `${match[1]} خطة محفوظة في Supabase`;
+  match = value.match(/^(\d+) classes shown$/);
+  if (match) return `يتم عرض ${match[1]} فصل`;
+  match = value.match(/^(\d+) of (\d+) teachers completed$/);
+  if (match) return `أكمل ${match[1]} من أصل ${match[2]} معلمين`;
+  match = value.match(/^Section ([A-Za-z])$/);
+  if (match) return `الشعبة ${match[1]}`;
   match = value.match(/^(\d+) active class sections?$/);
   if (match) return `${match[1]} فصلًا نشطًا`;
   match = value.match(/^(\d+) active subjects? available for assignments$/);

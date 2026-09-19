@@ -481,34 +481,35 @@ export default function SuperAdminPage() {
   const holidaysForSelectedWeek = useMemo(() => schoolHolidays.filter((holiday) => holiday.week_id === selectedHolidayWeekId), [schoolHolidays, selectedHolidayWeekId]);
 
   const changeOwnPassword = async () => {
+    const arabicUi = typeof window !== "undefined" && window.localStorage.getItem("andalus-language") === "ar";
     setOwnPasswordMessage("");
     if (!ownPassword.current) {
       setOwnPasswordTone("error");
-      setOwnPasswordMessage("Enter your current password.");
+      setOwnPasswordMessage(arabicUi ? "أدخل كلمة المرور الحالية." : "Enter your current password.");
       return;
     }
     if (ownPassword.next.length < 8) {
       setOwnPasswordTone("error");
-      setOwnPasswordMessage("The new password must contain at least 8 characters.");
+      setOwnPasswordMessage(arabicUi ? "يجب ألا تقل كلمة المرور الجديدة عن 8 أحرف." : "The new password must contain at least 8 characters.");
       return;
     }
     if (ownPassword.next !== ownPassword.confirm) {
       setOwnPasswordTone("error");
-      setOwnPasswordMessage("The new password and confirmation do not match.");
+      setOwnPasswordMessage(arabicUi ? "كلمة المرور الجديدة وتأكيدها غير متطابقين." : "The new password and confirmation do not match.");
       return;
     }
     setBusy(true);
     setOwnPasswordTone("info");
-    setOwnPasswordMessage("Updating your password securely…");
+    setOwnPasswordMessage(arabicUi ? "جارٍ تحديث كلمة المرور بأمان…" : "Updating your password securely…");
     try {
       const { error } = await getSupabaseBrowserClient().auth.updateUser({ password: ownPassword.next, current_password: ownPassword.current });
       if (error) throw error;
       setOwnPassword({ current: "", next: "", confirm: "" });
       setOwnPasswordTone("success");
-      setOwnPasswordMessage("Your Super Admin password was changed successfully.");
+      setOwnPasswordMessage(arabicUi ? "تم تغيير كلمة مرور حساب السوبر أدمن بنجاح." : "Your Super Admin password was changed successfully.");
     } catch (error) {
       setOwnPasswordTone("error");
-      setOwnPasswordMessage(error instanceof Error ? error.message : "Your password could not be changed.");
+      setOwnPasswordMessage(error instanceof Error ? (arabicUi ? `تعذر تغيير كلمة المرور: ${error.message}` : error.message) : (arabicUi ? "تعذر تغيير كلمة المرور." : "Your password could not be changed."));
     } finally {
       setBusy(false);
     }
