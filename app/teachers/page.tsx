@@ -203,9 +203,11 @@ export default function TeachersDashboardPage() {
   const [weeklyNote, setWeeklyNote] = useState("");
   const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
   const [autoSaveState, setAutoSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [builderFeedback, setBuilderFeedback] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
   const [builderHydrated, setBuilderHydrated] = useState(false);
   const autoSaveTimer = useRef<number | null>(null);
   const autoSavedSignature = useRef("");
+  const pendingSupervisorSubmission = useRef(false);
   const [savedPlanId, setSavedPlanId] = useState("");
   const [copyPanelOpen, setCopyPanelOpen] = useState(false);
   const [copySubjectId, setCopySubjectId] = useState("");
@@ -489,6 +491,7 @@ export default function TeachersDashboardPage() {
     const firstWeek = selectedWeek ?? academicWeeks.find((week) => week.is_current) ?? academicWeeks[0];
     if (!selectedClassId && firstAssignment) setSelectedClassId(firstAssignment.classId);
     if (!selectedWeekId && firstWeek) setSelectedWeekId(firstWeek.id);
+    setBuilderFeedback(null);
     setWeeklyBuilderOpen(true);
   };
 
@@ -552,8 +555,10 @@ export default function TeachersDashboardPage() {
       return;
     }
     if (selectedClassSlots.length === 0) {
-      setMessage("No timetable lessons are linked to this class yet. Ask the Super Admin to review the timetable connection.");
+      const text = "No timetable lessons are linked to this class yet. Ask the Super Admin to review the timetable connection.";
+      setMessage(text);
       setMessageTone("error");
+      setBuilderFeedback({ tone: "error", text });
       return;
     }
     const englishSlotMissingProgramme = editableClassSlots.find((slot) => {
@@ -564,10 +569,16 @@ export default function TeachersDashboardPage() {
     if (englishSlotMissingProgramme) {
       if (silent) setAutoSaveState("idle");
       else {
-        setMessage(`Choose AL or OL for ${dayNames[englishSlotMissingProgramme.day_of_week]} · Period ${englishSlotMissingProgramme.period_number} before saving Classwork.`);
+        const text = `Choose AL or OL for ${dayNames[englishSlotMissingProgramme.day_of_week]} · Period ${englishSlotMissingProgramme.period_number} before saving Classwork.`;
+        setMessage(text);
         setMessageTone("error");
+        setBuilderFeedback({ tone: "error", text });
       }
       return;
+    }
+    if (submitForReview) {
+      pendingSupervisorSubmission.current = false;
+      setBuilderFeedback({ tone: "info", text: isSupervisor ? "Approving your teaching plan automatically…" : "Sending the weekly plan to your supervisor…" });
     }
     setSaving(true);
     if (silent) setAutoSaveState("saving");
@@ -611,10 +622,13 @@ export default function TeachersDashboardPage() {
         if (entriesError) throw entriesError;
       }
 
+      const submittedAt = submitForReview ? new Date().toISOString() : null;
       const submissionRows = Array.from(new Set(editableClassSlots.filter((slot) => !approvedSubjectIds.has(slot.subject_id)).map((slot) => slot.subject_id))).map((subjectId) => ({
         weekly_plan_id: weeklyPlanId, teacher_id: profileId, subject_id: subjectId,
-        status: submitForReview ? "submitted" : "draft", reviewed_by: null, reviewed_at: null,
-        submitted_at: submitForReview ? new Date().toISOString() : null,
+        status: submitForReview ? (isSupervisor ? "approved" : "submitted") : "draft",
+        reviewed_by: submitForReview && isSupervisor ? profileId : null,
+        reviewed_at: submitForReview && isSupervisor ? submittedAt : null,
+        submitted_at: submittedAt,
       }));
       let writableSubmissionRows = submissionRows;
       if (!submitForReview && submissionRows.length) {
@@ -636,9 +650,10 @@ export default function TeachersDashboardPage() {
           .upsert(writableSubmissionRows, { onConflict: "weekly_plan_id,teacher_id,subject_id" })
           .select("subject_id, status, submitted_at");
         if (submissionError) throw submissionError;
+        const expectedStatus = isSupervisor ? "approved" : "submitted";
         if (submitForReview && (
           (savedSubmissionRows ?? []).length !== writableSubmissionRows.length
-          || (savedSubmissionRows ?? []).some((row) => row.status !== "submitted" || !row.submitted_at)
+          || (savedSubmissionRows ?? []).some((row) => row.status !== expectedStatus || !row.submitted_at)
         )) throw new Error("Supabase did not confirm the supervisor submission. Please try again.");
       }
 
@@ -662,10 +677,14 @@ export default function TeachersDashboardPage() {
       autoSavedSignature.current = autosaveSignature;
       setCopyPanelOpen(false);
       if (!silent) {
-        setMessage(submitForReview
-          ? "Your weekly plan was sent to the supervisor for approval. It will be published for families only after all required approvals are complete."
-          : "Your weekly plan was saved as a draft. Send it to the supervisor when it is complete.");
+        const successText = submitForReview
+          ? isSupervisor
+            ? "Your teaching plan was approved automatically. It is visible in your dashboard, and families will see the class plan only after every required plan is approved."
+            : "Your weekly plan was sent to the supervisor for approval. It will be published for families only after all required approvals are complete."
+          : "Your weekly plan was saved as a draft. Send it to the supervisor when it is complete.";
+        setMessage(successText);
         setMessageTone("success");
+        setBuilderFeedback({ tone: "success", text: successText });
         await loadTeacherDashboard();
       } else {
         setAutoSaveState("saved");
@@ -673,9 +692,18 @@ export default function TeachersDashboardPage() {
       if (submitForReview) setWeeklyBuilderOpen(false);
     } catch (error) {
       if (silent) { autoSavedSignature.current = ""; setAutoSaveState("idle"); }
-      else { setMessage(error instanceof Error ? error.message : "The weekly plan could not be saved."); setMessageTone("error"); }
+      else {
+        const errorText = error instanceof Error ? error.message : "The weekly plan could not be saved.";
+        setMessage(errorText);
+        setMessageTone("error");
+        setBuilderFeedback({ tone: "error", text: errorText });
+      }
     } finally {
       setSaving(false);
+      if (!submitForReview && pendingSupervisorSubmission.current) {
+        pendingSupervisorSubmission.current = false;
+        window.setTimeout(() => { void saveWholeWeek(true); }, 0);
+      }
     }
   };
 
@@ -683,6 +711,7 @@ export default function TeachersDashboardPage() {
     const arabic = window.localStorage.getItem("andalus-language") === "ar";
     const hasWrittenClasswork = editableClassSlots.some((slot) => !approvedSubjectIds.has(slot.subject_id) && Boolean(slotDraftFor(slot).classwork.trim()));
     if (!hasWrittenClasswork) {
+      setBuilderFeedback({ tone: "error", text: arabic ? "اكتب عمل الحصة لحصة واحدة على الأقل قبل إرسال الخطة الأسبوعية إلى المشرف." : "Write Classwork for at least one lesson before sending the weekly plan to your supervisor." });
       window.alert(arabic ? "اكتب عمل الحصة لحصة واحدة على الأقل قبل إرسال الخطة الأسبوعية إلى المشرف." : "Write Classwork for at least one lesson before sending the weekly plan to your supervisor.");
       return;
     }
@@ -692,6 +721,11 @@ export default function TeachersDashboardPage() {
 
   const sendConfirmedWeeklyPlan = () => {
     setSendConfirmationOpen(false);
+    if (saving) {
+      pendingSupervisorSubmission.current = true;
+      setBuilderFeedback({ tone: "info", text: sendConfirmationArabic ? "جارٍ إكمال الحفظ التلقائي، ثم ستُرسل الخطة مباشرة." : "Finishing the automatic save, then the plan will be sent immediately." });
+      return;
+    }
     void saveWholeWeek(true);
   };
 
@@ -726,6 +760,7 @@ export default function TeachersDashboardPage() {
     setSelectedClassId(submission.classId);
     setSelectedWeekId(submission.weekId);
     setCopyPanelOpen(false);
+    setBuilderFeedback(null);
     setWeeklyBuilderOpen(true);
   };
 
@@ -733,6 +768,7 @@ export default function TeachersDashboardPage() {
     setSelectedClassId(entry.classId);
     setSelectedWeekId(entry.weekId);
     setCopyPanelOpen(false);
+    setBuilderFeedback(null);
     setWeeklyBuilderOpen(true);
   };
 
@@ -1137,15 +1173,16 @@ export default function TeachersDashboardPage() {
         <div className="teacher-modal-heading"><div><p>{selectedWeek.label}</p><h2 id="weekly-builder-title">Build the whole week</h2></div><button disabled={saving} aria-label="Close weekly builder" onClick={() => setWeeklyBuilderOpen(false)}>×</button></div>
         <div className="teacher-editor-context"><span>One save for the whole week</span><i />Entries are placed according to your timetable slots.<b className={`teacher-autosave-state ${autoSaveState}`}>{autoSaveState === "saving" ? "Saving draft…" : autoSaveState === "saved" ? "Draft saved automatically" : "Auto-save is on"}</b></div>
         <form onSubmit={(event) => { event.preventDefault(); confirmAndSendWholeWeek(); }}>
-          {builderStatus !== "new" && <div className={`weekly-builder-review-state ${builderStatus}`}><strong>{builderStatus === "approved" ? "Approved" : builderStatus === "submitted" ? "Waiting for supervisor approval" : builderStatus === "changes_requested" ? "Changes requested" : "Draft saved"}</strong><span>{builderStatus === "approved" ? "Your part is approved. The class plan becomes visible to families after every required supervisor approval is complete." : builderStatus === "submitted" ? "This plan has been sent and is locked until the supervisor reviews it or you withdraw it." : builderStatus === "changes_requested" ? "Review the supervisor note, update the plan, then send it again." : "Your work is private and is not visible to families. Send it to the supervisor when it is complete."}</span></div>}
+          {builderFeedback && <div className={`weekly-builder-feedback ${builderFeedback.tone}`} role="status">{builderFeedback.text}</div>}
+          {builderStatus !== "new" && <div className={`weekly-builder-review-state ${builderStatus}`}><strong>{builderStatus === "approved" ? isSupervisor ? "Approved automatically" : "Approved" : builderStatus === "submitted" ? "Waiting for supervisor approval" : builderStatus === "changes_requested" ? "Changes requested" : "Draft saved"}</strong><span>{builderStatus === "approved" ? isSupervisor ? "Your teaching plan is approved automatically. It appears in your dashboard now; families see the class plan only after every required plan is approved." : "Your part is approved. The class plan becomes visible to families after every required supervisor approval is complete." : builderStatus === "submitted" ? "This plan has been sent and is locked until the supervisor reviews it or you withdraw it." : builderStatus === "changes_requested" ? "Review the supervisor note, update the plan, then send it again." : "Your work is private and is not visible to families. Send it to the supervisor when it is complete."}</span></div>}
           <div className="weekly-builder-toolbar"><label>1. Academic week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><label>2. Class<select value={selectedClassId} onChange={(event) => { setSelectedClassId(event.target.value); setSlotDrafts({}); setQuizSubjectId(""); }}>{Array.from(new Map(assignments.map((assignment) => [assignment.classId, assignment])).values()).map((assignment) => <option key={assignment.classId} value={assignment.classId}>Grade {assignment.grade} · {assignment.section}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedClassSlots.length > 0 ? "ready" : "missing"}`}>{selectedClassSlots.length > 0 ? `${selectedClassSlots.length} lessons ready for this week` : "Timetable connection required"}</span></div>
           <div className={`weekly-builder-days days-${activeDayIndexes.length}`}>{activeDayIndexes.map((index) => { const day = dayNames[index]; const daySlots = selectedClassSlots.filter((slot) => slot.day_of_week === index); return <section className="weekly-builder-day" key={day}><header><strong>{day}</strong><small>{daySlots.length} lesson{daySlots.length === 1 ? "" : "s"}</small></header>{daySlots.map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = isEnglishSubject(assignment?.subject ?? ""); return <article key={slot.id}><header><span>Period {slot.period_number}</span><strong>{isEnglish ? "English" : assignment?.subject ?? "Subject"}</strong></header>{assignment?.subject === "Integrated Science" && <label>Science component<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>English programme<select value={draft.englishProgramme} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}><option value="">Select AL or OL</option>{englishProgrammes.map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">AL or OL is added automatically before Classwork using the format: AL - Classwork.</p>}<label>Classwork<textarea rows={3} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={3} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder="Homework for this lesson" /></label><label>Classera notes<textarea rows={3} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>})}</section>})}</div>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>QZ</span><div><strong>Quiz or assessment</strong><small>Choose the subject, then add the quiz for this class.</small></div></div></div><div className="weekly-builder-quiz-row"><label>Subject<select value={quizSubjectId} onChange={(event) => setQuizSubjectId(event.target.value)}><option value="">Select subject</option>{selectedClassAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><label>Quiz day<select value={quizDay} onChange={(event) => setQuizDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label>Quiz details<input value={quizDetails} onChange={(event) => setQuizDetails(event.target.value)} placeholder="Title, scope or revision pages" /></label></div></section>
           <section className="weekly-builder-extra"><div className="weekly-builder-section-heading"><div><span>NT</span><div><strong>Weekly notes for families</strong><small>Spelling words, reminders or important announcements.</small></div></div></div><textarea className="weekly-builder-notes" rows={3} value={weeklyNote} onChange={(event) => setWeeklyNote(event.target.value)} placeholder="Weekly notes" /></section>
           <section className="weekly-copy-panel"><div><strong>Copy this subject plan to other classes</strong><p>{savedPlanId ? "Only classes in the same grade where you teach the same subject appear here. The copied plans are saved as drafts; quizzes and weekly notes stay with the original class." : "Save this class as a draft first, then you can copy one subject plan to your other eligible classes."}</p></div><button type="button" className="teacher-secondary-button" disabled={saving || !savedPlanId || builderStatus === "approved"} onClick={() => { setCopyPanelOpen((open) => !open); setCopySubjectId((current) => current || sourceSubjectAssignments[0]?.subjectId || ""); }}>Copy plan</button>{savedPlanId && copyPanelOpen && <div className="weekly-copy-controls"><label>Subject to copy<select value={copySubjectId} onChange={(event) => { setCopySubjectId(event.target.value); setCopyTargetClassIds([]); }}><option value="">Select subject</option>{sourceSubjectAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><div className="weekly-copy-targets">{copyTargetClasses.map((target) => <label key={target.classId}><input type="checkbox" checked={copyTargetClassIds.includes(target.classId)} onChange={() => toggleCopyTarget(target.classId)} /><span><strong>Grade {target.grade} · {target.section}</strong><small>{target.lessonCount} matching timetable lesson{target.lessonCount === 1 ? "" : "s"}</small></span></label>)}{copySubjectId && copyTargetClasses.length === 0 && <p>No other eligible class is assigned to you for this subject and grade.</p>}</div><div className="weekly-copy-actions"><small>Different lesson dates or periods are matched by lesson order: first lesson to first lesson, second to second, and so on.</small><button type="button" className="teacher-primary-button" disabled={saving || !copySubjectId || copyTargetClassIds.length === 0} onClick={() => void copyPlanToOtherClasses()}>Save copied drafts</button></div></div>}</section>
-          <div className="teacher-editor-footer"><span>{selectedClassSlots.length > 0 ? "Save privately as a draft, then send the completed plan to your supervisor. Families see it only after all required approvals." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button teacher-preview-button" onClick={() => void openParentPreview()}>Preview parent plan</button><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button><button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "submitted" || builderStatus === "approved"} className="teacher-primary-button" type="submit">{saving ? "Sending…" : "Send to supervisor for approval"}</button></div></div>
+          <div className="teacher-editor-footer"><span>{selectedClassSlots.length > 0 ? isSupervisor ? "Your teaching plan is approved automatically when sent. Families see the class plan only after all required plans are approved." : "Save privately as a draft, then send the completed plan to your supervisor. Families see it only after all required approvals." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button teacher-preview-button" onClick={() => void openParentPreview()}>Preview parent plan</button><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>Cancel</button><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>Save draft</button><button disabled={selectedClassSlots.length === 0 || builderStatus === "submitted" || builderStatus === "approved"} className="teacher-primary-button" type="submit">{saving ? "Send after automatic save" : isSupervisor ? "Approve my teaching plan" : "Send to supervisor for approval"}</button></div></div>
         </form>
-        {sendConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setSendConfirmationOpen(false)}><section className="weekly-send-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="weekly-send-confirmation-title" dir={sendConfirmationArabic ? "rtl" : "ltr"}><span aria-hidden="true">✓</span><h3 id="weekly-send-confirmation-title">{sendConfirmationArabic ? "تأكيد إرسال الخطة" : "Confirm plan submission"}</h3><p>{sendConfirmationArabic ? "هل تريد إرسال هذه الخطة الأسبوعية إلى المشرف للاعتماد؟ بعد الإرسال ستُغلق الخطة حتى يراجعها المشرف أو تسحبها للتعديل." : "Send this weekly plan to the supervisor for approval? After sending, the plan will be locked until it is reviewed or withdrawn."}</p><div><button type="button" className="teacher-secondary-button" onClick={() => setSendConfirmationOpen(false)}>{sendConfirmationArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={saving} onClick={sendConfirmedWeeklyPlan}>{sendConfirmationArabic ? "نعم، إرسال للمشرف" : "Yes, send to supervisor"}</button></div></section></div>}
+        {sendConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setSendConfirmationOpen(false)}><section className="weekly-send-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="weekly-send-confirmation-title" dir={sendConfirmationArabic ? "rtl" : "ltr"}><span aria-hidden="true">✓</span><h3 id="weekly-send-confirmation-title">{sendConfirmationArabic ? isSupervisor ? "تأكيد اعتماد خطتك" : "تأكيد إرسال الخطة" : isSupervisor ? "Confirm automatic approval" : "Confirm plan submission"}</h3><p>{sendConfirmationArabic ? isSupervisor ? "سيتم اعتماد حصصك التعليمية تلقائيًا داخل المنصة. ولن تظهر خطة الفصل لأولياء الأمور إلا بعد اعتماد جميع الخطط المطلوبة." : "هل تريد إرسال هذه الخطة الأسبوعية إلى المشرف للاعتماد؟ بعد الإرسال ستُغلق الخطة حتى يراجعها المشرف أو تسحبها للتعديل." : isSupervisor ? "Your own teaching lessons will be approved automatically. The class plan will remain hidden from families until every required plan is approved." : "Send this weekly plan to the supervisor for approval? After sending, the plan will be locked until it is reviewed or withdrawn."}</p><div><button type="button" className="teacher-secondary-button" onClick={() => setSendConfirmationOpen(false)}>{sendConfirmationArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" onClick={sendConfirmedWeeklyPlan}>{saving ? sendConfirmationArabic ? "الحفظ التلقائي جارٍ — اعتمد بعدها" : "Autosaving — approve next" : sendConfirmationArabic ? isSupervisor ? "نعم، اعتماد خطتي" : "نعم، إرسال للمشرف" : isSupervisor ? "Yes, approve my plan" : "Yes, send to supervisor"}</button></div></section></div>}
       </section></div>}
       {parentPreviewOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop parent-preview-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setParentPreviewOpen(false)}><section className="teacher-parent-preview" dir="ltr" role="dialog" aria-modal="true" aria-labelledby="parent-preview-title"><div className="teacher-modal-heading"><div><p>Preview only — nothing has been saved or sent</p><h2 id="parent-preview-title">Parent weekly-plan preview</h2></div><button aria-label="Close parent plan preview" onClick={() => setParentPreviewOpen(false)}>×</button></div><div className="parent-preview-intro">Your current writing is shown in its real timetable position. Other subjects are intentionally blank because this is only your private preview.</div>{parentPreviewLoading ? <p className="parent-preview-loading">Loading the class timetable…</p> : <section className="parent-preview-paper"><div className="parent-preview-paper-header"><img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS PRIVATE SCHOOLS</strong><span>The Egyptian Section</span><h3>WEEKLY STUDY PLAN</h3></div></div><div className="parent-preview-meta"><span><small>Class</small><strong>Grade {selectedClass.grade} · Class {selectedClass.section}</strong></span><span><small>Week No.</small><strong>{selectedWeek.week_number}</strong></span><span><small>Date</small><strong>{selectedWeek.label}</strong></span></div><div className="table-wrap"><table className="weekly-table parent-preview-table"><thead><tr><th>Day</th><th>Course</th><th>Classwork</th><th>Homework</th><th>Classera Notes</th></tr></thead>{dayNames.map((day, dayIndex) => { const daySlots = parentPreviewSlots.filter((slot) => slot.day_of_week === dayIndex); return daySlots.length > 0 ? <tbody className="weekly-day-group" key={day}>{daySlots.map((slot, index) => { const ownSlot = selectedClassSlots.find((teacherSlot) => teacherSlot.id === slot.id); const draft = ownSlot ? slotDraftFor(ownSlot) : null; return <tr key={slot.id} className={index === 0 ? "new-day" : ""}>{index === 0 && <td className="day-cell" rowSpan={daySlots.length}>{day}</td>}<td className="course-cell">{slot.subject}</td><td className={draft?.classwork.trim() ? "preview-written" : "preview-empty"}>{ownSlot ? previewClasswork(ownSlot) || "—" : "—"}</td><td className={draft?.homework.trim() ? "preview-written" : "preview-empty"}>{ownSlot ? draft?.homework.trim() || "—" : "—"}</td><td className={draft?.classeraNotes.trim() ? "preview-written" : "preview-empty"}>{ownSlot ? draft?.classeraNotes.trim() || "—" : "—"}</td></tr>; })}</tbody> : null; })}</table>{parentPreviewSlots.length === 0 && <p className="parent-preview-loading">No timetable lessons are available for this class yet.</p>}</div><div className="important-notes"><strong>Important Notes</strong><p>Your weekly notes and quiz details will appear here after they are saved and approved.</p></div></section>}<div className="teacher-editor-footer parent-preview-footer"><span>This preview does not submit, approve, or publish the weekly plan.</span><div><button type="button" className="teacher-primary-button" onClick={() => setParentPreviewOpen(false)}>Return to editor</button></div></div></section></div>}
     </main>

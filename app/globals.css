@@ -732,6 +732,8 @@ button, select, input { font: inherit; }
 .weekly-builder-review-state { padding: 13px 15px; border: 1px solid #d9e4ef; border-radius: 12px; display: grid; gap: 4px; background: #f7fbff; color: #52677f; }
 .weekly-builder-review-state strong { color: #163d70; font-size: 14px; }.weekly-builder-review-state span { font-size: 12px; line-height: 1.55; }
 .weekly-builder-review-state.submitted { border-color: #c3d8eb; background: #eef7ff; }.weekly-builder-review-state.changes_requested { border-color: #ecd6a7; background: #fff9ec; }.weekly-builder-review-state.approved { border-color: #bee2d1; background: #effaf4; }
+.weekly-builder-feedback { padding: 12px 15px; border: 1px solid #c6d9ea; border-radius: 12px; background: #eef7ff; color: #17466f; font-size: 13px; font-weight: 750; line-height: 1.6; }
+.weekly-builder-feedback.success { border-color: #b8dfcd; background: #edf9f3; color: #176747; }.weekly-builder-feedback.error { border-color: #efc0c0; background: #fff2f2; color: #9d2a2a; }
 .weekly-send-confirmation-backdrop { position: fixed; inset: 0; z-index: 160; padding: 20px; display: grid; place-items: center; background: rgba(4,16,39,.7); backdrop-filter: blur(6px); }
 .weekly-send-confirmation { width: min(460px, 100%); padding: 30px; border: 1px solid #d9e5ef; border-radius: 22px; background: #fff; box-shadow: 0 28px 80px rgba(4,16,39,.34); text-align: center; }
 .weekly-send-confirmation > span { width: 54px; height: 54px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center; background: #e8f7f1; color: #218160; font-size: 25px; font-weight: 900; }

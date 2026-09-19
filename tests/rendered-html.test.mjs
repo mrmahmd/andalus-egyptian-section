@@ -226,6 +226,31 @@ test("publishes only after required supervisor approvals unless Super Admin expl
   assert.match(publishingSql, /sync_weekly_plan_publication_on_submission/);
 });
 
+test("queues supervisor submission behind autosave and auto-approves supervisors' own lessons", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../supabase/migrations/20260919194546_resync_mohamed_hamad_and_autoapprove_supervisor_teaching_plans.sql", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /pendingSupervisorSubmission/);
+  assert.match(teacherSource, /if \(saving\) \{[\s\S]*pendingSupervisorSubmission\.current = true/);
+  assert.match(teacherSource, /if \(!submitForReview && pendingSupervisorSubmission\.current\)/);
+  assert.match(teacherSource, /status: submitForReview \? \(isSupervisor \? "approved" : "submitted"\) : "draft"/);
+  assert.match(teacherSource, /reviewed_by: submitForReview && isSupervisor \? profileId : null/);
+  assert.match(teacherSource, /disabled=\{selectedClassSlots\.length === 0 \|\| builderStatus === "submitted" \|\| builderStatus === "approved"\}/);
+  assert.match(migration, /Supervisors create their own approved teaching submissions/);
+  assert.match(migration, /teacher_id = \(select auth\.uid\(\)\)/);
+  assert.match(migration, /reviewed_by = \(select auth\.uid\(\)\)/);
+  assert.match(migration, /staff\.administrative_role like '%Supervisor%'/);
+});
+
+test("keeps Mohamed Hamad's complete verified Grade 4 timetable", async () => {
+  const migration = await readFile(new URL("../supabase/migrations/20260919194546_resync_mohamed_hamad_and_autoapprove_supervisor_teaching_plans.sql", import.meta.url), "utf8");
+
+  assert.match(migration, /teacher\.username = 'm\.mhamad'/);
+  assert.match(migration, /\('4\/A', 'التربية الإسلامية', 4, 6\)/);
+  assert.doesNotMatch(migration, /\('4\/A', 'التربية الإسلامية', 4, 5\)/);
+  assert.equal((migration.match(/^\s*\('4\/[AB]',/gm) ?? []).length, 20);
+});
+
 test("adds Super Admin teacher completion reporting, self password change and bulk weekly publishing", async () => {
   const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
   const languageSource = await readFile(new URL("../app/language-switcher.tsx", import.meta.url), "utf8");
