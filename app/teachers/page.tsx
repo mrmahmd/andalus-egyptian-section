@@ -556,15 +556,6 @@ export default function TeachersDashboardPage() {
       }
       return;
     }
-    if (submitForReview) {
-      const incompleteSlot = editableClassSlots.find((slot) => !approvedSubjectIds.has(slot.subject_id) && !slotDraftFor(slot).classwork.trim());
-      if (incompleteSlot) {
-        setMessage(`Complete Classwork for ${dayNames[incompleteSlot.day_of_week]} · Period ${incompleteSlot.period_number} before sending the plan to your supervisor.`);
-        setMessageTone("error");
-        return;
-      }
-    }
-
     setSaving(true);
     if (silent) setAutoSaveState("saving");
     try {
@@ -673,6 +664,17 @@ export default function TeachersDashboardPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const confirmAndSendWholeWeek = () => {
+    const arabic = window.localStorage.getItem("andalus-language") === "ar";
+    const hasWrittenClasswork = editableClassSlots.some((slot) => !approvedSubjectIds.has(slot.subject_id) && Boolean(slotDraftFor(slot).classwork.trim()));
+    if (!hasWrittenClasswork) {
+      window.alert(arabic ? "اكتب عمل الحصة لحصة واحدة على الأقل قبل إرسال الخطة الأسبوعية إلى المشرف." : "Write Classwork for at least one lesson before sending the weekly plan to your supervisor.");
+      return;
+    }
+    const confirmed = window.confirm(arabic ? "هل تريد إرسال هذه الخطة الأسبوعية إلى المشرف للاعتماد؟ بعد الإرسال ستُغلق الخطة حتى يراجعها المشرف أو تسحبها للتعديل." : "Send this weekly plan to the supervisor for approval? After sending, the plan will be locked until it is reviewed or withdrawn.");
+    if (confirmed) void saveWholeWeek(true);
   };
 
   const hasAutosaveContent = useMemo(() => Object.values(slotDrafts).some((draft) => Boolean(draft.classwork.trim() || draft.homework.trim() || draft.classeraNotes.trim())) || Boolean(quizDetails.trim() || weeklyNote.trim()), [slotDrafts, quizDetails, weeklyNote]);
@@ -1075,7 +1077,7 @@ export default function TeachersDashboardPage() {
       {weeklyBuilderOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && setWeeklyBuilderOpen(false)}><section className="teacher-editor-modal weekly-builder-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
         <div className="teacher-modal-heading"><div><p>{selectedWeek.label}</p><h2 id="weekly-builder-title">Build the whole week</h2></div><button disabled={saving} aria-label="Close weekly builder" onClick={() => setWeeklyBuilderOpen(false)}>×</button></div>
         <div className="teacher-editor-context"><span>One save for the whole week</span><i />Entries are placed according to your timetable slots.<b className={`teacher-autosave-state ${autoSaveState}`}>{autoSaveState === "saving" ? "Saving draft…" : autoSaveState === "saved" ? "Draft saved automatically" : "Auto-save is on"}</b></div>
-        <form onSubmit={(event) => { event.preventDefault(); void saveWholeWeek(true); }}>
+        <form onSubmit={(event) => { event.preventDefault(); confirmAndSendWholeWeek(); }}>
           {builderStatus !== "new" && <div className={`weekly-builder-review-state ${builderStatus}`}><strong>{builderStatus === "approved" ? "Approved" : builderStatus === "submitted" ? "Waiting for supervisor approval" : builderStatus === "changes_requested" ? "Changes requested" : "Draft saved"}</strong><span>{builderStatus === "approved" ? "Your part is approved. The class plan becomes visible to families after every required supervisor approval is complete." : builderStatus === "submitted" ? "This plan has been sent and is locked until the supervisor reviews it or you withdraw it." : builderStatus === "changes_requested" ? "Review the supervisor note, update the plan, then send it again." : "Your work is private and is not visible to families. Send it to the supervisor when it is complete."}</span></div>}
           <div className="weekly-builder-toolbar"><label>1. Academic week<select value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label><label>2. Class<select value={selectedClassId} onChange={(event) => { setSelectedClassId(event.target.value); setSlotDrafts({}); setQuizSubjectId(""); }}>{Array.from(new Map(assignments.map((assignment) => [assignment.classId, assignment])).values()).map((assignment) => <option key={assignment.classId} value={assignment.classId}>Grade {assignment.grade} · {assignment.section}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedClassSlots.length > 0 ? "ready" : "missing"}`}>{selectedClassSlots.length > 0 ? `${selectedClassSlots.length} lessons ready for this week` : "Timetable connection required"}</span></div>
           <div className={`weekly-builder-days days-${activeDayIndexes.length}`}>{activeDayIndexes.map((index) => { const day = dayNames[index]; const daySlots = selectedClassSlots.filter((slot) => slot.day_of_week === index); return <section className="weekly-builder-day" key={day}><header><strong>{day}</strong><small>{daySlots.length} lesson{daySlots.length === 1 ? "" : "s"}</small></header>{daySlots.map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = isEnglishSubject(assignment?.subject ?? ""); return <article key={slot.id}><header><span>Period {slot.period_number}</span><strong>{isEnglish ? "English" : assignment?.subject ?? "Subject"}</strong></header>{assignment?.subject === "Integrated Science" && <label>Science component<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">Select Chemistry, Physics or Biology</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>English programme<select value={draft.englishProgramme} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}><option value="">Select AL or OL</option>{englishProgrammes.map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">AL or OL is added automatically before Classwork using the format: AL - Classwork.</p>}<label>Classwork<textarea rows={3} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder="Lesson, unit and pages" /></label><label>Homework<textarea rows={3} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder="Homework for this lesson" /></label><label>Classera notes<textarea rows={3} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder="Reminder or materials" /></label></article>})}</section>})}</div>
