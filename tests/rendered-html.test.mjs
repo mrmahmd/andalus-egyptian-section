@@ -229,16 +229,26 @@ test("keeps weekly-plan creation responsive while data is loading", async () => 
   assert.match(teacherSource, /aria-busy=\{loading\}/);
 });
 
-test("publishes only after required supervisor approvals unless Super Admin explicitly overrides", async () => {
+test("publishes approved partial class plans without exposing missing teachers' drafts", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
-  const publishingSql = await readFile(new URL("../supabase/migrations/20260919120000_restore_supervisor_approval_publication.sql", import.meta.url), "utf8");
+  const parentSource = await readFile(new URL("../app/weekly-plan/page.tsx", import.meta.url), "utf8");
+  const publishingSql = await readFile(new URL("../supabase/migrations/20260920225647_publish_approved_partial_class_plans.sql", import.meta.url), "utf8");
 
   assert.match(teacherSource, /Approve every submitted department plan this week/);
-  assert.match(teacherSource, /published for families/);
-  assert.match(publishingSql, /required_submission/);
-  assert.match(publishingSql, /submission\.status = 'approved'/);
+  assert.match(teacherSource, /no submitted plan is still waiting for review/);
+  assert.match(teacherSource, /missing teachers appear as Plan not published/);
+  assert.match(parentSource, /publishedEntryByPeriod/);
+  assert.match(parentSource, /classwork: publishedEntry\?\.classwork \|\| "Plan not published"/);
+  assert.match(parentSource, /slot\.requires_weekly_plan_submission \|\| !subject\.include_in_weekly_plan/);
+  assert.match(publishingSql, /approved_submission\.status = 'approved'/);
+  assert.match(publishingSql, /unresolved_submission\.status in \('submitted', 'changes_requested'\)/);
+  assert.doesNotMatch(publishingSql, /unresolved_submission\.status in \('draft'/);
+  assert.match(publishingSql, /Never publish an empty or completely unstarted class plan/);
+  assert.match(publishingSql, /Public reads supervisor-approved plan entries/);
+  assert.match(publishingSql, /submission\.teacher_id = plan_entries\.teacher_id/);
+  assert.match(publishingSql, /submission\.subject_id = plan_entries\.subject_id/);
   assert.match(publishingSql, /manual_publication_override/);
-  assert.match(publishingSql, /sync_weekly_plan_publication_on_submission/);
+  assert.match(publishingSql, /select private\.refresh_weekly_plan_publication_state\(id\)/);
 });
 
 test("queues supervisor submission behind autosave and auto-approves supervisors' own lessons", async () => {

@@ -9,7 +9,13 @@ type LiveLesson = { day_of_week: number; period_number: number; course: string; 
 type LiveQuiz = { course: string; date: string; details: string };
 type LiveHoliday = { day_of_week: number; title: string; note: string | null };
 type LiveDictation = { day: number; words: string[] };
-type FixedTimetableSlot = { day_of_week: number; period_number: number; subjects: { code: string; parent_plan_name: string; name_en: string } | { code: string; parent_plan_name: string; name_en: string }[] | null };
+type PublishedEntry = { day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string };
+type ParentTimetableSlot = {
+  day_of_week: number;
+  period_number: number;
+  requires_weekly_plan_submission: boolean;
+  subjects: { code: string; parent_plan_name: string; name_en: string; include_in_weekly_plan: boolean } | { code: string; parent_plan_name: string; name_en: string; include_in_weekly_plan: boolean }[] | null;
+};
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
 const dictationNotePrefix = "__ENGLISH_DICTATION__";
@@ -92,16 +98,28 @@ export default function WeeklyPlanPage() {
         .select("plan_entries(day_of_week, period_number, classwork, homework, classera_notes, subjects(code, parent_plan_name)), plan_quizzes(quiz_date, details, subjects(parent_plan_name)), plan_notes(note_text)")
         .eq("id", selectedPlan.id).eq("status", "published").maybeSingle(),
         supabase.from("weekly_plan_holidays").select("day_of_week, title, note").eq("week_id", selectedPlan.weekId),
-        supabase.from("timetable_slots").select("day_of_week, period_number, subjects(code, parent_plan_name, name_en)").eq("class_id", selectedPlan.classId).order("day_of_week").order("period_number"),
+        supabase.from("timetable_slots").select("day_of_week, period_number, requires_weekly_plan_submission, subjects(code, parent_plan_name, name_en, include_in_weekly_plan)").eq("class_id", selectedPlan.classId).order("day_of_week").order("period_number"),
       ]);
-      const entries = (data?.plan_entries ?? []) as unknown as { day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string; subjects: { code: string; parent_plan_name: string } | { code: string; parent_plan_name: string }[] | null }[];
+      const entries = (data?.plan_entries ?? []) as unknown as PublishedEntry[];
       const holidayRows = (holidayData ?? []) as LiveHoliday[];
-      const lessonRows = entries.filter((entry) => !fixedLessonText[one(entry.subjects)?.code ?? ""]).map((entry) => ({ day_of_week: entry.day_of_week, period_number: entry.period_number, course: one(entry.subjects)?.parent_plan_name ?? "Subject", classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes }));
-      const fixedRows = ((timetableData ?? []) as unknown as FixedTimetableSlot[]).flatMap((slot) => {
-        const fixed = fixedLessonText[one(slot.subjects)?.code ?? ""];
-        return fixed ? [{ day_of_week: slot.day_of_week, period_number: slot.period_number, course: fixed.course, classwork: fixed.classwork, homework: "—", notes: "—" }] : [];
+      const publishedEntryByPeriod = new Map(entries.map((entry) => [`${entry.day_of_week}-${entry.period_number}`, entry]));
+      const lessonRows = ((timetableData ?? []) as unknown as ParentTimetableSlot[]).flatMap((slot) => {
+        const subject = one(slot.subjects);
+        if (!subject) return [];
+        const fixed = fixedLessonText[subject.code];
+        if (fixed) return [{ day_of_week: slot.day_of_week, period_number: slot.period_number, course: fixed.course, classwork: fixed.classwork, homework: "—", notes: "—" }];
+        if (!slot.requires_weekly_plan_submission || !subject.include_in_weekly_plan) return [];
+        const publishedEntry = publishedEntryByPeriod.get(`${slot.day_of_week}-${slot.period_number}`);
+        return [{
+          day_of_week: slot.day_of_week,
+          period_number: slot.period_number,
+          course: subject.parent_plan_name || subject.name_en || "Subject",
+          classwork: publishedEntry?.classwork || "Plan not published",
+          homework: publishedEntry?.homework || "—",
+          notes: publishedEntry?.classera_notes || "—",
+        }];
       });
-      setLiveLessons([...lessonRows, ...fixedRows].filter((lesson) => !holidayRows.some((holiday) => holiday.day_of_week === lesson.day_of_week)).concat(holidayRows.map((holiday) => ({ day_of_week: holiday.day_of_week, period_number: 0, course: holiday.title, classwork: holiday.note || "No classes today.", homework: "—", notes: "School-wide holiday" }))).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number));
+      setLiveLessons(lessonRows.filter((lesson) => !holidayRows.some((holiday) => holiday.day_of_week === lesson.day_of_week)).concat(holidayRows.map((holiday) => ({ day_of_week: holiday.day_of_week, period_number: 0, course: holiday.title, classwork: holiday.note || "No classes today.", homework: "—", notes: "School-wide holiday" }))).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number));
       const quizzes = (data?.plan_quizzes ?? []) as unknown as { quiz_date: string | null; details: string; subjects: { parent_plan_name: string } | { parent_plan_name: string }[] | null }[];
       setLiveQuizzes(quizzes.filter((quiz) => Boolean(quiz.details)).map((quiz) => ({ course: one(quiz.subjects)?.parent_plan_name ?? "Subject", date: quiz.quiz_date ?? "", details: quiz.details })));
       const dictations = ((data?.plan_notes ?? []) as unknown as { note_text: string }[])
