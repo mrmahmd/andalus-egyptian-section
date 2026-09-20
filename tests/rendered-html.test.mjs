@@ -65,7 +65,7 @@ test("connects the teacher workspace to approved Supabase data", async () => {
   assert.match(source, /from\("teacher_assignments"\)/);
   assert.match(source, /from\("academic_weeks"\)/);
   assert.match(source, /from\("timetable_slots"\)/);
-  assert.match(source, /from\("plan_entries"\)\.upsert/);
+  assert.match(source, /from\("plan_entries"\)[\s\S]*\.upsert\(entryRows/);
   assert.match(source, /from\("plan_quizzes"\)/);
   assert.match(source, /from\("plan_notes"\)/);
   assert.match(source, /Timetable connection required/);
@@ -233,7 +233,7 @@ test("publishes only after required supervisor approvals unless Super Admin expl
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const publishingSql = await readFile(new URL("../supabase/migrations/20260919120000_restore_supervisor_approval_publication.sql", import.meta.url), "utf8");
 
-  assert.match(teacherSource, /Approve all submitted plans/);
+  assert.match(teacherSource, /Approve every submitted department plan this week/);
   assert.match(teacherSource, /published for families/);
   assert.match(publishingSql, /required_submission/);
   assert.match(publishingSql, /submission\.status = 'approved'/);
@@ -258,6 +258,34 @@ test("queues supervisor submission behind autosave and auto-approves supervisors
   assert.match(migration, /slot\.teacher_id = \(select auth\.uid\(\)\)/);
   assert.match(migration, /slot\.subject_id = plan_submissions\.subject_id/);
   assert.match(migration, /plan\.id = plan_submissions\.weekly_plan_id/);
+});
+
+test("repairs stale supervisor submissions and supports one-click approval for the selected week", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../supabase/migrations/20260920054000_autoapprove_supervisors_and_add_week_bulk_approval.sql", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /approve_my_week_submissions/);
+  assert.match(teacherSource, /item\.weekId === selectedReviewWeekId && item\.status === "submitted"/);
+  assert.match(teacherSource, /اعتماد جميع خطط معلمي القسم لهذا الأسبوع/);
+  assert.doesNotMatch(teacherSource, /approveAllSelectedClassPlans/);
+  assert.match(migration, /create or replace function public\.approve_my_week_submissions/);
+  assert.match(migration, /plan\.week_id = target_week_id/);
+  assert.doesNotMatch(migration, /plan\.class_id = target_class_id/);
+  assert.match(migration, /link\.teacher_staff_id = teacher\.staff_id/);
+  assert.match(migration, /staff\.administrative_role like '%Supervisor%'/);
+  assert.match(migration, /submission\.teacher_id = supervisor\.user_id[\s\S]*submission\.status = 'submitted'/);
+  assert.match(migration, /reviewed_by = submission\.teacher_id/);
+  assert.match(migration, /revoke all on function public\.approve_my_week_submissions\(uuid\) from public/);
+  assert.match(migration, /grant execute on function public\.approve_my_week_submissions\(uuid\) to authenticated/);
+});
+
+test("verifies lesson saves and withdraws the whole teacher plan", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /\.upsert\(entryRows,[\s\S]*\.select\("id"\)/);
+  assert.match(teacherSource, /savedEntryRows \?\? \[\]\)\.length !== entryRows\.length/);
+  assert.match(teacherSource, /\.eq\("weekly_plan_id", submission\.weeklyPlanId\)[\s\S]*\.eq\("teacher_id", profileId\)[\s\S]*\.eq\("status", "submitted"\)[\s\S]*\.select\("id, status"\)/);
+  assert.match(teacherSource, /Supabase did not confirm the complete plan withdrawal/);
 });
 
 test("keeps Mohamed Hamad's complete verified Grade 4 timetable", async () => {

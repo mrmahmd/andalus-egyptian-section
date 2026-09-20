@@ -648,8 +648,12 @@ export default function TeachersDashboardPage() {
         };
       });
       if (entryRows.length) {
-        const { error: entriesError } = await supabase.from("plan_entries").upsert(entryRows, { onConflict: "weekly_plan_id,day_of_week,period_number" });
+        const { data: savedEntryRows, error: entriesError } = await supabase
+          .from("plan_entries")
+          .upsert(entryRows, { onConflict: "weekly_plan_id,day_of_week,period_number" })
+          .select("id");
         if (entriesError) throw entriesError;
+        if ((savedEntryRows ?? []).length !== entryRows.length) throw new Error("Supabase did not confirm every lesson save. Please try again.");
       }
 
       const submittedAt = submitForReview ? new Date().toISOString() : null;
@@ -773,8 +777,15 @@ export default function TeachersDashboardPage() {
     if (submission.status !== "submitted") return;
     setSaving(true);
     try {
-      const { error } = await getSupabaseBrowserClient().from("plan_submissions").update({ status: "draft", submitted_at: null, review_note: null, reviewed_by: null, reviewed_at: null, updated_at: new Date().toISOString() }).eq("id", submission.id).eq("teacher_id", profileId);
+      const { data: withdrawnRows, error } = await getSupabaseBrowserClient()
+        .from("plan_submissions")
+        .update({ status: "draft", submitted_at: null, review_note: null, reviewed_by: null, reviewed_at: null, updated_at: new Date().toISOString() })
+        .eq("weekly_plan_id", submission.weeklyPlanId)
+        .eq("teacher_id", profileId)
+        .eq("status", "submitted")
+        .select("id, status");
       if (error) throw error;
+      if (!(withdrawnRows ?? []).length || (withdrawnRows ?? []).some((row) => row.status !== "draft")) throw new Error("Supabase did not confirm the complete plan withdrawal. Please try again.");
       setMessage("The plan was withdrawn from review and is ready to edit again.");
       setMessageTone("success");
       await loadTeacherDashboard();
@@ -952,25 +963,24 @@ export default function TeachersDashboardPage() {
     await reviewWeeklyPlan(plan, decision);
   };
 
-  const approveAllSelectedClassPlans = async () => {
-    if (!selectedReviewWeekId || !selectedReviewClassId) return;
+  const approveAllSelectedWeekPlans = async () => {
+    if (!selectedReviewWeekId) return;
     const arabic = window.localStorage.getItem("andalus-language") === "ar";
     setBulkApprovalConfirmationOpen(false);
     setSaving(true);
     try {
-      const { data, error } = await getSupabaseBrowserClient().rpc("approve_my_class_week_submissions", {
+      const { data, error } = await getSupabaseBrowserClient().rpc("approve_my_week_submissions", {
         target_week_id: selectedReviewWeekId,
-        target_class_id: selectedReviewClassId,
       });
       if (error) throw error;
       const approvedCount = Number(data ?? 0);
       setMessage(approvedCount > 0
         ? arabic ? `تم اعتماد ${approvedCount} خطة مادة مرسلة. لن تُنشر خطة ولي الأمر إلا بعد اكتمال جميع موافقات الأقسام المطلوبة.` : `${approvedCount} submitted subject plan${approvedCount === 1 ? " was" : "s were"} approved. The parent plan will publish only after every required department approval is complete.`
-        : arabic ? "لا توجد خطط مرسلة تنتظر اعتمادك في هذا الفصل والأسبوع." : "There were no submitted plans waiting for your approval in this class and week.");
+        : arabic ? "لا توجد خطط مرسلة تنتظر اعتمادك في هذا الأسبوع." : "There were no submitted plans waiting for your approval in this week.");
       setMessageTone(approvedCount > 0 ? "success" : "info");
       await loadTeacherDashboard();
     } catch (error) {
-      setMessage(arabic ? "تعذر اعتماد خطط الفصل المحددة." : error instanceof Error ? error.message : "The selected class plans could not be approved.");
+      setMessage(arabic ? "تعذر اعتماد خطط الأسبوع المحدد." : error instanceof Error ? error.message : "The selected week plans could not be approved.");
       setMessageTone("error");
     } finally {
       setSaving(false);
@@ -1071,7 +1081,7 @@ export default function TeachersDashboardPage() {
       teacherName: plan.teacherName, className: plan.className, week: plan.week,
       subject: plan.reviews.map((item) => item.subject).join(" + "), status: plan.status, note: plan.note, submittedAt: plan.submittedAt, entries: plan.entries, quizzes: plan.quizzes, weeklyNotes: plan.weeklyNotes,
     })), [selectedClassTeacherPlans]);
-  const selectedClassPendingCount = selectedClassReviewRawItems.filter((item) => item.status === "submitted").length;
+  const selectedWeekPendingCount = reviewItems.filter((item) => item.weekId === selectedReviewWeekId && item.status === "submitted").length;
   useEffect(() => {
     setSelectedReviewClassId((current) => supervisorReviewClasses.some((schoolClass) => schoolClass.id === current) ? current : supervisorReviewClasses[0]?.id ?? "");
   }, [supervisorReviewClasses]);
@@ -1180,7 +1190,7 @@ export default function TeachersDashboardPage() {
               <label>{dashboardArabic ? "١. الأسبوع الدراسي" : "1. School week"}<select value={selectedReviewWeekId} onChange={(event) => setSelectedReviewWeekId(event.target.value)}><option value="">{dashboardArabic ? "اختر الأسبوع" : "Select week"}</option>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label}</option>)}</select></label>
               <label>{dashboardArabic ? "٢. الفصل والشعبة" : "2. Class & section"}<select value={selectedReviewClassId} onChange={(event) => setSelectedReviewClassId(event.target.value)} disabled={!selectedReviewWeek || supervisorReviewClasses.length === 0}><option value="">{dashboardArabic ? "اختر الفصل" : "Select class"}</option>{supervisorReviewClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}</select></label>
               <span>{dashboardArabic ? `تم العثور على ${selectedClassReviewItems.length} خطة معلم` : `${selectedClassReviewItems.length} teacher plan${selectedClassReviewItems.length === 1 ? "" : "s"} found`}</span>
-              <button type="button" className="teacher-primary-button supervisor-approve-all" disabled={saving || selectedClassPendingCount === 0} onClick={requestBulkApproval}>{dashboardArabic ? `اعتماد جميع الخطط المرسلة (${selectedClassPendingCount})` : `Approve all submitted plans (${selectedClassPendingCount})`}</button>
+              <button type="button" className="teacher-primary-button supervisor-approve-all" disabled={saving || selectedWeekPendingCount === 0} onClick={requestBulkApproval}>{dashboardArabic ? `اعتماد جميع خطط معلمي القسم لهذا الأسبوع (${selectedWeekPendingCount})` : `Approve every submitted department plan this week (${selectedWeekPendingCount})`}</button>
             </div>
             <div className="supervisor-review-list" id="supervisor-review-results">
               {!selectedReviewWeek || !selectedReviewClassId ? <p className="supervisor-review-empty">{dashboardArabic ? "اختر الأسبوع الدراسي ثم الفصل والشعبة." : "Select the school week, then the class and section."}</p> : selectedClassReviewItems.map((review) => <article key={review.id}>
@@ -1197,7 +1207,7 @@ export default function TeachersDashboardPage() {
         </div>
       </section>
 
-      {bulkApprovalConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setBulkApprovalConfirmationOpen(false)}><section className="weekly-send-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="bulk-approval-title" dir={bulkApprovalArabic ? "rtl" : "ltr"}><span aria-hidden="true">✓</span><h3 id="bulk-approval-title">{bulkApprovalArabic ? "اعتماد كل خطط الفصل" : "Approve all class plans"}</h3><p>{bulkApprovalArabic ? `سيتم اعتماد ${selectedClassPendingCount} خطة مادة مرسلة في الأسبوع والفصل المحددين ضمن نطاق إشرافك فقط. لن تُنشر خطة ولي الأمر إلا بعد اكتمال جميع موافقات الأقسام المطلوبة.` : `${selectedClassPendingCount} submitted subject plan${selectedClassPendingCount === 1 ? "" : "s"} in the selected week and class will be approved within your supervision scope only. The parent plan will publish only after all required department approvals are complete.`}</p><div><button type="button" className="teacher-secondary-button" onClick={() => setBulkApprovalConfirmationOpen(false)}>{bulkApprovalArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={saving} onClick={() => void approveAllSelectedClassPlans()}>{bulkApprovalArabic ? "نعم، اعتماد الجميع" : "Yes, approve all"}</button></div></section></div>}
+      {bulkApprovalConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setBulkApprovalConfirmationOpen(false)}><section className="weekly-send-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="bulk-approval-title" dir={bulkApprovalArabic ? "rtl" : "ltr"}><span aria-hidden="true">✓</span><h3 id="bulk-approval-title">{bulkApprovalArabic ? "اعتماد كل خطط الأسبوع" : "Approve every plan this week"}</h3><p>{bulkApprovalArabic ? `سيتم اعتماد ${selectedWeekPendingCount} خطة مادة مرسلة لكل معلميك في جميع الفصول والشعب خلال الأسبوع المحدد، وضمن نطاق إشرافك فقط. لن تُنشر خطة ولي الأمر إلا بعد اكتمال جميع الموافقات المطلوبة للفصل.` : `${selectedWeekPendingCount} submitted subject plan${selectedWeekPendingCount === 1 ? "" : "s"} from all your linked teachers across every class and section in the selected week will be approved. Parent plans publish only after every required approval for each class is complete.`}</p><div><button type="button" className="teacher-secondary-button" onClick={() => setBulkApprovalConfirmationOpen(false)}>{bulkApprovalArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={saving} onClick={() => void approveAllSelectedWeekPlans()}>{bulkApprovalArabic ? "نعم، اعتماد الجميع" : "Yes, approve all"}</button></div></section></div>}
 
       {weeklyBuilderOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && setWeeklyBuilderOpen(false)}><section className="teacher-editor-modal weekly-builder-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
         <div className="teacher-modal-heading"><div><p>{selectedWeek.label}</p><h2 id="weekly-builder-title">Build the whole week</h2></div><button disabled={saving} aria-label="Close weekly builder" onClick={() => setWeeklyBuilderOpen(false)}>×</button></div>
