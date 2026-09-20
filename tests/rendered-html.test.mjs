@@ -72,6 +72,21 @@ test("connects the teacher workspace to approved Supabase data", async () => {
   assert.doesNotMatch(source, /Changes in this prototype are not saved/);
 });
 
+test("replaces family notes with English-only dictation words above the parent plan", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const parentSource = await readFile(new URL("../app/weekly-plan/page.tsx", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /departmentName === "English Department"/);
+  assert.match(teacherSource, /English Dictation Words/);
+  assert.match(teacherSource, /encodeEnglishDictation\(dictationDay, dictationWords\)/);
+  assert.doesNotMatch(teacherSource, />Weekly notes for families</);
+  assert.doesNotMatch(teacherSource, />Quiz or assessment</);
+  assert.match(parentSource, /Vocabulary for Dictation on/);
+  assert.match(parentSource, /parent-dictation-block/);
+  assert.ok(parentSource.indexOf("liveDictations.map") < parentSource.indexOf('<div className="table-wrap">'));
+  assert.doesNotMatch(parentSource, /Weekly Notes for Families/);
+});
+
 test("adds fixed Quran, Swimming and PE rows only to published parent plans", async () => {
   const source = await readFile(
     new URL("../app/weekly-plan/page.tsx", import.meta.url),

@@ -412,7 +412,14 @@ button, select, input { font: inherit; }
 .plan-toolbar p:last-child { margin: 7px 0 0; color: var(--muted); }
 .toolbar-actions { display: flex; gap: 10px; }
 .plan-paper { margin-bottom: 70px; padding: 34px; background: var(--white); border: 1px solid var(--line); box-shadow: 0 22px 65px rgba(29,48,78,.10); }
-.parent-plan-assessments, .parent-plan-family-notes { margin-top: 12px; padding: 12px 14px; border-radius: 9px; background: #f3f8fc; }.parent-plan-assessments b, .parent-plan-family-notes b { display: block; color: #103867; font-size: 13px; }.parent-plan-assessments p, .parent-plan-family-notes p { margin: 7px 0 0; color: #3d5571; font-size: 12px; line-height: 1.55; }.parent-plan-assessments strong { display: block; color: #154f85; }
+.parent-plan-assessments { margin-top: 12px; padding: 12px 14px; border-radius: 9px; background: #f3f8fc; }.parent-plan-assessments b { display: block; color: #103867; font-size: 13px; }.parent-plan-assessments p { margin: 7px 0 0; color: #3d5571; font-size: 12px; line-height: 1.55; }.parent-plan-assessments strong { display: block; color: #154f85; }
+.parent-dictation-block { margin: 22px 0 0; padding: 16px 18px 18px; border: 1px solid #c9ddeb; border-radius: 12px; background: linear-gradient(135deg, #eef8fd, #fff8fc); break-inside: avoid; page-break-inside: avoid; }
+.parent-dictation-block h3 { margin: 0 0 12px; color: #0d376b; font-size: 16px; font-weight: 900; text-align: center; letter-spacing: .01em; }
+.parent-dictation-block table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.parent-dictation-block td { padding: 10px 8px; border: 1px solid #b9cede; background: rgba(255,255,255,.88); color: #163c68; font-size: 14px; font-weight: 800; text-align: center; }
+.dictation-word-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 10px; border: 1px solid #c9d9e6; border-radius: 9px; overflow: hidden; }
+.dictation-word-grid span { padding: 9px 7px; border-right: 1px solid #c9d9e6; border-bottom: 1px solid #c9d9e6; background: #fff; color: #163c68; font-weight: 800; text-align: center; }
+.dictation-word-grid.compact { font-size: 12px; }
 .paper-header { position: relative; display: block; min-height: 72px; padding: 0 0 22px; border-bottom: 4px solid var(--navy-800); text-align: center; }
 .paper-header img { position: absolute; left: 0; width: 90px; height: 66px; object-fit: cover; border-radius: 4px; }
 .paper-header > div { display: grid; width: 100%; gap: 4px; text-align: center; }
@@ -729,6 +736,9 @@ button, select, input { font: inherit; }
 .weekly-builder-section-heading small { margin-top: 3px; color: #77869b; font-size: 10px; }
 .weekly-builder-quiz-row { display: grid; grid-template-columns: .75fr 1fr 1.35fr 1.35fr; gap: 10px; }
 .weekly-builder-notes { width: 100%; box-sizing: border-box; }
+.weekly-builder-dictation-row { display: grid; grid-template-columns: minmax(180px, .45fr) minmax(0, 1.55fr); gap: 12px; align-items: start; }
+.english-dictation-editor { border-color: #bdd9e8; background: linear-gradient(135deg, #eff9fd, #fff7fb); }
+@media (max-width: 700px) { .weekly-builder-dictation-row { grid-template-columns: 1fr; } .parent-dictation-block { padding: 13px 10px 14px; } .parent-dictation-block td { padding: 8px 4px; font-size: 12px; } }
 .weekly-builder-review-state { padding: 13px 15px; border: 1px solid #d9e4ef; border-radius: 12px; display: grid; gap: 4px; background: #f7fbff; color: #52677f; }
 .weekly-builder-review-state strong { color: #163d70; font-size: 14px; }.weekly-builder-review-state span { font-size: 12px; line-height: 1.55; }
 .weekly-builder-review-state.submitted { border-color: #c3d8eb; background: #eef7ff; }.weekly-builder-review-state.changes_requested { border-color: #ecd6a7; background: #fff9ec; }.weekly-builder-review-state.approved { border-color: #bee2d1; background: #effaf4; }
