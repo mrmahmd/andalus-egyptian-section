@@ -451,6 +451,14 @@ button, select, input { font: inherit; }
 .weekly-table th:nth-child(5) { background: #b83172; }
 .weekly-table th, .weekly-table td { text-align: center !important; }
 .weekly-table td { padding: 12px 10px; border: 1px solid #cfdaea; vertical-align: middle; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; unicode-bidi: plaintext; }
+/* Alexandria contains matching Arabic and Latin glyphs, so mixed-language plan
+   content keeps one visual size instead of switching to mismatched fallbacks. */
+.plan-paper .weekly-table td {
+  font-family: "Alexandria", "Cairo", sans-serif !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.55;
+}
 /* Keep Classwork, Homework and Classera Notes especially readable on screen and in print. */
 .weekly-table td:not(.day-cell):not(.course-cell) { color: #1b2e4a; font-size: 12.5px; font-weight: 700; line-height: 1.55; }
 .weekly-table tr.new-day td { border-top: 3px solid var(--day-accent, #9db2cc); }
