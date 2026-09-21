@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient } from "../lib/supabase/client";
+import { formatAcademicWeekRange } from "../lib/format-academic-week";
 
-type PublishedPlan = { grade: number; section: string; weekNumber: number; weekLabel: string };
+type PublishedPlan = { grade: number; section: string; weekNumber: number; weekLabel: string; startsOn: string; endsOn: string };
 const one = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] ?? null : value;
 
 export default function HomePlanFinder() {
@@ -18,12 +19,13 @@ export default function HomePlanFinder() {
     setIsArabic(window.localStorage.getItem("andalus-language") === "ar");
     const loadPublishedPlans = async () => {
       const { data } = await getSupabaseBrowserClient().from("weekly_plans")
-        .select("school_classes(grade, section), academic_weeks(week_number, label)")
-        .eq("status", "published");
+        .select("school_classes(grade, section), academic_weeks!inner(week_number, label, starts_on, ends_on, parent_portal_visible)")
+        .eq("status", "published")
+        .eq("academic_weeks.parent_portal_visible", true);
       setPublishedPlans(((data ?? []) as unknown as Record<string, unknown>[]).map((item) => {
         const schoolClass = one(item.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
-        const academicWeek = one(item.academic_weeks as { week_number: number; label: string } | { week_number: number; label: string }[] | null);
-        return schoolClass && academicWeek ? { grade: schoolClass.grade, section: schoolClass.section, weekNumber: academicWeek.week_number, weekLabel: academicWeek.label } : null;
+        const academicWeek = one(item.academic_weeks as { week_number: number; label: string; starts_on: string; ends_on: string; parent_portal_visible: boolean } | { week_number: number; label: string; starts_on: string; ends_on: string; parent_portal_visible: boolean }[] | null);
+        return schoolClass && academicWeek ? { grade: schoolClass.grade, section: schoolClass.section, weekNumber: academicWeek.week_number, weekLabel: academicWeek.label, startsOn: academicWeek.starts_on, endsOn: academicWeek.ends_on } : null;
       }).filter((plan): plan is PublishedPlan => plan !== null));
     };
     void loadPublishedPlans();
@@ -40,7 +42,7 @@ export default function HomePlanFinder() {
     <div className="finder-fields">
       <label><span>{isArabic ? "الصف" : "Grade"}</span><select value={grade} onChange={(event) => setGrade(event.target.value)}>{Array.from({ length: 10 }, (_, index) => <option key={index + 1} value={index + 1}>{gradeLabel(index + 1)}</option>)}</select></label>
       <label><span>{isArabic ? "الشعبة" : "Class"}</span><select value={section} onChange={(event) => setSection(event.target.value)}><option value="A">{classLabel("A")}</option><option value="B">{classLabel("B")}</option></select></label>
-      <label className="week-field"><span>{isArabic ? "الأسبوع الدراسي" : "School week"}</span><select value={week} disabled={availableWeeks.length === 0} onChange={(event) => setWeek(event.target.value)}>{availableWeeks.length === 0 ? <option value="">{isArabic ? "لا توجد خطط معتمدة بعد" : "No approved plans yet"}</option> : availableWeeks.map((item) => <option key={item.weekNumber} value={item.weekNumber}>{isArabic ? `الأسبوع ${item.weekNumber} · ${item.weekLabel}` : `Week ${item.weekNumber} · ${item.weekLabel}`}</option>)}</select></label>
+      <label className="week-field"><span>{isArabic ? "الأسبوع الدراسي" : "School week"}</span><select value={week} disabled={availableWeeks.length === 0} onChange={(event) => setWeek(event.target.value)}>{availableWeeks.length === 0 ? <option value="">{isArabic ? "لا توجد خطط معتمدة بعد" : "No approved plans yet"}</option> : availableWeeks.map((item) => <option key={item.weekNumber} value={item.weekNumber}>{isArabic ? `الأسبوع ${item.weekNumber} · ${formatAcademicWeekRange({ starts_on: item.startsOn, ends_on: item.endsOn }, "ar-EG")}` : `Week ${item.weekNumber} · ${formatAcademicWeekRange({ starts_on: item.startsOn, ends_on: item.endsOn })}`}</option>)}</select></label>
       {week ? <Link href={planUrl} className="button button-primary finder-button">{isArabic ? "عرض الخطة" : "View plan"} <span>→</span></Link> : <span className="button button-primary finder-button" aria-disabled="true">{isArabic ? "عرض الخطة" : "View plan"} <span>→</span></span>}
     </div>
   </section>;

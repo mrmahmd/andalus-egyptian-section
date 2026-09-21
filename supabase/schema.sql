@@ -93,6 +93,8 @@ create table if not exists public.academic_weeks (
   ends_on date not null,
   label text not null,
   is_current boolean not null default false,
+  teacher_entry_enabled boolean not null default true,
+  parent_portal_visible boolean not null default true,
   unique (academic_year, week_number),
   check (starts_on <= ends_on)
 );
@@ -240,6 +242,9 @@ create policy "Public reads active staff directory" on public.staff_directory fo
 create policy "Public reads active classes" on public.school_classes for select to anon, authenticated using (is_active);
 create policy "Public reads active subjects" on public.subjects for select to anon, authenticated using (is_active);
 create policy "Public reads academic weeks" on public.academic_weeks for select to anon, authenticated using (true);
+create policy "Super admin manages academic week visibility" on public.academic_weeks for update to authenticated
+using ((select private.is_active_staff(array['super_admin'])))
+with check ((select private.is_active_staff(array['super_admin'])));
 create policy "Public reads timetable" on public.timetable_slots for select to anon, authenticated using (true);
 
 create policy "Staff read relevant profiles" on public.profiles for select to authenticated
@@ -267,7 +272,13 @@ create policy "Supervisors and super admin delete relevant assignments" on publi
 using ((select private.is_department_supervisor_for(teacher_id)) or private.is_active_staff(array['super_admin']));
 
 create policy "Public reads published plans" on public.weekly_plans for select to anon
-using (status = 'published');
+using (
+  status = 'published'
+  and exists (
+    select 1 from public.academic_weeks week_record
+    where week_record.id = weekly_plans.week_id and week_record.parent_portal_visible
+  )
+);
 create policy "Active staff reads plans" on public.weekly_plans for select to authenticated
 using (status = 'published' or private.is_active_staff());
 create policy "Assigned staff creates plan shells" on public.weekly_plans for insert to authenticated
@@ -292,7 +303,8 @@ using (
       on s.weekly_plan_id = p.id
      and s.teacher_id = plan_entries.teacher_id
      and s.subject_id = plan_entries.subject_id
-    where p.id = weekly_plan_id and p.status = 'published' and s.status = 'approved'
+    join public.academic_weeks week_record on week_record.id = p.week_id
+    where p.id = weekly_plan_id and p.status = 'published' and week_record.parent_portal_visible and s.status = 'approved'
   )
 );
 create policy "Active staff reads plan entries" on public.plan_entries for select to authenticated
@@ -326,7 +338,8 @@ using (
       on s.weekly_plan_id = p.id
      and s.teacher_id = plan_quizzes.teacher_id
      and s.subject_id = plan_quizzes.subject_id
-    where p.id = weekly_plan_id and p.status = 'published' and s.status = 'approved'
+    join public.academic_weeks week_record on week_record.id = p.week_id
+    where p.id = weekly_plan_id and p.status = 'published' and week_record.parent_portal_visible and s.status = 'approved'
   )
 );
 create policy "Active staff reads quizzes" on public.plan_quizzes for select to authenticated using (private.is_active_staff());
@@ -345,7 +358,8 @@ using (
     join public.plan_submissions s
       on s.weekly_plan_id = p.id
      and s.teacher_id = plan_notes.teacher_id
-    where p.id = weekly_plan_id and p.status = 'published' and s.status = 'approved'
+    join public.academic_weeks week_record on week_record.id = p.week_id
+    where p.id = weekly_plan_id and p.status = 'published' and week_record.parent_portal_visible and s.status = 'approved'
   )
 );
 create policy "Active staff reads notes" on public.plan_notes for select to authenticated using (private.is_active_staff());
@@ -359,6 +373,7 @@ using (teacher_id = (select auth.uid()) or private.is_active_staff(array['super_
 
 revoke all on all tables in schema public from anon, authenticated;
 grant select on public.departments, public.staff_directory, public.school_classes, public.subjects, public.academic_weeks, public.timetable_slots to anon, authenticated;
+grant update (teacher_entry_enabled, parent_portal_visible) on public.academic_weeks to authenticated;
 grant select on public.profiles, public.registration_requests, public.teacher_assignments, public.weekly_plans, public.plan_entries, public.plan_quizzes, public.plan_notes to authenticated;
 grant insert on public.registration_requests, public.weekly_plans, public.plan_entries, public.plan_quizzes, public.plan_notes to authenticated;
 grant update on public.profiles, public.registration_requests, public.weekly_plans, public.plan_entries, public.plan_quizzes, public.plan_notes to authenticated;

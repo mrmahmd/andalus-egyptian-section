@@ -26,6 +26,63 @@ test("renders published timetable lessons in merged school-day groups", async ()
   assert.match(source, /plan_quizzes/);
 });
 
+test("shows real academic-week dates and keeps long parent-plan text readable", async () => {
+  const parentSource = await readFile(new URL("../app/weekly-plan/page.tsx", import.meta.url), "utf8");
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const finderSource = await readFile(new URL("../app/home-plan-finder.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(parentSource, /formatAcademicWeekRange/);
+  assert.match(parentSource, /academic_weeks!inner\(week_number, label, starts_on, ends_on, parent_portal_visible\)/);
+  assert.match(teacherSource, /academicWeekRange\(selectedWeek/);
+  assert.match(finderSource, /academic_weeks!inner\(week_number, label, starts_on, ends_on, parent_portal_visible\)/);
+  assert.match(styles, /\.weekly-table \{[^}]*table-layout: fixed/);
+  assert.match(styles, /overflow-wrap: anywhere/);
+  assert.match(styles, /\.weekly-table td:not\(\.day-cell\):not\(\.course-cell\) \{ font-size: 11px/);
+  assert.match(styles, /\.weekly-day-group:nth-of-type\(5\)/);
+});
+
+test("uses the supplied full-colour school logo across the platform", async () => {
+  const pages = [
+    "../app/page.tsx",
+    "../app/weekly-plan/page.tsx",
+    "../app/timetable/page.tsx",
+    "../app/support/page.tsx",
+    "../app/teachers/page.tsx",
+    "../app/teachers/login/page.tsx",
+    "../app/admin/page.tsx",
+    "../app/super-admin/page.tsx",
+  ];
+
+  for (const page of pages) {
+    const source = await readFile(new URL(page, import.meta.url), "utf8");
+    assert.match(source, /school-logo\.png/);
+    assert.doesNotMatch(source, /school-logo\.jpeg/);
+  }
+});
+
+test("gives Super Admin independent teacher-entry and parent-visibility controls per week", async () => {
+  const superAdminSource = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const parentSource = await readFile(new URL("../app/weekly-plan/page.tsx", import.meta.url), "utf8");
+  const finderSource = await readFile(new URL("../app/home-plan-finder.tsx", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../supabase/migrations/20260921002000_add_academic_week_visibility_controls.sql", import.meta.url), "utf8");
+
+  assert.match(superAdminSource, /Week Visibility Control/);
+  assert.match(superAdminSource, /updateAcademicWeekVisibility/);
+  assert.match(superAdminSource, /teacher_entry_enabled/);
+  assert.match(superAdminSource, /parent_portal_visible/);
+  assert.match(teacherSource, /weeks\.filter\(\(week\) => week\.teacher_entry_enabled\)/);
+  assert.match(teacherSource, /teacherEntryWeeks\.map/);
+  assert.match(parentSource, /eq\("academic_weeks\.parent_portal_visible", true\)/);
+  assert.match(finderSource, /eq\("academic_weeks\.parent_portal_visible", true\)/);
+  assert.match(migration, /add column if not exists teacher_entry_enabled boolean not null default true/);
+  assert.match(migration, /add column if not exists parent_portal_visible boolean not null default true/);
+  assert.match(migration, /enforce_teacher_entry_week/);
+  assert.match(migration, /reviews of other teachers remain available/);
+  assert.doesNotMatch(migration, /delete from public\.weekly_plans/);
+});
+
 test("renders teacher sign in and account creation entry point", async () => {
   const html = await readFile(
     new URL("teachers/login/index.html", outputRoot),

@@ -195,7 +195,7 @@ export default function TeacherLoginPage() {
     <main className="teacher-auth-page">
       <section className="teacher-auth-brand-panel">
         <div className="teacher-auth-brand">
-          <img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" />
+          <img src={`${basePath}/school-logo.png`} alt="AlAndalus Private Schools" />
           <div><strong>ALANDALUS</strong><span>PRIVATE SCHOOLS</span><small>Egyptian Section</small></div>
         </div>
 
@@ -216,7 +216,7 @@ export default function TeacherLoginPage() {
 
       <section className="teacher-auth-form-panel">
         <div className="teacher-auth-mobile-brand">
-          <img src={`${basePath}/school-logo.jpeg`} alt="" />
+          <img src={`${basePath}/school-logo.png`} alt="" />
           <span><strong>ALANDALUS</strong><small>Teacher Workspace</small></span>
         </div>
 

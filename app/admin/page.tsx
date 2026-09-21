@@ -146,7 +146,7 @@ export default function AdminDashboardPage() {
   return (
     <main className="teacher-portal admin-portal admin-report-portal">
       <aside className="teacher-sidebar admin-sidebar">
-        <div className="teacher-brand"><img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS</strong><span>Administration Reports</span></div></div>
+        <div className="teacher-brand"><img src={`${basePath}/school-logo.png`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS</strong><span>Administration Reports</span></div></div>
         <div className="teacher-school-year"><span>Academic year</span><strong>2026–2027</strong></div>
         <nav className="teacher-nav" aria-label="Administrative report navigation"><p>Administration</p><button className="active"><span className="teacher-nav-icon">RP</span>Published Plan Report<small>{plans.length}</small></button><p>Access</p><Link href="/weekly-plan/"><span className="teacher-nav-icon">FP</span>Family Plan Page</Link></nav>
         <div className="admin-permission-card report-access-card"><span>AR</span><div><strong>Read-only access</strong><p>View published plans for every grade and class.</p></div></div>
@@ -154,7 +154,7 @@ export default function AdminDashboardPage() {
       </aside>
 
       <section className="teacher-main">
-        <header className="teacher-topbar"><div className="teacher-mobile-brand"><img src={`${basePath}/school-logo.jpeg`} alt="" /><strong>Administration Reports</strong></div><div className="teacher-top-actions"><span className="teacher-sync"><i /> Live school data</span><button className="teacher-profile-chip"><span className="teacher-avatar admin-avatar">AR</span><span><strong>{administratorName}</strong><small>Read-only reporting</small></span></button></div></header>
+        <header className="teacher-topbar"><div className="teacher-mobile-brand"><img src={`${basePath}/school-logo.png`} alt="" /><strong>Administration Reports</strong></div><div className="teacher-top-actions"><span className="teacher-sync"><i /> Live school data</span><button className="teacher-profile-chip"><span className="teacher-avatar admin-avatar">AR</span><span><strong>{administratorName}</strong><small>Read-only reporting</small></span></button></div></header>
         <div className="teacher-content admin-content">
           <div className="teacher-page-heading"><div><p className="teacher-kicker">Administrative workspace</p><h1>Published Weekly Plan Report</h1><span>Review every published weekly plan by grade, class and academic week. This account cannot create, edit or submit plans.</span></div><Link className="teacher-primary-button admin-preview-link" href="/weekly-plan/">Open family plan <span>→</span></Link></div>
           {message && <p className="super-admin-live-message error" role="alert">{message}</p>}

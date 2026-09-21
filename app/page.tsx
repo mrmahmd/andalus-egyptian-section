@@ -27,7 +27,7 @@ export default function Home() {
     <HomeReveal>
       <header className="site-header">
         <Link href="/" className="brand-lockup" aria-label="AlAndalus Private Schools home">
-          <img src={`${basePath}/school-logo.jpeg`} alt="AlAndalus Private Schools" />
+          <img src={`${basePath}/school-logo.png`} alt="AlAndalus Private Schools" />
           <span className="brand-copy">
             <strong>AlAndalus Private Schools</strong>
             <small>Egyptian Section</small>
@@ -146,7 +146,7 @@ export default function Home() {
       <footer className="site-footer" data-reveal>
         <div className="page-width footer-grid">
           <div className="footer-brand">
-            <img src={`${basePath}/school-logo.jpeg`} alt="" />
+            <img src={`${basePath}/school-logo.png`} alt="" />
             <div><strong>ALANDALUS PRIVATE SCHOOLS</strong><span>Egyptian Section</span></div>
           </div>
           <p>Weekly Study Plan · Academic Year 2026–2027</p>
