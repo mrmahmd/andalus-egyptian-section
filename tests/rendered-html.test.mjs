@@ -88,6 +88,7 @@ test("keeps parent-plan reads anonymous and refreshes stale public data", async 
   const parentSource = await readFile(new URL("../app/weekly-plan/page.tsx", import.meta.url), "utf8");
   const finderSource = await readFile(new URL("../app/home-plan-finder.tsx", import.meta.url), "utf8");
   const superAdminSource = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+  const publicRlsMigration = await readFile(new URL("../supabase/migrations/20260922094500_fix_anonymous_parent_plan_content_rls.sql", import.meta.url), "utf8");
 
   assert.match(clientSource, /export function getSupabasePublicClient/);
   assert.match(clientSource, /persistSession: false/);
@@ -101,6 +102,11 @@ test("keeps parent-plan reads anonymous and refreshes stale public data", async 
   assert.match(finderSource, /visibilitychange/);
   assert.match(superAdminSource, /select\("id, teacher_entry_enabled, parent_portal_visible"\)/);
   assert.match(superAdminSource, /savedWeek\[field\] !== value/);
+  assert.match(publicRlsMigration, /security definer/);
+  assert.match(publicRlsMigration, /private\.parent_can_read_approved_plan_content/);
+  assert.match(publicRlsMigration, /revoke all on function private\.parent_can_read_approved_plan_content/);
+  assert.match(publicRlsMigration, /grant execute on function private\.parent_can_read_approved_plan_content/);
+  assert.doesNotMatch(publicRlsMigration, /grant select on public\.plan_submissions to anon/);
 });
 
 test("renders teacher sign in and account creation entry point", async () => {
