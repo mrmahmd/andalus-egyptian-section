@@ -811,9 +811,14 @@ export default function SuperAdminPage() {
         setSuccessMessage("Local preview only — no school data was changed.");
         return;
       }
-      const { error } = await getSupabaseBrowserClient().from("academic_weeks").update({ [field]: value }).eq("id", weekId);
+      const { data: savedWeek, error } = await getSupabaseBrowserClient().from("academic_weeks")
+        .update({ [field]: value })
+        .eq("id", weekId)
+        .select("id, teacher_entry_enabled, parent_portal_visible")
+        .single();
       if (error) throw error;
-      setAcademicWeeks((current) => current.map((week) => week.id === weekId ? { ...week, [field]: value } : week));
+      if (!savedWeek || savedWeek[field] !== value) throw new Error("The saved week setting could not be verified. Please refresh and try again.");
+      setAcademicWeeks((current) => current.map((week) => week.id === weekId ? { ...week, teacher_entry_enabled: savedWeek.teacher_entry_enabled, parent_portal_visible: savedWeek.parent_portal_visible } : week));
       const week = academicWeeks.find((item) => item.id === weekId);
       const weekName = `Week ${week?.week_number ?? ""}`.trim();
       setSuccessMessage(field === "teacher_entry_enabled"

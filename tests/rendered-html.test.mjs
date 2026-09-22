@@ -83,6 +83,26 @@ test("gives Super Admin independent teacher-entry and parent-visibility controls
   assert.doesNotMatch(migration, /delete from public\.weekly_plans/);
 });
 
+test("keeps parent-plan reads anonymous and refreshes stale public data", async () => {
+  const clientSource = await readFile(new URL("../lib/supabase/client.ts", import.meta.url), "utf8");
+  const parentSource = await readFile(new URL("../app/weekly-plan/page.tsx", import.meta.url), "utf8");
+  const finderSource = await readFile(new URL("../app/home-plan-finder.tsx", import.meta.url), "utf8");
+  const superAdminSource = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+
+  assert.match(clientSource, /export function getSupabasePublicClient/);
+  assert.match(clientSource, /persistSession: false/);
+  assert.match(clientSource, /autoRefreshToken: false/);
+  assert.match(clientSource, /detectSessionInUrl: false/);
+  assert.match(parentSource, /getSupabasePublicClient/);
+  assert.doesNotMatch(parentSource, /getSupabaseBrowserClient/);
+  assert.match(parentSource, /visibilitychange/);
+  assert.match(parentSource, /Refresh plans/);
+  assert.match(finderSource, /getSupabasePublicClient/);
+  assert.match(finderSource, /visibilitychange/);
+  assert.match(superAdminSource, /select\("id, teacher_entry_enabled, parent_portal_visible"\)/);
+  assert.match(superAdminSource, /savedWeek\[field\] !== value/);
+});
+
 test("renders teacher sign in and account creation entry point", async () => {
   const html = await readFile(
     new URL("teachers/login/index.html", outputRoot),

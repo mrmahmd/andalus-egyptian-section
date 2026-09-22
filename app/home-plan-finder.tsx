@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { getSupabaseBrowserClient } from "../lib/supabase/client";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { getSupabasePublicClient } from "../lib/supabase/client";
 import { formatAcademicWeekRange } from "../lib/format-academic-week";
 
 type PublishedPlan = { grade: number; section: string; weekNumber: number; weekLabel: string; startsOn: string; endsOn: string };
@@ -13,27 +13,58 @@ export default function HomePlanFinder() {
   const [section, setSection] = useState("A");
   const [week, setWeek] = useState("");
   const [publishedPlans, setPublishedPlans] = useState<PublishedPlan[]>([]);
+  const [loadError, setLoadError] = useState("");
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [isArabic, setIsArabic] = useState(false);
 
   useEffect(() => {
-    setIsArabic(window.localStorage.getItem("andalus-language") === "ar");
-    const loadPublishedPlans = async () => {
-      const { data } = await getSupabaseBrowserClient().from("weekly_plans")
-        .select("school_classes(grade, section), academic_weeks!inner(week_number, label, starts_on, ends_on, parent_portal_visible)")
-        .eq("status", "published")
-        .eq("academic_weeks.parent_portal_visible", true);
-      setPublishedPlans(((data ?? []) as unknown as Record<string, unknown>[]).map((item) => {
-        const schoolClass = one(item.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
-        const academicWeek = one(item.academic_weeks as { week_number: number; label: string; starts_on: string; ends_on: string; parent_portal_visible: boolean } | { week_number: number; label: string; starts_on: string; ends_on: string; parent_portal_visible: boolean }[] | null);
-        return schoolClass && academicWeek ? { grade: schoolClass.grade, section: schoolClass.section, weekNumber: academicWeek.week_number, weekLabel: academicWeek.label, startsOn: academicWeek.starts_on, endsOn: academicWeek.ends_on } : null;
-      }).filter((plan): plan is PublishedPlan => plan !== null));
-    };
-    void loadPublishedPlans();
+    const initialization = window.setTimeout(() => setIsArabic(window.localStorage.getItem("andalus-language") === "ar"), 0);
+    return () => window.clearTimeout(initialization);
   }, []);
 
+  const refreshPlans = useCallback(() => setRefreshVersion((current) => current + 1), []);
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshPlans();
+    };
+    window.addEventListener("focus", refreshPlans);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshPlans);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [refreshPlans]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPublishedPlans = async () => {
+      setLoadError("");
+      try {
+        const { data, error } = await getSupabasePublicClient().from("weekly_plans")
+          .select("school_classes(grade, section), academic_weeks!inner(week_number, label, starts_on, ends_on, parent_portal_visible)")
+          .eq("status", "published")
+          .eq("academic_weeks.parent_portal_visible", true);
+        if (error) throw error;
+        if (cancelled) return;
+        setPublishedPlans(((data ?? []) as unknown as Record<string, unknown>[]).map((item) => {
+          const schoolClass = one(item.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
+          const academicWeek = one(item.academic_weeks as { week_number: number; label: string; starts_on: string; ends_on: string; parent_portal_visible: boolean } | { week_number: number; label: string; starts_on: string; ends_on: string; parent_portal_visible: boolean }[] | null);
+          return schoolClass && academicWeek ? { grade: schoolClass.grade, section: schoolClass.section, weekNumber: academicWeek.week_number, weekLabel: academicWeek.label, startsOn: academicWeek.starts_on, endsOn: academicWeek.ends_on } : null;
+        }).filter((plan): plan is PublishedPlan => plan !== null));
+      } catch (error) {
+        if (cancelled) return;
+        setPublishedPlans([]);
+        setLoadError(error instanceof Error ? error.message : "Published plans could not be loaded.");
+      }
+    };
+    void loadPublishedPlans();
+    return () => { cancelled = true; };
+  }, [refreshVersion]);
+
   const availableWeeks = useMemo(() => publishedPlans.filter((plan) => plan.grade === Number(grade) && plan.section === section).sort((a, b) => b.weekNumber - a.weekNumber), [grade, publishedPlans, section]);
-  useEffect(() => setWeek((current) => availableWeeks.some((item) => String(item.weekNumber) === current) ? current : String(availableWeeks[0]?.weekNumber ?? "")), [availableWeeks]);
-  const planUrl = `/weekly-plan/?grade=${grade}&section=${section}&week=${week}`;
+  const visibleWeek = availableWeeks.some((item) => String(item.weekNumber) === week) ? week : String(availableWeeks[0]?.weekNumber ?? "");
+  const planUrl = `/weekly-plan/?grade=${grade}&section=${section}&week=${visibleWeek}`;
   const gradeLabel = (number: number) => isArabic ? `الصف ${number}` : `Grade ${number}`;
   const classLabel = (value: string) => isArabic ? `الشعبة ${value === "A" ? "أ" : "ب"}` : `Class ${value}`;
 
@@ -42,8 +73,9 @@ export default function HomePlanFinder() {
     <div className="finder-fields">
       <label><span>{isArabic ? "الصف" : "Grade"}</span><select value={grade} onChange={(event) => setGrade(event.target.value)}>{Array.from({ length: 10 }, (_, index) => <option key={index + 1} value={index + 1}>{gradeLabel(index + 1)}</option>)}</select></label>
       <label><span>{isArabic ? "الشعبة" : "Class"}</span><select value={section} onChange={(event) => setSection(event.target.value)}><option value="A">{classLabel("A")}</option><option value="B">{classLabel("B")}</option></select></label>
-      <label className="week-field"><span>{isArabic ? "الأسبوع الدراسي" : "School week"}</span><select value={week} disabled={availableWeeks.length === 0} onChange={(event) => setWeek(event.target.value)}>{availableWeeks.length === 0 ? <option value="">{isArabic ? "لا توجد خطط معتمدة بعد" : "No approved plans yet"}</option> : availableWeeks.map((item) => <option key={item.weekNumber} value={item.weekNumber}>{isArabic ? `الأسبوع ${item.weekNumber} · ${formatAcademicWeekRange({ starts_on: item.startsOn, ends_on: item.endsOn }, "ar-EG")}` : `Week ${item.weekNumber} · ${formatAcademicWeekRange({ starts_on: item.startsOn, ends_on: item.endsOn })}`}</option>)}</select></label>
-      {week ? <Link href={planUrl} className="button button-primary finder-button">{isArabic ? "عرض الخطة" : "View plan"} <span>→</span></Link> : <span className="button button-primary finder-button" aria-disabled="true">{isArabic ? "عرض الخطة" : "View plan"} <span>→</span></span>}
+      <label className="week-field"><span>{isArabic ? "الأسبوع الدراسي" : "School week"}</span><select value={visibleWeek} disabled={availableWeeks.length === 0} onChange={(event) => setWeek(event.target.value)}>{availableWeeks.length === 0 ? <option value="">{isArabic ? "لا توجد خطط معتمدة بعد" : "No approved plans yet"}</option> : availableWeeks.map((item) => <option key={item.weekNumber} value={item.weekNumber}>{isArabic ? `الأسبوع ${item.weekNumber} · ${formatAcademicWeekRange({ starts_on: item.startsOn, ends_on: item.endsOn }, "ar-EG")}` : `Week ${item.weekNumber} · ${formatAcademicWeekRange({ starts_on: item.startsOn, ends_on: item.endsOn })}`}</option>)}</select></label>
+      {visibleWeek ? <Link href={planUrl} className="button button-primary finder-button">{isArabic ? "عرض الخطة" : "View plan"} <span>→</span></Link> : <span className="button button-primary finder-button" aria-disabled="true">{isArabic ? "عرض الخطة" : "View plan"} <span>→</span></span>}
     </div>
+    {loadError && <p className="finder-load-error" role="alert">{isArabic ? "تعذر تحديث الخطط." : "Plans could not be refreshed."} <button type="button" onClick={refreshPlans}>{isArabic ? "إعادة المحاولة" : "Try again"}</button></p>}
   </section>;
 }
