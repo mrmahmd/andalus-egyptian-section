@@ -362,9 +362,30 @@ test("confirms teacher submission, reports success, and copies completed plans a
   assert.match(teacherSource, /finishSuccessfulSubmission[\s\S]*setWeeklyBuilderOpen\(false\)[\s\S]*setActiveNav\("Overview"\)/);
   assert.doesNotMatch(teacherSource, /className="weekly-copy-panel"/);
   assert.match(teacherSource, /canCopy && <button[\s\S]*openCopyPlanDialog\(plan\)[\s\S]*Copy plan/);
-  assert.match(teacherSource, /already has your[\s\S]*Nothing was overwritten/);
+  assert.match(teacherSource, /hasMeaningfulDraft && !replaceExistingDraft/);
+  assert.match(teacherSource, /Open existing draft/);
+  assert.match(teacherSource, /Replace my draft/);
+  assert.match(teacherSource, /targetSubmission\?\.status === "submitted"/);
+  assert.match(teacherSource, /targetSubmission\?\.status === "approved"/);
   assert.match(teacherSource, /status: "draft", submitted_at: null/);
   assert.match(teacherSource, /setSelectedClassId\(copiedClassId\)[\s\S]*setSelectedWeekId\(copiedWeekId\)[\s\S]*setWeeklyBuilderOpen\(true\)/);
+});
+
+test("keeps teacher and class publication states truthful for partial plans", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const superAdminSource = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../supabase/migrations/20260926193000_block_meaningful_drafts_before_partial_publication.sql", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /entryReviewStatus = \(entry: TeacherEntry\)[\s\S]*\?\.status \?\? "draft"/);
+  assert.doesNotMatch(teacherSource, /if \(entry\.status === "published"\) existing\.status = "published"/);
+  assert.match(teacherSource, /Approved by supervisor/);
+  assert.match(superAdminSource, /publicationState: "not_published" \| "partially_published" \| "fully_published"/);
+  assert.match(superAdminSource, /Partially published/);
+  assert.match(superAdminSource, /Each row reflects that teacher&apos;s own work only/);
+  assert.match(superAdminSource, /meaningfulSubmissions\.some\(\(submission\) => submission\.status === "draft"\)/);
+  assert.match(migration, /unresolved_submission\.status = 'draft'/);
+  assert.match(migration, /btrim\(coalesce\(draft_entry\.classwork, ''\)\) <> ''/);
+  assert.match(migration, /select private\.refresh_weekly_plan_publication_state\(id\)[\s\S]*from public\.weekly_plans/);
 });
 
 test("rechecks live week access before opening or saving a teacher plan", async () => {

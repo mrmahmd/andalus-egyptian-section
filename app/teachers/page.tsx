@@ -154,6 +154,7 @@ type SchoolClass = { id: string; grade: number; section: string };
 type SchoolSubject = { id: string; name_en: string };
 type DepartmentTeacher = { userId: string; name: string; assignments: Assignment[] };
 type WeeklyPlanRow = { planId: string; classId: string; weekId: string; className: string; week: string; subjects: string[]; lessonCount: number; status: string; updated: string };
+type CopyConflict = { targetPlanId: string; targetLabel: string };
 
 const emptySlotDraft = (): SlotDraft => ({ classwork: "", homework: "", classeraNotes: "", englishProgramme: "", scienceComponent: "" });
 const scienceComponents = ["Chemistry", "Physics", "Biology"];
@@ -249,6 +250,7 @@ export default function TeachersDashboardPage() {
   const [copySubjectId, setCopySubjectId] = useState("");
   const [copyTargetClassId, setCopyTargetClassId] = useState("");
   const [copyFeedback, setCopyFeedback] = useState("");
+  const [copyConflict, setCopyConflict] = useState<CopyConflict | null>(null);
   const [parentPreviewOpen, setParentPreviewOpen] = useState(false);
   const [parentPreviewLoading, setParentPreviewLoading] = useState(false);
   const [parentPreviewSlots, setParentPreviewSlots] = useState<ParentPreviewSlot[]>([]);
@@ -886,7 +888,7 @@ export default function TeachersDashboardPage() {
     setWeeklyBuilderOpen(true);
   };
 
-  const entryReviewStatus = (entry: TeacherEntry) => mySubmissions.find((submission) => submission.classId === entry.classId && submission.weekId === entry.weekId && submission.subjectId === entry.subjectId)?.status ?? entry.status;
+  const entryReviewStatus = (entry: TeacherEntry) => mySubmissions.find((submission) => submission.classId === entry.classId && submission.weekId === entry.weekId && submission.subjectId === entry.subjectId)?.status ?? "draft";
 
   const deleteDraftEntry = async (entry: TeacherEntry) => {
     const status = entryReviewStatus(entry);
@@ -932,6 +934,7 @@ export default function TeachersDashboardPage() {
     setCopySubjectId(sourceSubjectIds[0] ?? "");
     setCopyTargetClassId("");
     setCopyFeedback("");
+    setCopyConflict(null);
     setCopyDialogOpen(true);
   };
 
@@ -942,6 +945,19 @@ export default function TeachersDashboardPage() {
     setCopySubjectId("");
     setCopyTargetClassId("");
     setCopyFeedback("");
+    setCopyConflict(null);
+  };
+
+  const openExistingCopyTarget = async () => {
+    if (!copySourcePlan || !copyTargetClassId || !(await verifyTeacherWeekAccess(copySourcePlan.weekId, false))) return;
+    const targetClassId = copyTargetClassId;
+    const targetWeekId = copySourcePlan.weekId;
+    closeCopyPlanDialog();
+    setSelectedClassId(targetClassId);
+    setSelectedWeekId(targetWeekId);
+    setSlotDrafts({});
+    setBuilderFeedback({ tone: "info", text: "The existing draft was kept unchanged. Review or edit it before sending it to the supervisor." });
+    setWeeklyBuilderOpen(true);
   };
 
   const clearWeeklyDraft = async (plan: WeeklyPlanRow) => {
@@ -963,7 +979,7 @@ export default function TeachersDashboardPage() {
     } finally { setSaving(false); }
   };
 
-  const copyPlanToOtherClasses = async () => {
+  const copyPlanToOtherClasses = async (replaceExistingDraft = false) => {
     if (!copySourcePlan || !copySubjectId || !copyTargetClassId) return;
     const target = copyTargetClasses.find((item) => item.classId === copyTargetClassId);
     if (!target || target.lessonCount === 0) {
@@ -991,16 +1007,37 @@ export default function TeachersDashboardPage() {
       const { data: existingPlan, error: existingPlanError } = await supabase.from("weekly_plans").select("id").eq("class_id", target.classId).eq("week_id", copySourcePlan.weekId).maybeSingle();
       if (existingPlanError) throw existingPlanError;
       let targetPlanId = existingPlan?.id ? String(existingPlan.id) : "";
+      let existingSubmissionId = "";
       if (targetPlanId) {
         const [{ data: targetExistingEntries, error: targetEntriesError }, { data: targetSubmission, error: targetSubmissionError }] = await Promise.all([
-          supabase.from("plan_entries").select("id").eq("weekly_plan_id", targetPlanId).eq("teacher_id", profileId).eq("subject_id", copySubjectId).limit(1),
-          supabase.from("plan_submissions").select("status").eq("weekly_plan_id", targetPlanId).eq("teacher_id", profileId).eq("subject_id", copySubjectId).maybeSingle(),
+          supabase.from("plan_entries").select("id, classwork, homework, classera_notes").eq("weekly_plan_id", targetPlanId).eq("teacher_id", profileId).eq("subject_id", copySubjectId),
+          supabase.from("plan_submissions").select("id, status").eq("weekly_plan_id", targetPlanId).eq("teacher_id", profileId).eq("subject_id", copySubjectId).maybeSingle(),
         ]);
         if (targetEntriesError) throw targetEntriesError;
         if (targetSubmissionError) throw targetSubmissionError;
-        if ((targetExistingEntries?.length ?? 0) > 0 || targetSubmission) {
-          setCopyFeedback(`Grade ${target.grade} · ${target.section} already has your ${copySourceAssignments.find((assignment) => assignment.subjectId === copySubjectId)?.subject ?? "subject"} plan for this week. Nothing was overwritten; open that plan from the main screen if you want to edit it.`);
+        const targetLabel = `Grade ${target.grade} · ${target.section}`;
+        existingSubmissionId = targetSubmission?.id ? String(targetSubmission.id) : "";
+        if (targetSubmission?.status === "submitted") {
+          setCopyFeedback(`${targetLabel} already has a plan waiting for supervisor review. Withdraw it before replacing it.`);
           return;
+        }
+        if (targetSubmission?.status === "approved") {
+          setCopyFeedback(`${targetLabel} already has an approved plan. An approved plan cannot be replaced by copying.`);
+          return;
+        }
+        if (targetSubmission?.status === "changes_requested") {
+          setCopyFeedback(`${targetLabel} has a plan returned with supervisor notes. Open that plan and respond to the requested changes instead of replacing it.`);
+          return;
+        }
+        const hasMeaningfulDraft = (targetExistingEntries ?? []).some((entry) => [entry.classwork, entry.homework, entry.classera_notes].some((value) => String(value ?? "").trim().length > 0));
+        if (hasMeaningfulDraft && !replaceExistingDraft) {
+          setCopyConflict({ targetPlanId, targetLabel });
+          setCopyFeedback("");
+          return;
+        }
+        if ((targetExistingEntries?.length ?? 0) > 0) {
+          const { error: clearTargetError } = await supabase.from("plan_entries").delete().eq("weekly_plan_id", targetPlanId).eq("teacher_id", profileId).eq("subject_id", copySubjectId);
+          if (clearTargetError) throw clearTargetError;
         }
       }
       if (!targetPlanId) {
@@ -1014,7 +1051,11 @@ export default function TeachersDashboardPage() {
       const { data: insertedRows, error: insertError } = await supabase.from("plan_entries").insert(rowsToCopy).select("id");
       if (insertError) throw insertError;
       if ((insertedRows ?? []).length !== rowsToCopy.length) throw new Error("Supabase did not confirm every copied lesson. Please try again.");
-      const { data: savedSubmission, error: submissionError } = await supabase.from("plan_submissions").insert({ weekly_plan_id: targetPlanId, teacher_id: profileId, subject_id: copySubjectId, status: "draft", submitted_at: null, reviewed_by: null, reviewed_at: null, review_note: null }).select("id, status").single();
+      const submissionPayload = { weekly_plan_id: targetPlanId, teacher_id: profileId, subject_id: copySubjectId, status: "draft", submitted_at: null, reviewed_by: null, reviewed_at: null, review_note: null, updated_at: new Date().toISOString() };
+      const submissionQuery = existingSubmissionId
+        ? supabase.from("plan_submissions").update(submissionPayload).eq("id", existingSubmissionId).eq("teacher_id", profileId).eq("status", "draft")
+        : supabase.from("plan_submissions").insert(submissionPayload);
+      const { data: savedSubmission, error: submissionError } = await submissionQuery.select("id, status").single();
       if (submissionError) {
         const insertedIds = (insertedRows ?? []).map((row) => String(row.id));
         const { error: cleanupError } = insertedIds.length ? await supabase.from("plan_entries").delete().in("id", insertedIds).eq("teacher_id", profileId) : { error: null };
@@ -1030,6 +1071,7 @@ export default function TeachersDashboardPage() {
       setCopySourcePlan(null);
       setCopySubjectId("");
       setCopyTargetClassId("");
+      setCopyConflict(null);
       setSelectedClassId(copiedClassId);
       setSelectedWeekId(copiedWeekId);
       setSlotDrafts({});
@@ -1157,16 +1199,19 @@ export default function TeachersDashboardPage() {
     const existing = groups.get(entry.weeklyPlanId) ?? { planId: entry.weeklyPlanId, classId: entry.classId, weekId: entry.weekId, className: entry.className, week: entry.week, subjects: [], lessonCount: 0, status: "draft", updated: entry.updated } as WeeklyPlanRow;
     if (!existing.subjects.includes(entry.subject)) existing.subjects.push(entry.subject);
     existing.lessonCount += 1;
-    const status = entryReviewStatus(entry);
-    if (entry.status === "published") existing.status = "published";
-    else if (existing.status !== "published" && status === "submitted") existing.status = "submitted";
-    else if (existing.status !== "published" && existing.status !== "submitted" && status === "changes_requested") existing.status = "changes_requested";
-    else if (existing.status === "draft" && status === "approved") existing.status = "approved";
     groups.set(entry.weeklyPlanId, existing);
     return groups;
-  }, new Map<string, WeeklyPlanRow>()).values()).sort((a, b) => Number(b.weekId === currentWeek?.id) - Number(a.weekId === currentWeek?.id) || a.week.localeCompare(b.week)), [entries, mySubmissions, currentWeek?.id]);
-  const publishedCount = entries.filter((entry) => entry.status === "published").length;
-  const draftCount = entries.filter((entry) => entry.status === "draft").length;
+  }, new Map<string, WeeklyPlanRow>()).values()).map((plan) => {
+    const subjectIds = Array.from(new Set(entries.filter((entry) => entry.weeklyPlanId === plan.planId).map((entry) => entry.subjectId)));
+    const statuses = subjectIds.map((subjectId) => mySubmissions.find((submission) => submission.weeklyPlanId === plan.planId && submission.subjectId === subjectId)?.status ?? "draft");
+    const status = statuses.some((item) => item === "changes_requested") ? "changes_requested"
+      : statuses.some((item) => item === "submitted") ? "submitted"
+        : statuses.length > 0 && statuses.every((item) => item === "approved") ? "approved"
+          : "draft";
+    return { ...plan, status };
+  }).sort((a, b) => Number(b.weekId === currentWeek?.id) - Number(a.weekId === currentWeek?.id) || a.week.localeCompare(b.week)), [entries, mySubmissions, currentWeek?.id]);
+  const approvedCount = entries.filter((entry) => entryReviewStatus(entry) === "approved").length;
+  const draftCount = entries.filter((entry) => ["draft", "changes_requested"].includes(entryReviewStatus(entry))).length;
   const waitingReviews = reviewItems.filter((item) => item.status === "submitted");
   const selectedReviewWeek = academicWeeks.find((week) => week.id === selectedReviewWeekId);
   const supervisorReviewClasses = useMemo(() => {
@@ -1265,7 +1310,7 @@ export default function TeachersDashboardPage() {
           {(activeNav === "Overview" || activeNav === "Weekly Plans") && <>
             <section className="teacher-stats" aria-label="Weekly plan summary">
               <article><span className="stat-icon navy">AS</span><div><small>Assignments</small><strong>{assignments.length}</strong><p>Approved by Super Admin</p></div></article>
-              <article><span className="stat-icon magenta">PB</span><div><small>Published entries</small><strong>{publishedCount}</strong><p>Visible after plan publication</p></div></article>
+              <article><span className="stat-icon magenta">AP</span><div><small>Approved entries</small><strong>{approvedCount}</strong><p>Approved by the responsible supervisor</p></div></article>
               <article><span className="stat-icon cyan">DR</span><div><small>Draft entries</small><strong>{draftCount}</strong><p>Saved in Supabase</p></div></article>
               <article><span className="stat-icon amber">TS</span><div><small>Timetable slots</small><strong>{timetableSlots.length}</strong><p>Controls plan placement</p></div></article>
             </section>
@@ -1273,7 +1318,7 @@ export default function TeachersDashboardPage() {
             <section className="teacher-card teacher-plans-card teacher-live-plans-card">
               <div className="teacher-card-heading"><div><h2>{activeNav === "Overview" ? "My weekly plans" : "All my weekly plans"}</h2><p>One row represents one class plan for one school week. Open it to continue writing all of its lessons.</p></div></div>
               <div className="teacher-plan-table-wrap"><table className="teacher-plan-table teacher-weekly-plan-table"><thead><tr><th>Week</th><th>Class</th><th>Subjects written</th><th>Status</th><th>Last saved</th><th>Actions</th></tr></thead><tbody>
-                {weeklyPlanRows.map((plan) => { const statusLabel = plan.status === "published" ? "Published for families" : plan.status === "submitted" ? "Sent to supervisor" : plan.status === "changes_requested" ? "Changes requested" : plan.status === "approved" ? "Approved — waiting for class" : "Draft in progress"; const editable = plan.status === "draft" || plan.status === "changes_requested"; const canCopy = plan.status === "submitted" || plan.status === "approved" || plan.status === "published"; const statusTone = plan.status === "published" ? "purple" : plan.status === "approved" ? "green" : plan.status === "submitted" ? "navy" : plan.status === "changes_requested" ? "rose" : "amber"; return <tr key={plan.planId}><td><strong>{plan.week}</strong><small>{plan.lessonCount} lesson{plan.lessonCount === 1 ? "" : "s"}</small></td><td><strong>{plan.className}</strong></td><td>{plan.subjects.join(", ")}</td><td><span className={`teacher-status ${statusTone}`}><i />{statusLabel}</span></td><td>{plan.updated}</td><td><div className="teacher-plan-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => void openWeeklyPlan(plan)}>{editable ? "Continue plan" : "Preview"}</button>{canCopy && <button type="button" className="teacher-secondary-button copy" disabled={saving} onClick={() => openCopyPlanDialog(plan)}>Copy plan</button>}{plan.status === "submitted" && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => { const submission = mySubmissions.find((item) => item.weeklyPlanId === plan.planId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}{editable && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void clearWeeklyDraft(plan)}>Clear draft</button>}</div></td></tr>; })}
+                {weeklyPlanRows.map((plan) => { const statusLabel = plan.status === "submitted" ? "Sent to supervisor" : plan.status === "changes_requested" ? "Changes requested" : plan.status === "approved" ? "Approved by supervisor" : "Draft in progress"; const editable = plan.status === "draft" || plan.status === "changes_requested"; const canCopy = plan.status === "submitted" || plan.status === "approved"; const statusTone = plan.status === "approved" ? "green" : plan.status === "submitted" ? "navy" : plan.status === "changes_requested" ? "rose" : "amber"; return <tr key={plan.planId}><td><strong>{plan.week}</strong><small>{plan.lessonCount} lesson{plan.lessonCount === 1 ? "" : "s"}</small></td><td><strong>{plan.className}</strong></td><td>{plan.subjects.join(", ")}</td><td><span className={`teacher-status ${statusTone}`}><i />{statusLabel}</span></td><td>{plan.updated}</td><td><div className="teacher-plan-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => void openWeeklyPlan(plan)}>{editable ? "Continue plan" : "Preview"}</button>{canCopy && <button type="button" className="teacher-secondary-button copy" disabled={saving} onClick={() => openCopyPlanDialog(plan)}>Copy plan</button>}{plan.status === "submitted" && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => { const submission = mySubmissions.find((item) => item.weeklyPlanId === plan.planId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}{editable && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void clearWeeklyDraft(plan)}>Clear draft</button>}</div></td></tr>; })}
                 {!loading && weeklyPlanRows.length === 0 && <tr><td className="super-empty" colSpan={6}>No weekly plans have been started yet.</td></tr>}
               </tbody></table></div>
             </section>
@@ -1346,7 +1391,7 @@ export default function TeachersDashboardPage() {
         {sendConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setSendConfirmationOpen(false)}><section className="weekly-send-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="weekly-send-confirmation-title" dir={sendConfirmationArabic ? "rtl" : "ltr"}><span aria-hidden="true">✓</span><h3 id="weekly-send-confirmation-title">{sendConfirmationArabic ? isSupervisor ? "تأكيد اعتماد خطتك" : "تأكيد إرسال الخطة" : isSupervisor ? "Confirm automatic approval" : "Confirm plan submission"}</h3><p>{sendConfirmationArabic ? isSupervisor ? "سيتم اعتماد حصصك التعليمية تلقائيًا داخل المنصة. ستظهر خطة الفصل عند عدم وجود خطة مرسلة قيد المراجعة، وتظهر حصص غير المرسلين بعبارة Plan not published." : "هل تريد إرسال هذه الخطة الأسبوعية إلى المشرف للاعتماد؟ بعد الإرسال ستُغلق الخطة حتى يراجعها المشرف أو تسحبها للتعديل." : isSupervisor ? "Your own teaching lessons will be approved automatically. The class plan is visible when no submitted plan remains under review; missing teachers show Plan not published." : "Send this weekly plan to the supervisor for approval? After sending, the plan will be locked until it is reviewed or withdrawn."}</p><div><button type="button" className="teacher-secondary-button" onClick={() => setSendConfirmationOpen(false)}>{sendConfirmationArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" onClick={sendConfirmedWeeklyPlan}>{saving ? sendConfirmationArabic ? "الحفظ التلقائي جارٍ — اعتمد بعدها" : "Autosaving — approve next" : sendConfirmationArabic ? isSupervisor ? "نعم، اعتماد خطتي" : "نعم، إرسال للمشرف" : isSupervisor ? "Yes, approve my plan" : "Yes, send to supervisor"}</button></div></section></div>}
         {submissionSuccessOpen && <div className="weekly-send-confirmation-backdrop" role="presentation"><section className="weekly-send-confirmation weekly-submission-success" role="alertdialog" aria-modal="true" aria-labelledby="weekly-submission-success-title" dir={submissionSuccessArabic ? "rtl" : "ltr"}><span aria-hidden="true">✓</span><h3 id="weekly-submission-success-title">{submissionSuccessArabic ? isSupervisor ? "تم اعتماد خطتك بنجاح" : "تم إرسال الخطة بنجاح" : isSupervisor ? "Your plan was approved" : "Plan sent successfully"}</h3><p>{submissionSuccessArabic ? isSupervisor ? "تم اعتماد حصصك التعليمية تلقائيًا، وتم تحديث حالة الخطة في الشاشة الرئيسية." : "تم إرسال الخطة إلى المشرف للموافقة عليها، وتم تحديث حالتها في الشاشة الرئيسية إلى: تم الإرسال للمشرف." : isSupervisor ? "Your teaching lessons were approved automatically and the plan status is updated on the main screen." : "Your weekly plan was sent to the supervisor for approval. Its main-screen status is now Sent to supervisor."}</p><div><button type="button" className="teacher-primary-button" onClick={finishSuccessfulSubmission}>{submissionSuccessArabic ? "العودة إلى الشاشة الرئيسية" : "Return to main screen"}</button></div></section></div>}
       </section></div>}
-      {copyDialogOpen && copySourcePlan && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeCopyPlanDialog()}><section className="weekly-copy-dialog" role="dialog" aria-modal="true" aria-labelledby="weekly-copy-dialog-title" dir={dashboardArabic ? "rtl" : "ltr"}><div className="weekly-copy-dialog-heading"><span aria-hidden="true">CP</span><div><small>{copySourcePlan.week} · {copySourcePlan.className}</small><h3 id="weekly-copy-dialog-title">{dashboardArabic ? "أين تريد نسخ أيام الخطة؟" : "Where do you want to copy this plan?"}</h3></div></div><p>{dashboardArabic ? "اختر المادة ثم الفصل المستهدف. ستُنسخ الحصص كمسودة جديدة، وبعد النسخ سيفتح محرر الخطة لمراجعتها قبل إرسالها في مسار اعتماد مستقل." : "Choose the subject and target class. Lessons are copied as a new draft, then the editor opens so you can review it before starting its own approval workflow."}</p><div className="weekly-copy-dialog-fields"><label>{dashboardArabic ? "المادة المطلوب نسخها" : "Subject to copy"}<select value={copySubjectId} onChange={(event) => { setCopySubjectId(event.target.value); setCopyTargetClassId(""); setCopyFeedback(""); }}><option value="">{dashboardArabic ? "اختر المادة" : "Select subject"}</option>{copySourceAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><label>{dashboardArabic ? "الفصل المستهدف" : "Target class"}<select value={copyTargetClassId} onChange={(event) => { setCopyTargetClassId(event.target.value); setCopyFeedback(""); }} disabled={!copySubjectId}><option value="">{dashboardArabic ? "اختر الفصل" : "Select class"}</option>{copyTargetClasses.filter((target) => target.lessonCount > 0).map((target) => <option key={target.classId} value={target.classId}>Grade {target.grade} · {target.section} — {target.lessonCount} lesson{target.lessonCount === 1 ? "" : "s"}</option>)}</select></label></div>{copySubjectId && copyTargetClasses.filter((target) => target.lessonCount > 0).length === 0 && <p className="weekly-copy-dialog-feedback info">{dashboardArabic ? "لا يوجد فصل آخر مؤهل تدرّس فيه المادة نفسها بالصف نفسه." : "No other eligible class in the same grade is assigned to you for this subject."}</p>}{copyFeedback && <p className="weekly-copy-dialog-feedback error" role="alert">{copyFeedback}</p>}<div className="weekly-copy-dialog-note">{dashboardArabic ? "لن يتم استبدال أي خطة موجودة. يُنسخ عمل الحصة والواجب وملاحظات كلاسيرا فقط، وتبقى كلمات الإملاء والاختبارات مع الفصل الأصلي." : "Existing work is never overwritten. Classwork, Homework and Classera Notes are copied; dictation words and quizzes stay with the original class."}</div><div className="weekly-copy-dialog-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={closeCopyPlanDialog}>{dashboardArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={saving || !copySubjectId || !copyTargetClassId} onClick={() => void copyPlanToOtherClasses()}>{saving ? dashboardArabic ? "جارٍ النسخ…" : "Copying…" : dashboardArabic ? "نسخ وفتح المحرر" : "Copy and open editor"}</button></div></section></div>}
+      {copyDialogOpen && copySourcePlan && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeCopyPlanDialog()}><section className="weekly-copy-dialog" role="dialog" aria-modal="true" aria-labelledby="weekly-copy-dialog-title" dir={dashboardArabic ? "rtl" : "ltr"}><div className="weekly-copy-dialog-heading"><span aria-hidden="true">CP</span><div><small>{copySourcePlan.week} · {copySourcePlan.className}</small><h3 id="weekly-copy-dialog-title">{dashboardArabic ? "أين تريد نسخ أيام الخطة؟" : "Where do you want to copy this plan?"}</h3></div></div><p>{dashboardArabic ? "اختر المادة ثم الفصل المستهدف. ستُنسخ الحصص كمسودة جديدة، وبعد النسخ سيفتح محرر الخطة لمراجعتها قبل إرسالها في مسار اعتماد مستقل." : "Choose the subject and target class. Lessons are copied as a new draft, then the editor opens so you can review it before starting its own approval workflow."}</p><div className="weekly-copy-dialog-fields"><label>{dashboardArabic ? "المادة المطلوب نسخها" : "Subject to copy"}<select value={copySubjectId} onChange={(event) => { setCopySubjectId(event.target.value); setCopyTargetClassId(""); setCopyFeedback(""); setCopyConflict(null); }}><option value="">{dashboardArabic ? "اختر المادة" : "Select subject"}</option>{copySourceAssignments.map((assignment) => <option key={assignment.subjectId} value={assignment.subjectId}>{assignment.subject}</option>)}</select></label><label>{dashboardArabic ? "الفصل المستهدف" : "Target class"}<select value={copyTargetClassId} onChange={(event) => { setCopyTargetClassId(event.target.value); setCopyFeedback(""); setCopyConflict(null); }} disabled={!copySubjectId}><option value="">{dashboardArabic ? "اختر الفصل" : "Select class"}</option>{copyTargetClasses.filter((target) => target.lessonCount > 0).map((target) => <option key={target.classId} value={target.classId}>Grade {target.grade} · {target.section} — {target.lessonCount} lesson{target.lessonCount === 1 ? "" : "s"}</option>)}</select></label></div>{copySubjectId && copyTargetClasses.filter((target) => target.lessonCount > 0).length === 0 && <p className="weekly-copy-dialog-feedback info">{dashboardArabic ? "لا يوجد فصل آخر مؤهل تدرّس فيه المادة نفسها بالصف نفسه." : "No other eligible class in the same grade is assigned to you for this subject."}</p>}{copyFeedback && <p className="weekly-copy-dialog-feedback error" role="alert">{copyFeedback}</p>}{copyConflict && <div className="weekly-copy-dialog-conflict" role="alert"><strong>{dashboardArabic ? `توجد مسودة مكتوبة بالفعل في ${copyConflict.targetLabel}` : `${copyConflict.targetLabel} already has a written draft`}</strong><p>{dashboardArabic ? "يمكنك فتح المسودة الحالية بدون تغييرها، أو استبدال محتوى هذه المادة فقط بعد التأكيد. لن تتأثر خطط أي معلم أو مادة أخرى." : "Open the existing draft without changing it, or explicitly replace only your selected subject. No other teacher or subject is affected."}</p><div><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => void openExistingCopyTarget()}>{dashboardArabic ? "فتح المسودة الحالية" : "Open existing draft"}</button><button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void copyPlanToOtherClasses(true)}>{dashboardArabic ? "تأكيد الاستبدال" : "Replace my draft"}</button></div></div>}<div className="weekly-copy-dialog-note">{dashboardArabic ? "المسودة الفارغة يمكن ملؤها تلقائيًا. المسودة المكتوبة لا تُستبدل إلا بتأكيدك، والخطة المرسلة أو المعتمدة لا يمكن استبدالها بالنسخ." : "An empty draft can be filled automatically. A written draft requires your confirmation, and submitted or approved plans cannot be replaced by copying."}</div><div className="weekly-copy-dialog-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={closeCopyPlanDialog}>{dashboardArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={saving || !copySubjectId || !copyTargetClassId || Boolean(copyConflict)} onClick={() => void copyPlanToOtherClasses()}>{saving ? dashboardArabic ? "جارٍ النسخ…" : "Copying…" : dashboardArabic ? "نسخ وفتح المحرر" : "Copy and open editor"}</button></div></section></div>}
       {parentPreviewOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop parent-preview-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setParentPreviewOpen(false)}><section className="teacher-parent-preview" dir="ltr" role="dialog" aria-modal="true" aria-labelledby="parent-preview-title"><div className="teacher-modal-heading"><div><p>Preview only — nothing has been saved or sent</p><h2 id="parent-preview-title">Parent weekly-plan preview</h2></div><button aria-label="Close parent plan preview" onClick={() => setParentPreviewOpen(false)}>×</button></div><div className="parent-preview-intro">Your current writing is shown in its real timetable position. Other subjects are intentionally blank because this is only your private preview.</div>{parentPreviewLoading ? <p className="parent-preview-loading">Loading the class timetable…</p> : <section className="parent-preview-paper"><div className="parent-preview-paper-header"><img src={`${basePath}/school-logo.png`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS PRIVATE SCHOOLS</strong><span>The Egyptian Section</span><h3>WEEKLY STUDY PLAN</h3></div></div><div className="parent-preview-meta"><span><small>Class</small><strong>Grade {selectedClass.grade} · Class {selectedClass.section}</strong></span><span><small>Week No.</small><strong>{selectedWeek.week_number}</strong></span><span><small>Date</small><strong>{academicWeekRange(selectedWeek)}</strong></span></div>{departmentName === "English Department" && parseDictationWords(dictationWords).length > 0 && <section className="parent-dictation-block"><h3>Vocabulary for Dictation on {dayNames[Number(dictationDay)]}</h3><table><tbody>{chunkWords(parseDictationWords(dictationWords)).map((row, rowIndex) => <tr key={rowIndex}>{row.map((word) => <td key={word}>{word}</td>)}</tr>)}</tbody></table></section>}<div className="table-wrap"><table className="weekly-table parent-preview-table"><colgroup><col className="day-column" /><col className="course-column" /><col className="classwork-column" /><col className="homework-column" /><col className="classera-column" /></colgroup><thead><tr><th>Day</th><th>Course</th><th>Classwork</th><th>Homework</th><th>Classera Notes</th></tr></thead>{dayNames.map((day, dayIndex) => { const daySlots = parentPreviewSlots.filter((slot) => slot.day_of_week === dayIndex); return daySlots.length > 0 ? <tbody className="weekly-day-group" key={day}>{daySlots.map((slot, index) => { const ownSlot = selectedClassSlots.find((teacherSlot) => teacherSlot.id === slot.id); const draft = ownSlot ? slotDraftFor(ownSlot) : null; return <tr key={slot.id} className={index === 0 ? "new-day" : ""}>{index === 0 && <td className="day-cell" rowSpan={daySlots.length}>{day}</td>}<td className="course-cell">{slot.subject}</td><td className={draft?.classwork.trim() ? "preview-written" : "preview-empty"}>{ownSlot ? previewClasswork(ownSlot) || "—" : "—"}</td><td className={draft?.homework.trim() ? "preview-written" : "preview-empty"}>{ownSlot ? draft?.homework.trim() || "—" : "—"}</td><td className={draft?.classeraNotes.trim() ? "preview-written" : "preview-empty"}>{ownSlot ? draft?.classeraNotes.trim() || "—" : "—"}</td></tr>; })}</tbody> : null; })}</table>{parentPreviewSlots.length === 0 && <p className="parent-preview-loading">No timetable lessons are available for this class yet.</p>}</div></section>}<div className="teacher-editor-footer parent-preview-footer"><span>This preview does not submit, approve, or publish the weekly plan.</span><div><button type="button" className="teacher-primary-button" onClick={() => setParentPreviewOpen(false)}>Return to editor</button></div></div></section></div>}
     </main>
   );

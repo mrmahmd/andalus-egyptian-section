@@ -156,6 +156,11 @@ Object.assign(staffAr, {
 });
 
 Object.assign(staffAr, {
+  "Approved entries": "الحصص المعتمدة",
+  "Approved by the responsible supervisor": "اعتمدها المشرف المسؤول",
+  "Approved by supervisor": "معتمدة من المشرف",
+  "Open existing draft": "فتح المسودة الحالية",
+  "Replace my draft": "استبدال مسودتي",
   "Arabic": "العربية",
   "Islamic": "التربية الإسلامية",
   "English": "اللغة الإنجليزية",
