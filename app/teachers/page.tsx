@@ -419,6 +419,49 @@ export default function TeachersDashboardPage() {
     return () => window.clearTimeout(timer);
   }, [loadTeacherDashboard]);
 
+  const verifyTeacherWeekAccess = useCallback(async (weekId: string, closeEditorWhenClosed = true) => {
+    const arabic = window.localStorage.getItem("andalus-language") === "ar";
+    try {
+      const { data: liveWeek, error } = await getSupabaseBrowserClient()
+        .from("academic_weeks")
+        .select("id, teacher_entry_enabled")
+        .eq("id", weekId)
+        .single();
+      if (error) throw error;
+      if (liveWeek?.teacher_entry_enabled) return true;
+      const text = arabic
+        ? "هذا الأسبوع مغلق الآن من إدارة المدرسة، لذلك لا يمكن فتحه أو حفظ أي كتابة جديدة فيه. الخطط المحفوظة سابقًا لم تُحذف."
+        : "This week is now closed by school administration, so it cannot be opened or receive new saves. Previously saved plans were not deleted.";
+      setAcademicWeeks((current) => current.map((week) => week.id === weekId ? { ...week, teacher_entry_enabled: false } : week));
+      setSelectedWeekId((current) => current === weekId ? "" : current);
+      setMessage(text);
+      setMessageTone("error");
+      setBuilderFeedback({ tone: "error", text });
+      if (closeEditorWhenClosed) setWeeklyBuilderOpen(false);
+      return false;
+    } catch (error) {
+      const text = arabic
+        ? "تعذر التحقق من فتح الأسبوع الآن، لذلك تم إيقاف الحفظ مؤقتًا لحماية الخطة. حدّث الصفحة وحاول مرة أخرى."
+        : "The week access could not be verified, so saving was paused to protect the plan. Refresh and try again.";
+      setMessage(error instanceof Error ? `${text} (${error.message})` : text);
+      setMessageTone("error");
+      setBuilderFeedback({ tone: "error", text });
+      return false;
+    }
+  }, []);
+
+  useEffect(() => {
+    const recheckOpenEditor = () => {
+      if (document.visibilityState === "visible" && weeklyBuilderOpen && selectedWeekId) void verifyTeacherWeekAccess(selectedWeekId);
+    };
+    window.addEventListener("focus", recheckOpenEditor);
+    document.addEventListener("visibilitychange", recheckOpenEditor);
+    return () => {
+      window.removeEventListener("focus", recheckOpenEditor);
+      document.removeEventListener("visibilitychange", recheckOpenEditor);
+    };
+  }, [selectedWeekId, verifyTeacherWeekAccess, weeklyBuilderOpen]);
+
   const teacherEntryWeeks = useMemo(() => academicWeeks.filter((week) => week.teacher_entry_enabled), [academicWeeks]);
   const selectedWeek = teacherEntryWeeks.find((week) => week.id === selectedWeekId);
   const holidayForDay = (dayOfWeek: number) => schoolHolidays.find((holiday) => holiday.week_id === selectedWeekId && holiday.day_of_week === dayOfWeek) ?? null;
@@ -513,7 +556,7 @@ export default function TeachersDashboardPage() {
 
   useEffect(() => { void loadPlanIntoBuilder(); }, [loadPlanIntoBuilder]);
 
-  const openWeeklyBuilder = () => {
+  const openWeeklyBuilder = async () => {
     if (!weeklyPlanCreationOpen) {
       setMessage("Weekly plan creation is currently closed by school administration.");
       setMessageTone("info");
@@ -536,6 +579,7 @@ export default function TeachersDashboardPage() {
     }
     const firstAssignment = selectedClass ?? assignments[0];
     const firstWeek = selectedWeek ?? teacherEntryWeeks.find((week) => week.is_current) ?? teacherEntryWeeks[0];
+    if (!firstWeek || !(await verifyTeacherWeekAccess(firstWeek.id, false))) return;
     if (!selectedClassId && firstAssignment) setSelectedClassId(firstAssignment.classId);
     if (!selectedWeekId && firstWeek) setSelectedWeekId(firstWeek.id);
     setBuilderFeedback(null);
@@ -630,6 +674,10 @@ export default function TeachersDashboardPage() {
     setSaving(true);
     if (silent) setAutoSaveState("saving");
     try {
+      if (!(await verifyTeacherWeekAccess(selectedWeek.id))) {
+        if (silent) setAutoSaveState("idle");
+        return;
+      }
       const supabase = getSupabaseBrowserClient();
       const { data: existingPlan, error: planReadError } = await supabase.from("weekly_plans").select("id").eq("class_id", selectedClassId).eq("week_id", selectedWeek.id).maybeSingle();
       if (planReadError) throw planReadError;
@@ -822,14 +870,16 @@ export default function TeachersDashboardPage() {
     }
   };
 
-  const openSavedPlan = (submission: MySubmission) => {
+  const openSavedPlan = async (submission: MySubmission) => {
+    if (!(await verifyTeacherWeekAccess(submission.weekId, false))) return;
     setSelectedClassId(submission.classId);
     setSelectedWeekId(submission.weekId);
     setBuilderFeedback(null);
     setWeeklyBuilderOpen(true);
   };
 
-  const openEntryEditor = (entry: TeacherEntry) => {
+  const openEntryEditor = async (entry: TeacherEntry) => {
+    if (!(await verifyTeacherWeekAccess(entry.weekId, false))) return;
     setSelectedClassId(entry.classId);
     setSelectedWeekId(entry.weekId);
     setBuilderFeedback(null);
@@ -869,7 +919,8 @@ export default function TeachersDashboardPage() {
     }
   };
 
-  const openWeeklyPlan = (plan: WeeklyPlanRow) => {
+  const openWeeklyPlan = async (plan: WeeklyPlanRow) => {
+    if (!(await verifyTeacherWeekAccess(plan.weekId, false))) return;
     setSelectedClassId(plan.classId);
     setSelectedWeekId(plan.weekId);
     setWeeklyBuilderOpen(true);
@@ -921,6 +972,10 @@ export default function TeachersDashboardPage() {
     }
     const sourceWeek = academicWeeks.find((week) => week.id === copySourcePlan.weekId);
     if (!sourceWeek?.teacher_entry_enabled) {
+      setCopyFeedback("This week is closed for teacher entry, so a new copied draft cannot be created.");
+      return;
+    }
+    if (!(await verifyTeacherWeekAccess(copySourcePlan.weekId, false))) {
       setCopyFeedback("This week is closed for teacher entry, so a new copied draft cannot be created.");
       return;
     }
@@ -1218,7 +1273,7 @@ export default function TeachersDashboardPage() {
             <section className="teacher-card teacher-plans-card teacher-live-plans-card">
               <div className="teacher-card-heading"><div><h2>{activeNav === "Overview" ? "My weekly plans" : "All my weekly plans"}</h2><p>One row represents one class plan for one school week. Open it to continue writing all of its lessons.</p></div></div>
               <div className="teacher-plan-table-wrap"><table className="teacher-plan-table teacher-weekly-plan-table"><thead><tr><th>Week</th><th>Class</th><th>Subjects written</th><th>Status</th><th>Last saved</th><th>Actions</th></tr></thead><tbody>
-                {weeklyPlanRows.map((plan) => { const statusLabel = plan.status === "published" ? "Published for families" : plan.status === "submitted" ? "Sent to supervisor" : plan.status === "changes_requested" ? "Changes requested" : plan.status === "approved" ? "Approved — waiting for class" : "Draft in progress"; const editable = plan.status === "draft" || plan.status === "changes_requested"; const canCopy = plan.status === "submitted" || plan.status === "approved" || plan.status === "published"; const statusTone = plan.status === "published" ? "purple" : plan.status === "approved" ? "green" : plan.status === "submitted" ? "navy" : plan.status === "changes_requested" ? "rose" : "amber"; return <tr key={plan.planId}><td><strong>{plan.week}</strong><small>{plan.lessonCount} lesson{plan.lessonCount === 1 ? "" : "s"}</small></td><td><strong>{plan.className}</strong></td><td>{plan.subjects.join(", ")}</td><td><span className={`teacher-status ${statusTone}`}><i />{statusLabel}</span></td><td>{plan.updated}</td><td><div className="teacher-plan-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => openWeeklyPlan(plan)}>{editable ? "Continue plan" : "Preview"}</button>{canCopy && <button type="button" className="teacher-secondary-button copy" disabled={saving} onClick={() => openCopyPlanDialog(plan)}>Copy plan</button>}{plan.status === "submitted" && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => { const submission = mySubmissions.find((item) => item.weeklyPlanId === plan.planId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}{editable && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void clearWeeklyDraft(plan)}>Clear draft</button>}</div></td></tr>; })}
+                {weeklyPlanRows.map((plan) => { const statusLabel = plan.status === "published" ? "Published for families" : plan.status === "submitted" ? "Sent to supervisor" : plan.status === "changes_requested" ? "Changes requested" : plan.status === "approved" ? "Approved — waiting for class" : "Draft in progress"; const editable = plan.status === "draft" || plan.status === "changes_requested"; const canCopy = plan.status === "submitted" || plan.status === "approved" || plan.status === "published"; const statusTone = plan.status === "published" ? "purple" : plan.status === "approved" ? "green" : plan.status === "submitted" ? "navy" : plan.status === "changes_requested" ? "rose" : "amber"; return <tr key={plan.planId}><td><strong>{plan.week}</strong><small>{plan.lessonCount} lesson{plan.lessonCount === 1 ? "" : "s"}</small></td><td><strong>{plan.className}</strong></td><td>{plan.subjects.join(", ")}</td><td><span className={`teacher-status ${statusTone}`}><i />{statusLabel}</span></td><td>{plan.updated}</td><td><div className="teacher-plan-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => void openWeeklyPlan(plan)}>{editable ? "Continue plan" : "Preview"}</button>{canCopy && <button type="button" className="teacher-secondary-button copy" disabled={saving} onClick={() => openCopyPlanDialog(plan)}>Copy plan</button>}{plan.status === "submitted" && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => { const submission = mySubmissions.find((item) => item.weeklyPlanId === plan.planId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>Withdraw</button>}{editable && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void clearWeeklyDraft(plan)}>Clear draft</button>}</div></td></tr>; })}
                 {!loading && weeklyPlanRows.length === 0 && <tr><td className="super-empty" colSpan={6}>No weekly plans have been started yet.</td></tr>}
               </tbody></table></div>
             </section>
@@ -1228,7 +1283,7 @@ export default function TeachersDashboardPage() {
               <div className="teacher-review-status-list">
                 {mySubmissions.filter((submission) => submission.status !== "draft").map((submission) => <article key={submission.id}>
                   <div><span className={`teacher-status ${submission.status === "approved" ? "green" : submission.status === "changes_requested" ? "amber" : "navy"}`}><i />{submission.status.replaceAll("_", " ")}</span><strong>{submission.subject}</strong><small>{submission.className} · {submission.week}</small>{submission.reviewNote && <p><b>Supervisor note:</b> {submission.reviewNote}</p>}</div>
-                  <div className="teacher-review-status-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => openSavedPlan(submission)}>Preview & edit</button>{submission.status === "submitted" && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => void withdrawSubmissionForEditing(submission)}>Withdraw for editing</button>}</div>
+                  <div className="teacher-review-status-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => void openSavedPlan(submission)}>Preview & edit</button>{submission.status === "submitted" && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => void withdrawSubmissionForEditing(submission)}>Withdraw for editing</button>}</div>
                 </article>)}
                 {mySubmissions.filter((submission) => submission.status !== "draft").length === 0 && <p className="supervisor-review-empty">No additional plan updates are waiting. Save your lesson work when it is ready.</p>}
               </div>

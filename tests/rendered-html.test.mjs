@@ -367,6 +367,18 @@ test("confirms teacher submission, reports success, and copies completed plans a
   assert.match(teacherSource, /setSelectedClassId\(copiedClassId\)[\s\S]*setSelectedWeekId\(copiedWeekId\)[\s\S]*setWeeklyBuilderOpen\(true\)/);
 });
 
+test("rechecks live week access before opening or saving a teacher plan", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /verifyTeacherWeekAccess = useCallback/);
+  assert.match(teacherSource, /from\("academic_weeks"\)[\s\S]*select\("id, teacher_entry_enabled"\)[\s\S]*\.eq\("id", weekId\)/);
+  assert.match(teacherSource, /if \(!\(await verifyTeacherWeekAccess\(selectedWeek\.id\)\)\)/);
+  assert.match(teacherSource, /openWeeklyPlan = async[\s\S]*verifyTeacherWeekAccess\(plan\.weekId, false\)/);
+  assert.match(teacherSource, /window\.addEventListener\("focus", recheckOpenEditor\)/);
+  assert.match(teacherSource, /document\.addEventListener\("visibilitychange", recheckOpenEditor\)/);
+  assert.match(teacherSource, /This week is now closed by school administration/);
+});
+
 test("repairs stale supervisor submissions and supports one-click approval for the selected week", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const migration = await readFile(new URL("../supabase/migrations/20260920054000_autoapprove_supervisors_and_add_week_bulk_approval.sql", import.meta.url), "utf8");
