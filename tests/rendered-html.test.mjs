@@ -353,21 +353,31 @@ test("queues supervisor submission behind autosave and auto-approves supervisors
   assert.match(migration, /plan\.id = plan_submissions\.weekly_plan_id/);
 });
 
-test("confirms teacher submission, reports success, and copies completed plans as independent drafts", async () => {
+test("confirms teacher submission and copies each written subject as an independent draft", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const globalCss = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
   assert.match(teacherSource, /Confirm plan submission/);
   assert.match(teacherSource, /Plan sent successfully/);
   assert.match(teacherSource, /setSubmissionSuccessOpen\(true\)/);
   assert.match(teacherSource, /finishSuccessfulSubmission[\s\S]*setWeeklyBuilderOpen\(false\)[\s\S]*setActiveNav\("Overview"\)/);
   assert.doesNotMatch(teacherSource, /className="weekly-copy-panel"/);
+  assert.match(teacherSource, /const canCopy = \["draft", "changes_requested", "submitted", "approved"\]\.includes\(plan\.status\)/);
   assert.match(teacherSource, /canCopy && <button[\s\S]*openCopyPlanDialog\(plan\)[\s\S]*Copy plan/);
-  assert.match(teacherSource, /hasMeaningfulDraft && !replaceExistingDraft/);
+  assert.match(teacherSource, /entry\.weeklyPlanId === copySourcePlan\.planId && entry\.hasMeaningfulContent/);
+  assert.match(teacherSource, /const meaningfulSourceRows = [\s\S]*\.filter\(hasMeaningfulPlanContent\)/);
+  assert.match(teacherSource, /if \(hasMeaningfulDraft\) \{[\s\S]*setCopyConflict/);
   assert.match(teacherSource, /Open existing draft/);
-  assert.match(teacherSource, /Replace my draft/);
-  assert.match(teacherSource, /targetSubmission\?\.status === "submitted"/);
-  assert.match(teacherSource, /targetSubmission\?\.status === "approved"/);
+  assert.doesNotMatch(teacherSource, /Replace my draft/);
+  assert.match(teacherSource, /targetStatuses\.has\("submitted"\)/);
+  assert.match(teacherSource, /targetStatuses\.has\("approved"\)/);
   assert.match(teacherSource, /status: "draft", submitted_at: null/);
+  assert.match(teacherSource, /const englishCopyKey = "__english_plan__"/);
+  assert.match(teacherSource, /mapCopyRowsToTargetSlots\(meaningfulSourceRows, targetSlots, isEnglishCopy\)/);
+  assert.match(teacherSource, /subject_id: slot\.subject_id/);
+  assert.match(teacherSource, /isEnglishCopy \? isEnglishSubject\(assignment\.subject\)/);
+  assert.match(globalCss, /teacher-plan-actions \.teacher-secondary-button\.continue[\s\S]*linear-gradient/);
+  assert.match(globalCss, /teacher-plan-actions \.teacher-secondary-button\.copy[\s\S]*linear-gradient/);
   assert.match(teacherSource, /setSelectedClassId\(copiedClassId\)[\s\S]*setSelectedWeekId\(copiedWeekId\)[\s\S]*setWeeklyBuilderOpen\(true\)/);
 });
 
