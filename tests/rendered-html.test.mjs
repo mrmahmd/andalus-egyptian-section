@@ -353,6 +353,20 @@ test("queues supervisor submission behind autosave and auto-approves supervisors
   assert.match(migration, /plan\.id = plan_submissions\.weekly_plan_id/);
 });
 
+test("confirms teacher submission, reports success, and copies completed plans as independent drafts", async () => {
+  const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+
+  assert.match(teacherSource, /Confirm plan submission/);
+  assert.match(teacherSource, /Plan sent successfully/);
+  assert.match(teacherSource, /setSubmissionSuccessOpen\(true\)/);
+  assert.match(teacherSource, /finishSuccessfulSubmission[\s\S]*setWeeklyBuilderOpen\(false\)[\s\S]*setActiveNav\("Overview"\)/);
+  assert.doesNotMatch(teacherSource, /className="weekly-copy-panel"/);
+  assert.match(teacherSource, /canCopy && <button[\s\S]*openCopyPlanDialog\(plan\)[\s\S]*Copy plan/);
+  assert.match(teacherSource, /already has your[\s\S]*Nothing was overwritten/);
+  assert.match(teacherSource, /status: "draft", submitted_at: null/);
+  assert.match(teacherSource, /setSelectedClassId\(copiedClassId\)[\s\S]*setSelectedWeekId\(copiedWeekId\)[\s\S]*setWeeklyBuilderOpen\(true\)/);
+});
+
 test("repairs stale supervisor submissions and supports one-click approval for the selected week", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const migration = await readFile(new URL("../supabase/migrations/20260920054000_autoapprove_supervisors_and_add_week_bulk_approval.sql", import.meta.url), "utf8");
