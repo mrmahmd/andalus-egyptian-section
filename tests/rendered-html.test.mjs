@@ -343,7 +343,7 @@ test("queues supervisor submission behind autosave and auto-approves supervisors
   assert.match(teacherSource, /if \(!submitForReview && pendingSupervisorSubmission\.current\)/);
   assert.match(teacherSource, /status: submitForReview \? \(isSupervisor \? "approved" : "submitted"\) : "draft"/);
   assert.match(teacherSource, /reviewed_by: submitForReview && isSupervisor \? profileId : null/);
-  assert.match(teacherSource, /disabled=\{selectedClassSlots\.length === 0 \|\| builderStatus === "submitted" \|\| builderStatus === "approved"\}/);
+  assert.match(teacherSource, /disabled=\{(?:saving \|\| )?selectedClassSlots\.length === 0 \|\| builderStatus === "submitted" \|\| builderStatus === "approved"\}/);
   assert.match(migration, /Supervisors create their own approved teaching submissions/);
   assert.match(migration, /teacher_id = \(select auth\.uid\(\)\)/);
   assert.match(migration, /reviewed_by = \(select auth\.uid\(\)\)/);
@@ -501,4 +501,40 @@ test("routes Moamen El Haddad submissions to Mahmoud Helmy", async () => {
   assert.match(migration, /supervisor\.role = 'admin'/);
   assert.match(migration, /insert into public\.supervisor_staff_links/);
   assert.match(migration, /on conflict \(supervisor_staff_id, teacher_staff_id\) do nothing/);
+});
+
+test("keeps the Super Admin section on refresh and exposes every section on mobile", async () => {
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /andalus-super-admin-section/);
+  assert.match(source, /url\.searchParams\.set\("section", section\)/);
+  assert.match(source, /aria-label="Open navigation"/);
+  assert.match(source, /teacher-mobile-menu/);
+  assert.match(source, /Mobile Super administrator navigation/);
+  assert.match(source, /openSection\("settings"\)/);
+});
+
+test("removes untimetabled classes from Super Admin selectors without deleting class records", async () => {
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /const timetabledClassIds = new Set/);
+  assert.match(source, /filter\(\(schoolClass\) => timetabledClassIds\.has\(String\(schoolClass\.id\)\)\)/);
+  assert.doesNotMatch(source, /from\("school_classes"\)\.delete/);
+});
+
+test("uses a lightweight one-day-at-a-time weekly editor on mobile", async () => {
+  const source = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /matchMedia\("\(max-width: 760px\)"\)/);
+  assert.match(source, /visibleBuilderDayIndexes/);
+  assert.match(source, /weekly-builder-mobile-days/);
+  assert.match(source, /setSelectedBuilderDay\(index\)/);
+});
+
+test("localizes the academic-week visibility controls in Arabic", async () => {
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /التحكم في الأسابيع الدراسية/);
+  assert.match(source, /إدخال خطة المعلمين/);
+  assert.match(source, /منصة ولي الأمر/);
 });

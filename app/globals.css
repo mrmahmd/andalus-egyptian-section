@@ -746,6 +746,7 @@ button, select, input { font: inherit; }
 .weekly-builder-modal.is-read-only select:disabled { color: #173960; -webkit-text-fill-color: #173960; opacity: 1; cursor: default; }
 .weekly-builder-toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; padding: 16px; border: 1px solid #dfe8f0; border-radius: 12px; background: #f5f8fc; }
 .weekly-builder-days { display: grid; gap: 16px; align-items: start; padding-bottom: 3px; }
+.weekly-builder-mobile-days { display: none; }
 .weekly-builder-days.days-1 { grid-template-columns: minmax(0, 1fr); }
 .weekly-builder-days.days-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .weekly-builder-days.days-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1467,13 +1468,14 @@ button, select, input { font: inherit; }
 .super-week-visibility-heading > div:last-child strong { color: #0c5686; font-size: 20px; text-align: right; }
 .super-week-visibility-heading > div:last-child small { color: #64758d; font-size: 11px; white-space: nowrap; }
 .super-week-visibility-list { display: grid; gap: 12px; margin-top: 20px; }
-.super-week-visibility-list > article { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(270px, 1fr) minmax(270px, 1fr); gap: 12px; align-items: stretch; padding: 12px; border: 1px solid #dce6f1; border-radius: 15px; background: linear-gradient(120deg, #fbfdff, #fffafd); }
+.super-week-visibility-list > article { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(270px, 1fr) minmax(270px, 1fr); gap: 12px; align-items: stretch; padding: 14px; border: 1px solid #d7e3ef; border-radius: 18px; background: linear-gradient(120deg, #f8fcff, #fff8fc); box-shadow: 0 10px 26px rgba(18,53,88,.06); transition: transform .18s ease, box-shadow .18s ease; }
+.super-week-visibility-list > article:hover { transform: translateY(-2px); box-shadow: 0 15px 34px rgba(18,53,88,.1); }
 .super-week-identity { display: flex; align-items: center; gap: 12px; padding: 8px; }
 .super-week-identity > span { width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; flex: 0 0 auto; background: #102f5b; color: #fff; font-size: 13px; font-weight: 900; }
 .super-week-identity > div { display: grid; gap: 3px; }
 .super-week-identity strong { color: #102f5b; font-size: 14px; }
 .super-week-identity small { color: #6f7f96; font-size: 11px; }
-.super-week-visibility-list label { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 11px; align-items: center; padding: 12px 14px; border: 1px solid #dbe4ef; border-radius: 12px; background: #fff; cursor: pointer; }
+.super-week-visibility-list label { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 11px; align-items: center; padding: 14px 16px; border: 1px solid #dbe4ef; border-radius: 14px; background: #fff; cursor: pointer; }
 .super-week-visibility-list label.enabled { border-color: #b9e3d2; background: #f2fbf7; }
 .super-week-visibility-list label.disabled { border-color: #ead2dc; background: #fff7fa; }
 .super-week-visibility-list label > span { min-width: 0; display: grid; gap: 2px; }
@@ -1482,6 +1484,9 @@ button, select, input { font: inherit; }
 .super-week-visibility-list input { width: 20px; height: 20px; accent-color: #117d65; }
 .super-week-visibility-list label b { min-width: 52px; color: #16805a; font-size: 11px; text-align: right; }
 .super-week-visibility-list label.disabled b { color: #a13d68; }
+body.arabic-ui .super-week-visibility-card { direction: rtl; text-align: right; }
+body.arabic-ui .super-week-visibility-heading > div:last-child strong { text-align: left; }
+body.arabic-ui .super-week-visibility-list label b { text-align: left; }
 .admin-access-control-card { margin-bottom: 20px; padding: 24px; display: grid; gap: 10px; }
 @media (max-width: 900px) { .super-week-visibility-list > article { grid-template-columns: 1fr; } .super-week-visibility-heading { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 700px) { .super-teacher-access-list { grid-template-columns: 1fr; } .super-access-control-card { grid-column: auto; } .super-week-visibility-card { padding: 18px; } }
@@ -1538,8 +1543,12 @@ button, select, input { font: inherit; }
 .super-admin-filters label { display: grid; gap: 6px; }
 .super-admin-filters select, .super-admin-mobile-search input { height: 43px; padding: 0 11px; border: 1px solid #d2dce7; border-radius: 9px; outline: 0; background: #fbfcfe; color: #172640; font: inherit; font-size: 13px; }
 .super-admin-filters select:focus, .super-admin-mobile-search input:focus { border-color: #b31b78; box-shadow: 0 0 0 3px rgba(179,27,120,.1); }
-.super-plan-report-summary { margin-top: 20px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.super-plan-report-summary { margin-top: 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .super-plan-report-summary article { min-height: 132px; padding: 18px; border: 1px solid #e0e7ef; border-radius: 15px; background: linear-gradient(140deg, #fff, #f7fafd); box-shadow: 0 8px 24px rgba(23,47,79,.05); }
+.super-plan-report-summary article:nth-child(1) { border-top: 4px solid #17a07d; background: linear-gradient(145deg, #fff, #eefaf6); }
+.super-plan-report-summary article:nth-child(2) { border-top: 4px solid #b33b83; background: linear-gradient(145deg, #fff, #fbf1f7); }
+.super-plan-report-summary article:nth-child(3) { border-top: 4px solid #dc8438; background: linear-gradient(145deg, #fff, #fff6ed); }
+.super-plan-report-summary article:nth-child(4) { border-top: 4px solid #267cb5; background: linear-gradient(145deg, #fff, #eef6fc); }
 .super-plan-report-summary small { display: block; color: #74849a; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 .super-plan-report-summary strong { display: block; margin: 11px 0 7px; color: #152b4a; font-size: 30px; line-height: 1; }.super-plan-report-summary strong em { color: #8996a8; font-size: 14px; font-style: normal; }
 .super-plan-report-summary p { margin: 0; color: #738298; font-size: 12px; line-height: 1.45; }
@@ -1661,6 +1670,16 @@ body.arabic-ui .super-own-password-fields label, body.arabic-ui .super-own-passw
 
 @media (max-width: 760px) {
   .arabic-ui .super-admin-portal .teacher-main { width: 100%; margin: 0; }
+  .super-admin-portal .teacher-topbar { padding-inline: 12px; }
+  .super-admin-portal .teacher-mobile-brand { display: flex; min-width: 0; }
+  .super-admin-portal .teacher-mobile-brand strong { white-space: nowrap; }
+  .super-admin-portal .teacher-top-actions { margin-inline-start: auto; }
+  .super-admin-portal .teacher-sync, .super-admin-portal .teacher-profile-chip { display: none; }
+  .super-admin-portal .teacher-search { display: none; }
+  .super-admin-mobile-menu .teacher-mobile-menu-panel { width: min(90vw, 350px); }
+  .super-admin-mobile-menu .teacher-nav { margin-top: 14px; }
+  .super-admin-mobile-menu .teacher-nav button { min-height: 50px; font-size: 13px; }
+  .super-admin-mobile-menu .teacher-nav p { margin-top: 18px; color: #8296b5; }
   .super-admin-toolbar { padding: 18px; }
   .super-admin-mobile-search { display: grid; gap: 7px; }
   .super-admin-plans-link { width: 100%; justify-content: center; }
@@ -2331,6 +2350,13 @@ html[dir="ltr"] .teacher-portal .teacher-plan-table td strong { font-size: 15px;
   .teacher-portal:not(.super-admin-portal) .teacher-autosave-state { width: 100%; margin: 4px 0 0; justify-content: center; text-align: center; }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-modal form { padding: 15px 14px 22px; gap: 14px; }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-toolbar { grid-template-columns: 1fr; padding: 14px; }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-mobile-days { position: sticky; top: 78px; z-index: 10; display: flex; gap: 8px; overflow-x: auto; padding: 9px 2px 10px; background: rgba(247,251,254,.96); scrollbar-width: none; backdrop-filter: blur(12px); }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-mobile-days::-webkit-scrollbar { display: none; }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-mobile-days button { min-width: 92px; min-height: 48px; padding: 7px 10px; border: 1px solid #cbddeb; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #fff; color: #36536f; font: inherit; cursor: pointer; }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-mobile-days button.active { border-color: #0b7e9b; background: linear-gradient(125deg, #0b376c, #0e92a9); color: #fff; box-shadow: 0 7px 17px rgba(10,91,124,.2); }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-mobile-days strong { white-space: nowrap; font-size: 12px; }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-mobile-days small { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; background: rgba(16,111,149,.1); font-size: 10px; font-weight: 900; }
+  .teacher-portal:not(.super-admin-portal) .weekly-builder-mobile-days button.active small { background: rgba(255,255,255,.18); }
   .teacher-portal:not(.super-admin-portal) .teacher-timetable-ready { grid-column: auto; }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-day { padding: 11px; border-radius: 17px; }
   .teacher-portal:not(.super-admin-portal) .weekly-builder-day > header { position: sticky; top: 78px; z-index: 4; }

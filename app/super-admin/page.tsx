@@ -205,6 +205,8 @@ export default function SuperAdminPage() {
   const [roleFilter, setRoleFilter] = useState("All Roles");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
   const [activeSection, setActiveSection] = useState<DashboardSection>("accounts");
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const [dashboardArabic, setDashboardArabic] = useState(false);
   const [reviewAccount, setReviewAccount] = useState<ManagedAccount | null>(null);
   const [assignmentDraft, setAssignmentDraft] = useState({ subjectId: "", classId: "" });
   const [temporaryPassword, setTemporaryPassword] = useState("");
@@ -366,7 +368,8 @@ export default function SuperAdminPage() {
       setWeeklyPlanCreationOpen(accessResult.data?.is_open ?? true);
       setTeacherPlanAccess(Object.fromEntries((teacherAccessResult.data ?? []).map((row) => [String(row.teacher_id), Boolean(row.is_open)])));
       setSubjects((subjectsResult.data ?? []) as SubjectOption[]);
-      setClasses((classesResult.data ?? []) as ClassOption[]);
+      const timetabledClassIds = new Set((timetableResult.data ?? []).map((slot) => String(slot.class_id)));
+      setClasses(((classesResult.data ?? []) as ClassOption[]).filter((schoolClass) => timetabledClassIds.has(String(schoolClass.id))));
       const loadedWeeks = (weeksResult.data ?? []) as AcademicWeekOption[];
       setAcademicWeeks(loadedWeeks);
       setSchoolHolidays((holidaysResult.data ?? []) as SchoolHoliday[]);
@@ -397,6 +400,7 @@ export default function SuperAdminPage() {
   }, [basePath]);
 
   useEffect(() => {
+    queueMicrotask(() => setDashboardArabic(window.localStorage.getItem("andalus-language") === "ar"));
     const previewRequested = ["localhost", "127.0.0.1"].includes(window.location.hostname)
       && new URLSearchParams(window.location.search).get("preview") === "week-visibility";
     if (previewRequested) {
@@ -406,6 +410,11 @@ export default function SuperAdminPage() {
       setLoading(false);
       return;
     }
+    const requestedSection = new URLSearchParams(window.location.search).get("section") as DashboardSection | null;
+    const savedSection = window.localStorage.getItem("andalus-super-admin-section") as DashboardSection | null;
+    const allowedSections: DashboardSection[] = ["approvals", "accounts", "roles", "plans", "weeks", "holidays", "classes", "activity", "settings"];
+    if (requestedSection && allowedSections.includes(requestedSection)) setActiveSection(requestedSection);
+    else if (savedSection && allowedSections.includes(savedSection)) setActiveSection(savedSection);
     const timer = window.setTimeout(() => { void loadDashboard(); }, 0);
     return () => window.clearTimeout(timer);
   }, [loadDashboard]);
@@ -534,10 +543,17 @@ export default function SuperAdminPage() {
     activity: { kicker: "Account history", title: "Activity Log", description: "Recent account registration, approval and access activity." },
     settings: { kicker: "Platform status", title: "System Settings", description: "Review the active platform configuration and connected services." },
   };
-  const currentSection = sectionCopy[activeSection];
+  const currentSection = activeSection === "weeks" && dashboardArabic
+    ? { kicker: "إدارة الأسابيع الدراسية", title: "التحكم في فتح وإظهار الأسابيع", description: "حدد الأسابيع المتاحة للمعلمين، والأسابيع التي يمكن لأولياء الأمور مشاهدتها." }
+    : sectionCopy[activeSection];
 
   const openSection = (section: DashboardSection) => {
     setActiveSection(section);
+    setMobileNavigationOpen(false);
+    window.localStorage.setItem("andalus-super-admin-section", section);
+    const url = new URL(window.location.href);
+    url.searchParams.set("section", section);
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     setSearch("");
     setRoleFilter("All Roles");
     setStatusFilter("All Statuses");
@@ -955,8 +971,28 @@ export default function SuperAdminPage() {
         <div className="teacher-sidebar-profile"><span className="teacher-avatar super-admin-avatar">MF</span><div><strong>{currentAdminName}</strong><small>Super Admin</small></div><button aria-label="Open profile menu">•••</button></div>
       </aside>
 
+      <div className={`teacher-mobile-menu super-admin-mobile-menu ${mobileNavigationOpen ? "is-open" : ""}`} aria-hidden={!mobileNavigationOpen}>
+        <button type="button" className="teacher-mobile-menu-backdrop" aria-label="Close navigation" onClick={() => setMobileNavigationOpen(false)} />
+        <aside className="teacher-mobile-menu-panel">
+          <div className="teacher-mobile-menu-heading"><div className="teacher-brand"><img src={`${basePath}/school-logo.png`} alt="" /><div><strong>ALANDALUS</strong><span>Super Admin</span></div></div><button type="button" aria-label="Close navigation" onClick={() => setMobileNavigationOpen(false)}>×</button></div>
+          <nav className="teacher-nav" aria-label="Mobile Super administrator navigation">
+            <p>Super Administration</p>
+            <button className={activeSection === "approvals" ? "active" : ""} onClick={() => openSection("approvals")}><span className="teacher-nav-icon">AP</span>Account Approvals<small>{pendingCount}</small></button>
+            <button className={activeSection === "accounts" ? "active" : ""} onClick={() => openSection("accounts")}><span className="teacher-nav-icon">AC</span>All Accounts</button>
+            <button className={activeSection === "roles" ? "active" : ""} onClick={() => openSection("roles")}><span className="teacher-nav-icon">RL</span>Roles & Permissions</button>
+            <button className={activeSection === "plans" ? "active" : ""} onClick={() => openSection("plans")}><span className="teacher-nav-icon">WP</span>Manage Public Plans</button>
+            <button className={activeSection === "weeks" ? "active" : ""} onClick={() => openSection("weeks")}><span className="teacher-nav-icon">WK</span>Week Visibility</button>
+            <button className={activeSection === "holidays" ? "active" : ""} onClick={() => openSection("holidays")}><span className="teacher-nav-icon">HD</span>School Holidays</button>
+            <p>School System</p>
+            <button className={activeSection === "classes" ? "active" : ""} onClick={() => openSection("classes")}><span className="teacher-nav-icon">CL</span>Classes & Subjects</button>
+            <button className={activeSection === "activity" ? "active" : ""} onClick={() => openSection("activity")}><span className="teacher-nav-icon">LG</span>Activity Log</button>
+            <button className={activeSection === "settings" ? "active" : ""} onClick={() => openSection("settings")}><span className="teacher-nav-icon">ST</span>System Settings</button>
+          </nav>
+        </aside>
+      </div>
+
       <section className="teacher-main">
-        <header className="teacher-topbar"><div className="teacher-mobile-brand"><img src={`${basePath}/school-logo.png`} alt="" /><strong>Super Admin</strong></div><label className="teacher-search"><span>⌕</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search real staff names or assignments" /></label><div className="teacher-top-actions"><span className="teacher-sync"><i /> Supabase connected</span><button className="teacher-icon-button" aria-label="Notifications">◇<b>{pendingCount}</b></button><button className="teacher-profile-chip"><span className="teacher-avatar super-admin-avatar">MF</span><span><strong>{currentAdminName}</strong><small>Super Admin</small></span></button></div></header>
+        <header className="teacher-topbar"><div className="teacher-mobile-brand"><button type="button" className="teacher-mobile-menu-button" aria-label="Open navigation" onClick={() => setMobileNavigationOpen(true)}>☰</button><img src={`${basePath}/school-logo.png`} alt="" /><strong>Super Admin</strong></div><label className="teacher-search"><span>⌕</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search real staff names or assignments" /></label><div className="teacher-top-actions"><span className="teacher-sync"><i /> Supabase connected</span><button className="teacher-icon-button" aria-label="Notifications">◇<b>{pendingCount}</b></button><button className="teacher-profile-chip"><span className="teacher-avatar super-admin-avatar">MF</span><span><strong>{currentAdminName}</strong><small>Super Admin</small></span></button></div></header>
 
         <div className="teacher-content super-admin-content">
           <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentSection.kicker}</p><h1>{currentSection.title}</h1><span>{currentSection.description}</span></div>{activeSection !== "plans" && <button type="button" className="teacher-primary-button super-admin-plans-link" onClick={() => openSection("plans")}>Manage public weekly plans <span>→</span></button>}</div>
@@ -1075,8 +1111,8 @@ export default function SuperAdminPage() {
           {activeSection === "activity" && <section className="teacher-card super-activity-card"><div><h2>Recent Account Activity</h2><p>Registration and approval activity from the live directory.</p></div><ul>{accounts.filter((account) => account.status !== "Not Registered").map((account) => <li key={account.id}><span>{initials(account.name)}</span><div><strong>{account.name}</strong><small>{account.lastAction}</small></div><time>{account.requested}</time></li>)}</ul>{accounts.every((account) => account.status === "Not Registered") && <div className="super-section-empty"><span>LG</span><strong>No staff account activity yet</strong><p>New registration requests and your approval actions will appear here.</p></div>}</section>}
 
           {activeSection === "weeks" && <section className="teacher-card super-week-visibility-card">
-            <div className="super-week-visibility-heading"><div><span>WK</span><div><h2>Academic-week visibility</h2><p>Teacher entry and parent visibility are independent. Closing either switch never deletes plans, submissions, approvals, or published content.</p></div></div><div><strong>{academicWeeks.filter((week) => week.teacher_entry_enabled).length}</strong><small>open for teachers</small><strong>{academicWeeks.filter((week) => week.parent_portal_visible).length}</strong><small>visible to parents</small></div></div>
-            <div className="super-week-visibility-list">{academicWeeks.map((week) => <article key={week.id}><div className="super-week-identity"><span>{String(week.week_number).padStart(2, "0")}</span><div><strong>Week {week.week_number}</strong><small>{formatAcademicWeekRange(week)}</small></div></div><label className={week.teacher_entry_enabled ? "enabled" : "disabled"}><span><strong>Teacher entry</strong><small>{week.teacher_entry_enabled ? "Teachers can write and submit" : "Hidden and locked for teachers"}</small></span><input type="checkbox" checked={week.teacher_entry_enabled} disabled={busy} onChange={(event) => void updateAcademicWeekVisibility(week.id, "teacher_entry_enabled", event.target.checked)} /><b>{week.teacher_entry_enabled ? "Open" : "Closed"}</b></label><label className={week.parent_portal_visible ? "enabled" : "disabled"}><span><strong>Parent portal</strong><small>{week.parent_portal_visible ? "Published plans can be viewed" : "Hidden even when published"}</small></span><input type="checkbox" checked={week.parent_portal_visible} disabled={busy} onChange={(event) => void updateAcademicWeekVisibility(week.id, "parent_portal_visible", event.target.checked)} /><b>{week.parent_portal_visible ? "Visible" : "Hidden"}</b></label></article>)}</div>
+            <div className="super-week-visibility-heading"><div><span>WK</span><div><h2>{dashboardArabic ? "التحكم في الأسابيع الدراسية" : "Academic-week visibility"}</h2><p>{dashboardArabic ? "فتح الأسبوع للمعلمين وإظهاره لأولياء الأمور إعدادان مستقلان. إغلاق أي منهما لا يحذف الخطط أو الاعتمادات أو المحتوى المنشور." : "Teacher entry and parent visibility are independent. Closing either switch never deletes plans, submissions, approvals, or published content."}</p></div></div><div><strong>{academicWeeks.filter((week) => week.teacher_entry_enabled).length}</strong><small>{dashboardArabic ? "أسابيع مفتوحة للمعلمين" : "open for teachers"}</small><strong>{academicWeeks.filter((week) => week.parent_portal_visible).length}</strong><small>{dashboardArabic ? "أسابيع ظاهرة لأولياء الأمور" : "visible to parents"}</small></div></div>
+            <div className="super-week-visibility-list">{academicWeeks.map((week) => <article key={week.id}><div className="super-week-identity"><span>{String(week.week_number).padStart(2, "0")}</span><div><strong>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`}</strong><small>{formatAcademicWeekRange(week, dashboardArabic ? "ar-EG" : "en-GB")}</small></div></div><label className={week.teacher_entry_enabled ? "enabled" : "disabled"}><span><strong>{dashboardArabic ? "إدخال خطة المعلمين" : "Teacher entry"}</strong><small>{dashboardArabic ? week.teacher_entry_enabled ? "يمكن للمعلمين الكتابة والإرسال" : "مخفي ومغلق أمام المعلمين" : week.teacher_entry_enabled ? "Teachers can write and submit" : "Hidden and locked for teachers"}</small></span><input type="checkbox" checked={week.teacher_entry_enabled} disabled={busy} onChange={(event) => void updateAcademicWeekVisibility(week.id, "teacher_entry_enabled", event.target.checked)} /><b>{dashboardArabic ? week.teacher_entry_enabled ? "مفتوح" : "مغلق" : week.teacher_entry_enabled ? "Open" : "Closed"}</b></label><label className={week.parent_portal_visible ? "enabled" : "disabled"}><span><strong>{dashboardArabic ? "منصة ولي الأمر" : "Parent portal"}</strong><small>{dashboardArabic ? week.parent_portal_visible ? "يمكن مشاهدة الخطط المنشورة" : "مخفي حتى لو كانت الخطة منشورة" : week.parent_portal_visible ? "Published plans can be viewed" : "Hidden even when published"}</small></span><input type="checkbox" checked={week.parent_portal_visible} disabled={busy} onChange={(event) => void updateAcademicWeekVisibility(week.id, "parent_portal_visible", event.target.checked)} /><b>{dashboardArabic ? week.parent_portal_visible ? "ظاهر" : "مخفي" : week.parent_portal_visible ? "Visible" : "Hidden"}</b></label></article>)}</div>
           </section>}
 
           {activeSection === "settings" && <section className="super-admin-section-grid">
