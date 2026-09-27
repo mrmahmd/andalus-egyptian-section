@@ -354,6 +354,10 @@ button, select, input { font: inherit; }
 .supervisor-review-selector label { display: grid; gap: 7px; color: #263c5b; font-size: 13px; font-weight: 800; }
 .supervisor-review-selector select { min-height: 46px; padding: 0 11px; border: 1px solid #cbd8e7; border-radius: 9px; background: #fff; color: #17355f; font: inherit; font-size: 14px; font-weight: 700; }
 .supervisor-review-selector > span { min-height: 46px; padding: 0 13px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: #e5f4eb; color: #167252; font-size: 12px; font-weight: 800; text-align: center; }
+.supervisor-review-found { min-height: 46px; display: grid; gap: 7px; align-content: center; }
+.supervisor-review-found > span { padding: 8px 12px; border-radius: 10px; background: #e5f4eb; color: #167252; font-size: 11px; font-weight: 850; text-align: center; }
+.supervisor-review-found > button { min-height: 39px; padding: 7px 12px; border: 1px solid #9fd8e4; border-radius: 10px; background: linear-gradient(120deg, #e8f8fb, #eef0ff); color: #0b607b; font: inherit; font-size: 11px; font-weight: 900; line-height: 1.4; cursor: pointer; box-shadow: 0 6px 15px rgba(14,111,139,.1); transition: transform .2s ease, box-shadow .2s ease; }
+.supervisor-review-found > button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(14,111,139,.16); }
 .supervisor-approve-all { min-height: 46px; white-space: nowrap; }
 .supervisor-review-stats button { padding: 15px 17px; border: 1px solid #dce7f2; border-radius: 13px; background: #f8fbfe; color: #294663; text-align: left; font: inherit; cursor: pointer; transition: .2s ease; }
 .supervisor-review-stats button:hover, .supervisor-review-stats button.active { border-color: #0e5fa8; background: #edf6fd; box-shadow: 0 8px 18px rgba(14,95,168,.09); transform: translateY(-1px); }
@@ -382,6 +386,7 @@ button, select, input { font: inherit; }
 .supervisor-review-empty { margin: 0; padding: 28px; border-radius: 12px; background: #f2f7fb; color: #66809d; text-align: center; font-weight: 700; }
 .arabic-ui .supervisor-review-list, .arabic-ui .supervisor-review-list * { font-family: "Alexandria", "Cairo", sans-serif !important; direction: rtl; text-align: right; }
 .arabic-ui .supervisor-review-selector { direction: rtl; }
+.arabic-ui .supervisor-review-found { direction: rtl; }
 .arabic-ui .supervisor-review-selector label { text-align: right; }
 .arabic-ui .supervisor-review-stats button, .arabic-ui .supervisor-review-authority, .arabic-ui .supervisor-review-feedback { direction: rtl; text-align: right; }
 .arabic-ui .supervisor-review-list header, .arabic-ui .supervisor-review-actions > div { flex-direction: row-reverse; }

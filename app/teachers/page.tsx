@@ -1363,7 +1363,8 @@ export default function TeachersDashboardPage() {
       teacherName: plan.teacherName, className: plan.className, week: plan.week,
       subject: plan.reviews.map((item) => item.subject).join(" + "), status: plan.status, note: plan.note, submittedAt: plan.submittedAt, entries: plan.entries, quizzes: plan.quizzes, weeklyNotes: plan.weeklyNotes,
     })), [selectedClassTeacherPlans]);
-  const selectedWeekPendingCount = reviewItems.filter((item) => item.weekId === selectedReviewWeekId && item.status === "submitted").length;
+  const selectedWeekWaitingReviews = reviewItems.filter((item) => item.weekId === selectedReviewWeekId && item.status === "submitted");
+  const selectedWeekPendingCount = selectedWeekWaitingReviews.length;
   useEffect(() => {
     setSelectedReviewClassId((current) => supervisorReviewClasses.some((schoolClass) => schoolClass.id === current) ? current : supervisorReviewClasses[0]?.id ?? "");
   }, [supervisorReviewClasses]);
@@ -1379,6 +1380,12 @@ export default function TeachersDashboardPage() {
     setSelectedReviewWeekId(firstWaitingReview.weekId);
     setSelectedReviewClassId(firstWaitingReview.classId);
     setActiveNav("Teacher Reviews");
+    window.setTimeout(() => document.getElementById("supervisor-review-results")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  };
+  const openSelectedWeekWaitingReview = () => {
+    const nextReview = selectedWeekWaitingReviews.find((item) => item.classId !== selectedReviewClassId) ?? selectedWeekWaitingReviews[0];
+    if (!nextReview) return;
+    setSelectedReviewClassId(nextReview.classId);
     window.setTimeout(() => document.getElementById("supervisor-review-results")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
 
@@ -1471,7 +1478,7 @@ export default function TeachersDashboardPage() {
             <div className="supervisor-review-selector">
               <label>{dashboardArabic ? "١. الأسبوع الدراسي" : "1. School week"}<select value={selectedReviewWeekId} onChange={(event) => setSelectedReviewWeekId(event.target.value)}><option value="">{dashboardArabic ? "اختر الأسبوع" : "Select week"}</option>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select></label>
               <label>{dashboardArabic ? "٢. الفصل والشعبة" : "2. Class & section"}<select value={selectedReviewClassId} onChange={(event) => setSelectedReviewClassId(event.target.value)} disabled={!selectedReviewWeek || supervisorReviewClasses.length === 0}><option value="">{dashboardArabic ? "اختر الفصل" : "Select class"}</option>{supervisorReviewClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}</select></label>
-              <span>{dashboardArabic ? `تم العثور على ${selectedClassReviewItems.length} خطة معلم` : `${selectedClassReviewItems.length} teacher plan${selectedClassReviewItems.length === 1 ? "" : "s"} found`}</span>
+              <div className="supervisor-review-found"><span>{dashboardArabic ? `تم العثور على ${selectedClassReviewItems.length} خطة معلم في الفصل المحدد` : `${selectedClassReviewItems.length} teacher plan${selectedClassReviewItems.length === 1 ? "" : "s"} found in this class`}</span>{selectedWeekPendingCount > 0 && <button type="button" onClick={openSelectedWeekWaitingReview}>{dashboardArabic ? `عرض الخطط المرسلة لهذا الأسبوع (${selectedWeekPendingCount})` : `Show submitted plans this week (${selectedWeekPendingCount})`}</button>}</div>
               <button type="button" className="teacher-primary-button supervisor-approve-all" disabled={saving || selectedWeekPendingCount === 0} onClick={requestBulkApproval}>{dashboardArabic ? `اعتماد جميع خطط معلمي القسم لهذا الأسبوع (${selectedWeekPendingCount})` : `Approve every submitted department plan this week (${selectedWeekPendingCount})`}</button>
             </div>
             <div className="supervisor-review-list" id="supervisor-review-results">

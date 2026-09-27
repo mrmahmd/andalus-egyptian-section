@@ -531,6 +531,15 @@ test("uses a lightweight one-day-at-a-time weekly editor on mobile", async () =>
   assert.match(source, /setSelectedBuilderDay\(index\)/);
 });
 
+test("lets supervisors jump directly to submitted plans in the selected week", async () => {
+  const source = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /const selectedWeekWaitingReviews = reviewItems\.filter/);
+  assert.match(source, /const openSelectedWeekWaitingReview = \(\) =>/);
+  assert.match(source, /عرض الخطط المرسلة لهذا الأسبوع/);
+  assert.match(source, /nextReview\.classId/);
+});
+
 test("localizes the academic-week visibility controls in Arabic", async () => {
   const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
 
