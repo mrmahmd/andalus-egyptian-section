@@ -77,12 +77,13 @@ type TimetableSlot = {
   id: string;
   class_id: string;
   subject_id: string;
+  teacher_id: string | null;
   day_of_week: number;
   period_number: number;
   requires_weekly_plan_submission: boolean;
 };
 
-type ParentPreviewSlot = TimetableSlot & {
+type ParentPreviewSlot = Omit<TimetableSlot, "teacher_id"> & {
   subject: string;
 };
 
@@ -320,7 +321,7 @@ export default function TeachersDashboardPage() {
       const [assignmentsResult, weeksResult, slotsResult, entriesResult, mySubmissionsResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult, holidaysResult] = await Promise.all([
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en, include_in_weekly_plan)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current, teacher_entry_enabled, parent_portal_visible").order("week_number"),
-        supabase.from("timetable_slots").select("id, class_id, subject_id, day_of_week, period_number, requires_weekly_plan_submission").eq("teacher_id", userData.user.id).eq("requires_weekly_plan_submission", true).order("day_of_week").order("period_number"),
+        supabase.from("timetable_slots").select("id, class_id, subject_id, teacher_id, day_of_week, period_number, requires_weekly_plan_submission").eq("requires_weekly_plan_submission", true).order("day_of_week").order("period_number"),
         supabase.from("plan_entries").select("id, weekly_plan_id, subject_id, day_of_week, classwork, homework, classera_notes, updated_at, subjects(name_en), weekly_plans(class_id, week_id, status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         supabase.from("plan_submissions").select("id, weekly_plan_id, subject_id, status, review_note, weekly_plans(class_id, week_id, school_classes(grade, section), academic_weeks(label)), subjects(name_en)").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         Promise.resolve({ data: [], error: null }),
@@ -338,7 +339,7 @@ export default function TeachersDashboardPage() {
       const realAssignments: Assignment[] = (assignmentsResult.data ?? []).map((assignment) => {
         const schoolClass = one(assignment.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
         const subject = one(assignment.subjects as { name_en: string; include_in_weekly_plan: boolean } | { name_en: string; include_in_weekly_plan: boolean }[] | null);
-        if (!subject?.include_in_weekly_plan || !requiredSlotRows.some((slot) => String(slot.class_id) === String(assignment.class_id) && String(slot.subject_id) === String(assignment.subject_id))) return null;
+        if (!subject?.include_in_weekly_plan || !requiredSlotRows.some((slot) => String(slot.teacher_id) === String(userData.user.id) && String(slot.class_id) === String(assignment.class_id) && String(slot.subject_id) === String(assignment.subject_id))) return null;
         return {
           id: String(assignment.id),
           classId: String(assignment.class_id),
@@ -498,9 +499,26 @@ export default function TeachersDashboardPage() {
   const holidayForDay = (dayOfWeek: number) => schoolHolidays.find((holiday) => holiday.week_id === selectedWeekId && holiday.day_of_week === dayOfWeek) ?? null;
   const selectedClassAssignments = useMemo(() => assignments.filter((assignment) => assignment.classId === selectedClassId), [assignments, selectedClassId]);
   const selectedClass = selectedClassAssignments[0];
-  const selectedClassSlots = useMemo(() => timetableSlots
-    .filter((slot) => slot.class_id === selectedClassId && selectedClassAssignments.some((assignment) => assignment.subjectId === slot.subject_id) && !schoolHolidays.some((holiday) => holiday.week_id === selectedWeekId && holiday.day_of_week === slot.day_of_week))
-    .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number), [timetableSlots, selectedClassAssignments, selectedClassId, selectedWeekId, schoolHolidays]);
+  const selectedClassSlots = useMemo(() => {
+    const classSlots = timetableSlots.filter((slot) => slot.class_id === selectedClassId);
+    const sundayPeriodSix = classSlots.find((slot) => slot.day_of_week === 0 && slot.period_number === 6);
+    const tuesdayPeriodOne = classSlots.find((slot) => slot.day_of_week === 2 && slot.period_number === 1);
+    const preservePreWeekFive5B = selectedClass?.grade === 5 && selectedClass.section === "B" && (selectedWeek?.week_number ?? 5) < 5 && sundayPeriodSix && tuesdayPeriodOne;
+    return classSlots
+      .map((slot) => {
+        if (!preservePreWeekFive5B) return slot;
+        if (slot.id === sundayPeriodSix.id) return { ...slot, subject_id: tuesdayPeriodOne.subject_id };
+        if (slot.id === tuesdayPeriodOne.id) return { ...slot, subject_id: sundayPeriodSix.subject_id };
+        return slot;
+      })
+      .filter((slot) => {
+        const assignedSubject = selectedClassAssignments.some((assignment) => assignment.subjectId === slot.subject_id);
+        const historicalSwapSlot = Boolean(preservePreWeekFive5B && (slot.id === sundayPeriodSix.id || slot.id === tuesdayPeriodOne.id));
+        const assignedTeacher = historicalSwapSlot ? assignedSubject : String(slot.teacher_id) === profileId && assignedSubject;
+        return assignedTeacher && !schoolHolidays.some((holiday) => holiday.week_id === selectedWeekId && holiday.day_of_week === slot.day_of_week);
+      })
+      .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
+  }, [timetableSlots, selectedClassAssignments, selectedClassId, selectedWeekId, selectedWeek?.week_number, selectedClass?.grade, selectedClass?.section, profileId, schoolHolidays]);
   const editableClassSlots = useMemo(() => selectedClassSlots.filter((slot) => !holidayForDay(slot.day_of_week)), [selectedClassSlots, selectedWeekId, schoolHolidays]);
   const activeDayIndexes = dayNames.map((_, index) => index).filter((index) => selectedClassSlots.some((slot) => slot.day_of_week === index) || Boolean(holidayForDay(index)));
   const assignmentForSlot = (slot: TimetableSlot) => selectedClassAssignments.find((assignment) => assignment.subjectId === slot.subject_id);

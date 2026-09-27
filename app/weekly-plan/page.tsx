@@ -10,7 +10,14 @@ type LiveLesson = { day_of_week: number; period_number: number; course: string; 
 type LiveQuiz = { course: string; date: string; details: string };
 type LiveHoliday = { day_of_week: number; title: string; note: string | null };
 type LiveDictation = { day: number; words: string[] };
-type PublishedEntry = { day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string };
+type PublishedEntry = {
+  day_of_week: number;
+  period_number: number;
+  classwork: string;
+  homework: string;
+  classera_notes: string;
+  subjects: { parent_plan_name: string; name_en: string } | { parent_plan_name: string; name_en: string }[] | null;
+};
 type ParentTimetableSlot = {
   day_of_week: number;
   period_number: number;
@@ -138,7 +145,7 @@ export default function WeeklyPlanPage() {
         const supabase = getSupabasePublicClient();
         const [planResult, holidayResult, timetableResult] = await Promise.all([
         supabase.from("weekly_plans")
-        .select("plan_entries(day_of_week, period_number, classwork, homework, classera_notes, subjects(code, parent_plan_name)), plan_quizzes(quiz_date, details, subjects(parent_plan_name)), plan_notes(note_text)")
+        .select("plan_entries(day_of_week, period_number, classwork, homework, classera_notes, subjects(parent_plan_name, name_en)), plan_quizzes(quiz_date, details, subjects(parent_plan_name)), plan_notes(note_text)")
         .eq("id", selectedPlan.id).eq("status", "published").maybeSingle(),
         supabase.from("weekly_plan_holidays").select("day_of_week, title, note").eq("week_id", selectedPlan.weekId),
         supabase.from("timetable_slots").select("day_of_week, period_number, requires_weekly_plan_submission, subjects(code, parent_plan_name, name_en, include_in_weekly_plan)").eq("class_id", selectedPlan.classId).order("day_of_week").order("period_number"),
@@ -161,10 +168,11 @@ export default function WeeklyPlanPage() {
         if (fixed) return [{ day_of_week: slot.day_of_week, period_number: slot.period_number, course: fixed.course, classwork: fixed.classwork, homework: "—", notes: "—" }];
         if (!slot.requires_weekly_plan_submission || !subject.include_in_weekly_plan) return [];
         const publishedEntry = publishedEntryByPeriod.get(`${slot.day_of_week}-${slot.period_number}`);
+        const publishedSubject = publishedEntry ? one(publishedEntry.subjects) : null;
         return [{
           day_of_week: slot.day_of_week,
           period_number: slot.period_number,
-          course: subject.parent_plan_name || subject.name_en || "Subject",
+          course: publishedSubject?.parent_plan_name || publishedSubject?.name_en || subject.parent_plan_name || subject.name_en || "Subject",
           classwork: publishedEntry?.classwork || "Plan not published",
           homework: publishedEntry?.homework || "—",
           notes: publishedEntry?.classera_notes || "—",
