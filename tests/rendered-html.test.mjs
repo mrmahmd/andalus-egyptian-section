@@ -546,3 +546,18 @@ test("keeps the class report focused by hiding department names below each class
   assert.doesNotMatch(source, /className="super-plan-class-departments"/);
   assert.match(source, /<strong>Grade \{coverage\.grade\} · \{coverage\.section\}<\/strong><\/td>/);
 });
+
+test("right-aligns the Super Admin page heading in Arabic only", async () => {
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(styles, /\.arabic-ui \.super-admin-portal \.teacher-page-heading \{ direction: rtl; \}/);
+  assert.match(styles, /\.arabic-ui \.super-admin-portal \.teacher-page-heading > div:first-child \{ width: 100%; margin-inline-start: auto; text-align: right; \}/);
+});
+
+test("keeps the class publication table inside the page without a horizontal scrollbar", async () => {
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(styles, /\.super-plan-report-card \.super-admin-table-wrap \{ overflow-x: hidden; \}/);
+  assert.match(styles, /\.super-plan-report-table \{ min-width: 0; table-layout: fixed; \}/);
+  assert.match(styles, /\.super-plan-report-table \.super-row-actions \{ display: grid;/);
+});

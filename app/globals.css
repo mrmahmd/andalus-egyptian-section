@@ -1532,6 +1532,8 @@ body.arabic-ui .super-week-visibility-list label b { text-align: left; }
 .super-admin-permission-card strong { font-size: 12px; }
 .super-admin-permission-card p { margin: 4px 0 0; color: #b7c4d8; font-size: 11px; line-height: 1.45; }
 .super-admin-content { max-width: 1580px; }
+.arabic-ui .super-admin-portal .teacher-page-heading { direction: rtl; }
+.arabic-ui .super-admin-portal .teacher-page-heading > div:first-child { width: 100%; margin-inline-start: auto; text-align: right; }
 .super-admin-plans-link { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
 .super-admin-accounts-card { margin-top: 19px; overflow: hidden; }
 .super-admin-toolbar { min-height: 98px; padding: 20px 22px; border-bottom: 1px solid #e5eaf1; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
@@ -1565,6 +1567,12 @@ body.arabic-ui .super-plan-tracking-heading > div > span, body.arabic-ui .super-
 .super-plan-report-toolbar { align-items: center; }.super-plan-report-actions { display: flex; flex-wrap: wrap; gap: 9px; }.super-plan-report-actions .teacher-secondary-button { min-height: 45px; display: inline-flex; align-items: center; text-decoration: none; }
 .super-bulk-publish-button { background: linear-gradient(120deg, #9e1f6c, #d56a38); box-shadow: 0 8px 20px rgba(158,31,108,.17); }
 .super-plan-report-filters { padding: 16px 22px; border-bottom: 1px solid #e7ebf1; flex-wrap: wrap; background: #fbfcfe; }.super-plan-report-filters select { min-width: 130px; }
+.super-plan-report-card .super-admin-table-wrap { overflow-x: hidden; }
+.super-plan-report-table { min-width: 0; table-layout: fixed; }
+.super-plan-report-table th, .super-plan-report-table td { padding-inline: 9px; overflow-wrap: anywhere; }
+.super-plan-report-table th:nth-child(1) { width: 11%; }.super-plan-report-table th:nth-child(2) { width: 18%; }.super-plan-report-table th:nth-child(3) { width: 15%; }.super-plan-report-table th:nth-child(4) { width: 18%; }.super-plan-report-table th:nth-child(5) { width: 7%; }.super-plan-report-table th:nth-child(6) { width: 9%; }.super-plan-report-table th:nth-child(7) { width: 22%; }
+.super-plan-report-table .super-row-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+.super-plan-report-table .super-row-actions a, .super-plan-report-table .super-row-actions button { width: 100%; min-width: 0; padding: 6px 7px; white-space: normal; line-height: 1.25; }
 .super-plan-report-table td:first-child strong { display: inline-flex; align-items: center; min-height: 38px; padding: 8px 12px; border-radius: 11px; background: linear-gradient(135deg, #e7f5f8, #efe5f4); color: #112f54; font-size: 13px; font-weight: 900; white-space: nowrap; box-shadow: inset 0 0 0 1px rgba(31,115,143,.09); }
 .super-class-completion { min-width: 175px; }.super-class-completion > strong { color: #173b69; font-size: 19px; }.super-class-completion > div { margin: 7px 0; background: #e7edf3; }.super-class-completion small { color: #708097; font-size: 10px; }
 .super-plan-teacher-details { min-width: 170px; }.super-plan-teacher-details summary { color: #23617d; font-size: 11px; font-weight: 850; cursor: pointer; }.super-plan-teacher-details > div { margin-top: 8px; display: grid; gap: 5px; }.super-plan-teacher-details span { padding: 5px 7px; border-radius: 7px; font-size: 10px; font-weight: 750; }.super-plan-teacher-details .complete { background: #e8f7ef; color: #207157; }.super-plan-teacher-details .missing { background: #fff1e5; color: #9a5a1b; }
