@@ -28,8 +28,8 @@ begin
   order by case when display_name = 'أحمد حسن' then 0 else 1 end
   limit 1;
 
-  select id into al_subject from public.subjects where code = 'AL';
-  select id into arabic_subject from public.subjects where code = 'عربي';
+  select id into al_subject from public.subjects where code = 'english_al';
+  select id into arabic_subject from public.subjects where code = 'arabic';
 
   if target_class is null or farid is null or ahmed is null
      or al_subject is null or arabic_subject is null then
@@ -46,6 +46,14 @@ begin
 
   if sunday_slot.id is null or tuesday_slot.id is null then
     raise exception 'Expected Grade 5B timetable slots were not found';
+  end if;
+
+  if sunday_slot.teacher_id = ahmed
+     and sunday_slot.subject_id = arabic_subject
+     and tuesday_slot.teacher_id = farid
+     and tuesday_slot.subject_id = al_subject then
+    raise notice 'Grade 5B timetable swap is already applied';
+    return;
   end if;
 
   if sunday_slot.teacher_id is distinct from farid
