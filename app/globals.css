@@ -781,6 +781,8 @@ button, select, input { font: inherit; }
 .weekly-send-confirmation h3 { margin: 0; color: #102f5d; font-size: 22px; }.weekly-send-confirmation p { margin: 12px 0 22px; color: #60738b; font-size: 14px; line-height: 1.75; }
 .weekly-send-confirmation > div { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }.weekly-send-confirmation button { min-width: 150px; }
 .weekly-submission-success { border-top: 5px solid #16a678; }
+.weekly-submission-success.error { border-top-color: #d64b5e; }
+.weekly-submission-success.error > span { background: #fff0f2; color: #c52f47; }
 .weekly-copy-dialog { width: min(560px, 100%); padding: 28px; border: 1px solid #d4e1ec; border-radius: 22px; background: #fff; box-shadow: 0 28px 80px rgba(4,16,39,.34); }
 .weekly-copy-dialog-heading { display: flex; align-items: center; gap: 13px; }.weekly-copy-dialog-heading > span { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(145deg, #0d5f89, #163d72); color: #fff; font-size: 13px; font-weight: 900; }.weekly-copy-dialog-heading small { display: block; margin-bottom: 3px; color: #75869b; font-size: 11px; font-weight: 750; }.weekly-copy-dialog-heading h3 { margin: 0; color: #102f5d; font-size: 21px; }
 .weekly-copy-dialog > p { margin: 16px 0; color: #60738b; font-size: 13px; line-height: 1.7; }.weekly-copy-dialog-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.weekly-copy-dialog-fields label { display: grid; gap: 6px; color: #2a4465; font-size: 12px; font-weight: 800; }.weekly-copy-dialog-fields select { width: 100%; min-height: 44px; padding: 0 11px; border: 1px solid #cddae6; border-radius: 10px; background: #fbfdff; color: #16365d; font: inherit; }
