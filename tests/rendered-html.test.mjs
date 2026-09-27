@@ -535,6 +535,14 @@ test("localizes the academic-week visibility controls in Arabic", async () => {
   const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
 
   assert.match(source, /التحكم في الأسابيع الدراسية/);
+  assert.match(source, /dashboardArabic \? "إظهار الأسابيع" : "Week Visibility"/);
   assert.match(source, /إدخال خطة المعلمين/);
   assert.match(source, /منصة ولي الأمر/);
+});
+
+test("keeps the class report focused by hiding department names below each class", async () => {
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+
+  assert.doesNotMatch(source, /className="super-plan-class-departments"/);
+  assert.match(source, /<strong>Grade \{coverage\.grade\} · \{coverage\.section\}<\/strong><\/td>/);
 });
