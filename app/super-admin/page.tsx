@@ -124,8 +124,8 @@ type AchievementReport = {
   weekNumber: number;
   weekRange: string;
   generatedAt: string;
-  teachers: { id: string; name: string; department: string; classes: string; completed: number; total: number; percent: number; status: string }[];
-  supervisors: { id: string; name: string; department: string; teacherNames: string; approved: number; total: number; percent: number; lastApproval: string }[];
+  teachers: { id: string; name: string; completedClasses: string[]; incompleteClasses: string[]; completed: number; total: number; percent: number; status: string }[];
+  supervisors: { id: string; name: string; approved: number; total: number; percent: number; lastApproval: string }[];
 };
 
 type AcademicWeekOption = { id: string; week_number: number; label: string; starts_on: string; ends_on: string; is_current: boolean; teacher_entry_enabled: boolean; parent_portal_visible: boolean };
@@ -426,11 +426,11 @@ export default function SuperAdminPage() {
         if (previewMode === "report") setAchievementReport({
           weekNumber: 4, weekRange: "٢٧ سبتمبر - ٣ أكتوبر ٢٠٢٦", generatedAt: "٢٨ سبتمبر ٢٠٢٦، ٨:٣٠ م",
           teachers: [
-            { id: "preview-1", name: "محمد فريد", department: "قسم اللغة الإنجليزية", classes: "4A ✓، 4B ✓، 5A ○", completed: 2, total: 3, percent: 67, status: "مكتمل جزئيًا" },
-            { id: "preview-2", name: "مؤمن الحداد", department: "قسم اللغة الإنجليزية", classes: "3A ✓، 3B ✓", completed: 2, total: 2, percent: 100, status: "مكتمل" },
-            { id: "preview-3", name: "معلم تجريبي", department: "قسم اللغة العربية", classes: "6A ○", completed: 0, total: 1, percent: 0, status: "لم يكتمل" },
+            { id: "preview-1", name: "محمد فريد", completedClasses: ["4A", "4B"], incompleteClasses: ["5A"], completed: 2, total: 3, percent: 67, status: "مكتمل جزئيًا" },
+            { id: "preview-2", name: "مؤمن الحداد", completedClasses: ["3A", "3B"], incompleteClasses: [], completed: 2, total: 2, percent: 100, status: "مكتمل" },
+            { id: "preview-3", name: "معلم تجريبي", completedClasses: [], incompleteClasses: ["6A"], completed: 0, total: 1, percent: 0, status: "لم يكتمل" },
           ],
-          supervisors: [{ id: "preview-4", name: "محمود حلمي", department: "قسم اللغة الإنجليزية", teacherNames: "محمد فريد، مؤمن الحداد", approved: 4, total: 5, percent: 80, lastApproval: "٢٨/٩/٢٠٢٦، ٧:٤٥ م" }],
+          supervisors: [{ id: "preview-4", name: "محمود حلمي", approved: 4, total: 5, percent: 80, lastApproval: "٢٨/٩/٢٠٢٦، ٧:٤٥ م" }],
         });
       });
       return;
@@ -750,12 +750,13 @@ export default function SuperAdminPage() {
       const completed = rows.filter(isCompleted).length;
       const total = rows.length;
       return {
-        id, name: rows[0].teacher.name, department: rows[0].department,
-        classes: rows.map((row) => `${row.grade}${row.section} ${isCompleted(row) ? "✓" : "○"}`).join("، "),
+        id, name: rows[0].teacher.name,
+        completedClasses: rows.filter(isCompleted).map((row) => `${row.grade}${row.section}`),
+        incompleteClasses: rows.filter((row) => !isCompleted(row)).map((row) => `${row.grade}${row.section}`),
         completed, total, percent: total ? Math.round(completed / total * 100) : 0,
         status: completed === total ? "مكتمل" : completed ? "مكتمل جزئيًا" : "لم يكتمل",
       };
-    }).sort((a, b) => a.department.localeCompare(b.department) || a.name.localeCompare(b.name));
+    }).sort((a, b) => a.name.localeCompare(b.name, "ar"));
     const supervisorIds = new Set(supervisorLinks.map((link) => link.supervisorStaffId));
     const supervisors = accounts.filter((account) => supervisorIds.has(account.staffId)).map((supervisor) => {
       const linkedTeacherIds = new Set(supervisorLinks.filter((link) => link.supervisorStaffId === supervisor.staffId).map((link) => link.teacherStaffId));
@@ -766,8 +767,7 @@ export default function SuperAdminPage() {
       const approvedAt = planSubmissions.filter((submission) => linkedPlanIds.has(submission.weeklyPlanId) && linkedRows.some((row) => row.teacher.userId === submission.teacherId) && submission.status === "approved" && submission.reviewedAt)
         .map((submission) => submission.reviewedAt as string).sort().at(-1);
       return {
-        id: supervisor.staffId, name: supervisor.name, department: supervisor.department,
-        teacherNames: Array.from(new Set(linkedRows.map((row) => row.teacher.name))).join("، ") || "—",
+        id: supervisor.staffId, name: supervisor.name,
         approved, total, percent: total ? Math.round(approved / total * 100) : 0,
         lastApproval: approvedAt ? new Intl.DateTimeFormat("ar-SA", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Riyadh" }).format(new Date(approvedAt)) : "—",
       };
@@ -1241,7 +1241,49 @@ export default function SuperAdminPage() {
         </div>
       </section>
 
-      {achievementReport && <div className="super-report-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setAchievementReport(null)}><section className="super-report-dialog" role="dialog" aria-modal="true" aria-labelledby="achievement-report-title" dir="rtl"><div className="super-report-toolbar"><strong>تقرير الأسبوع {achievementReport.weekNumber}</strong><div><button type="button" onClick={() => window.print()}>طباعة / حفظ PDF</button><button type="button" onClick={() => setAchievementReport(null)}>إغلاق</button></div></div><div className="super-report-paper"><header><img src={`${basePath}/school-logo.png`} alt="شعار مدارس الأندلس الأهلية" /><div><span>مدارس الأندلس الأهلية · المسار المصري</span><h2 id="achievement-report-title">تقرير إنجاز المعلمين والمشرفين للأسبوع رقم {achievementReport.weekNumber}</h2><p>{achievementReport.weekRange}</p></div></header><div className="super-report-meta"><span>وقت استخراج التقرير: {achievementReport.generatedAt}</span><span>حالة البيانات لحظة الضغط على «عرض التقرير»</span></div><section><h3>أولًا: إنجاز المعلمين</h3><p>تُحسب نسبة المعلم على فصوله المكلف بها؛ يكتمل الفصل عند إرسال خطته بصرف النظر عن عدد المواد التي يدرّسها.</p><table><thead><tr><th>المعلم</th><th>القسم</th><th>الفصول <small>✓ مكتمل · ○ غير مكتمل</small></th><th>المكتمل</th><th>النسبة</th><th>الحالة</th></tr></thead><tbody>{achievementReport.teachers.map((teacher) => <tr key={teacher.id}><td>{teacher.name}</td><td>{teacher.department}</td><td>{teacher.classes}</td><td>{teacher.completed} / {teacher.total}</td><td><b className={teacher.percent === 100 ? "complete" : ""}>{teacher.percent}%</b></td><td>{teacher.status}</td></tr>)}{achievementReport.teachers.length === 0 && <tr><td colSpan={6}>لا توجد تكليفات معلّم مرتبطة بالجدول لهذا الأسبوع.</td></tr>}</tbody></table></section><section><h3>ثانيًا: اعتماد المشرفين</h3><p>النسبة مبنية على خطط فصول المعلمين المرتبطين بكل مشرف، وفق حالة الاعتماد المسجلة وقت استخراج التقرير.</p><table><thead><tr><th>المشرف</th><th>القسم</th><th>المعلمون المرتبطون</th><th>خطط الفصول المعتمدة</th><th>المتبقي</th><th>نسبة الاعتماد</th><th>آخر اعتماد</th></tr></thead><tbody>{achievementReport.supervisors.map((supervisor) => <tr key={supervisor.id}><td>{supervisor.name}</td><td>{supervisor.department}</td><td>{supervisor.teacherNames}</td><td>{supervisor.approved} / {supervisor.total}</td><td>{supervisor.total - supervisor.approved}</td><td><b className={supervisor.percent === 100 && supervisor.total > 0 ? "complete" : ""}>{supervisor.percent}%</b></td><td>{supervisor.lastApproval}</td></tr>)}{achievementReport.supervisors.length === 0 && <tr><td colSpan={7}>لا يوجد ربط إشراف مفعّل في البيانات الحالية.</td></tr>}</tbody></table></section><footer>منصة الخطط الأسبوعية · مدارس الأندلس الأهلية — المسار المصري</footer></div></section></div>}
+      {achievementReport && (
+        <div className="super-report-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setAchievementReport(null)}>
+          <section className="super-report-dialog" role="dialog" aria-modal="true" aria-labelledby="achievement-report-title" dir="rtl">
+            <div className="super-report-toolbar"><strong>تقرير الأسبوع {achievementReport.weekNumber}</strong><div><button type="button" onClick={() => window.print()}>طباعة / حفظ PDF</button><button type="button" onClick={() => setAchievementReport(null)}>إغلاق</button></div></div>
+            <div className="super-report-paper">
+              <header><img src={`${basePath}/school-logo.png`} alt="شعار مدارس الأندلس الأهلية" /><div><span>مدارس الأندلس الأهلية · المسار المصري</span><h2 id="achievement-report-title">تقرير إنجاز المعلمين والمشرفين للأسبوع رقم {achievementReport.weekNumber}</h2><p>{achievementReport.weekRange}</p></div></header>
+              <div className="super-report-meta"><span>وقت استخراج التقرير: {achievementReport.generatedAt}</span><span>حالة البيانات لحظة الضغط على «عرض التقرير»</span></div>
+              <section>
+                <h3>أولًا: إنجاز المعلمين</h3>
+                <p>تُحسب نسبة المعلم على فصوله المكلف بها؛ يكتمل الفصل عند إرسال خطته بصرف النظر عن عدد المواد التي يدرّسها.</p>
+                <table className="super-report-teacher-table"><thead><tr><th>المعلم</th><th>فصول المعلم</th><th>المنجز</th><th>النسبة</th><th>الحالة</th></tr></thead><tbody>
+                  {achievementReport.teachers.map((teacher) => <tr key={teacher.id}>
+                    <td className="super-report-person">{teacher.name}</td>
+                    <td><div className="super-report-class-lines">
+                      <div className="super-report-class-line done"><strong>المكتملة</strong><div>{teacher.completedClasses.length ? teacher.completedClasses.map((className) => <span key={className} dir="ltr">{className}</span>) : <em>لا يوجد</em>}</div></div>
+                      <div className="super-report-class-line pending"><strong>غير المكتملة</strong><div>{teacher.incompleteClasses.length ? teacher.incompleteClasses.map((className) => <span key={className} dir="ltr">{className}</span>) : <em>لا يوجد</em>}</div></div>
+                    </div></td>
+                    <td className="super-report-count"><span dir="ltr">{teacher.completed} / {teacher.total}</span></td>
+                    <td className="super-report-percent"><b className={teacher.percent === 100 ? "complete" : teacher.percent > 0 ? "partial" : "missing"}>{teacher.percent}%</b></td>
+                    <td><span className={`super-report-status ${teacher.percent === 100 ? "complete" : teacher.percent > 0 ? "partial" : "missing"}`}>{teacher.status}</span></td>
+                  </tr>)}
+                  {achievementReport.teachers.length === 0 && <tr><td colSpan={5}>لا توجد تكليفات معلّم مرتبطة بالجدول لهذا الأسبوع.</td></tr>}
+                </tbody></table>
+              </section>
+              <section>
+                <h3>ثانيًا: اعتماد المشرفين</h3>
+                <p>النسبة مبنية على خطط فصول المعلمين المرتبطين بكل مشرف، وفق حالة الاعتماد المسجلة وقت استخراج التقرير.</p>
+                <table className="super-report-supervisor-table"><thead><tr><th>المشرف</th><th>خطط الفصول المعتمدة</th><th>المتبقي</th><th>نسبة الاعتماد</th><th>آخر اعتماد</th></tr></thead><tbody>
+                  {achievementReport.supervisors.map((supervisor) => <tr key={supervisor.id}>
+                    <td className="super-report-person">{supervisor.name}</td>
+                    <td className="super-report-count"><span dir="ltr">{supervisor.approved} / {supervisor.total}</span></td>
+                    <td className="super-report-count pending">{supervisor.total - supervisor.approved}</td>
+                    <td className="super-report-percent"><b className={supervisor.percent === 100 && supervisor.total > 0 ? "complete" : supervisor.percent > 0 ? "partial" : "missing"}>{supervisor.percent}%</b></td>
+                    <td className="super-report-date">{supervisor.lastApproval}</td>
+                  </tr>)}
+                  {achievementReport.supervisors.length === 0 && <tr><td colSpan={5}>لا يوجد ربط إشراف مفعّل في البيانات الحالية.</td></tr>}
+                </tbody></table>
+              </section>
+              <footer>منصة الخطط الأسبوعية · مدارس الأندلس الأهلية — المسار المصري</footer>
+            </div>
+          </section>
+        </div>
+      )}
 
       {bulkPublishConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setBulkPublishConfirmationOpen(false)}><section className="weekly-send-confirmation super-bulk-publish-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="bulk-school-publish-title"><span aria-hidden="true">SA</span><h3 id="bulk-school-publish-title">Approve and publish the whole school week?</h3><p>This Super Admin override will publish every non-empty class plan in <strong>{academicWeeks.find((week) => week.id === selectedPlanWeekId)?.label ?? "the selected week"}</strong>. Empty or unstarted classes remain unpublished, and the teacher-completion report remains unchanged so missing teachers stay visible.</p><div className="super-bulk-publish-summary"><strong>{bulkPublishCandidates.length}<small>plans ready to force publish</small></strong><strong>{unpublishedClassCount}<small>classes currently not published</small></strong><strong>{weeklyClassCoverage.filter((coverage) => coverage.completionPercent < 100).length}<small>classes below 100% teacher completion</small></strong></div><div><button type="button" className="teacher-secondary-button" onClick={() => setBulkPublishConfirmationOpen(false)}>Cancel</button><button type="button" className="teacher-primary-button" disabled={busy || bulkPublishCandidates.length === 0} onClick={() => void publishAllSchoolPlans()}>Yes, approve and publish</button></div></section></div>}
 

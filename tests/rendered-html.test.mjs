@@ -237,6 +237,21 @@ test("opens Super Admin on the weekly overview with account navigation", async (
   assert.match(source, /setReportPending\(true\);\s*const loaded = await loadDashboard\(\)/);
 });
 
+test("keeps the achievement report readable with separate completed and incomplete class rows", async () => {
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  const report = source.split("{achievementReport && (")[1]?.split("{bulkPublishConfirmationOpen")[0] ?? "";
+
+  assert.match(report, /super-report-class-line done/);
+  assert.match(report, /super-report-class-line pending/);
+  assert.match(report, /teacher\.completedClasses\.map/);
+  assert.match(report, /teacher\.incompleteClasses\.map/);
+  assert.doesNotMatch(report, /teacher\.department|supervisor\.department|supervisor\.teacherNames/);
+  assert.match(css, /\.super-report-paper table \{ table-layout: fixed; font-size: 13px; \}/);
+  assert.match(css, /\.super-report-class-line\.done \{ background:/);
+  assert.match(css, /\.super-report-class-line\.pending \{ background:/);
+});
+
 test("saves teacher assignments immediately and enforces English programme grades", async () => {
   const superAdminSource = await readFile(
     new URL("../app/super-admin/page.tsx", import.meta.url),
