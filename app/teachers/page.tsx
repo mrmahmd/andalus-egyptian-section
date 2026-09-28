@@ -9,6 +9,7 @@ import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 const navigation = [
   ["Overview", "OV"],
   ["Weekly Plans", "WP"],
+  ["My Timetable", "TT"],
   ["My Classes", "CL"],
   ["My Subjects", "SB"],
   ["Calendar", "CA"],
@@ -16,10 +17,10 @@ const navigation = [
 
 const supervisorNavigation = [
   ["Overview", "OV"],
-  ["Weekly Plans", "WP"],
   ["Teacher Reviews", "RV"],
+  ["Weekly Plans", "WP"],
+  ["My Timetable", "TT"],
   ["Department Teachers", "DT"],
-  ["Profile & assignments", "PR"],
 ] as const;
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
@@ -82,6 +83,8 @@ type TimetableSlot = {
   period_number: number;
   requires_weekly_plan_submission: boolean;
 };
+
+type PersonalTimetableSlot = TimetableSlot & { className: string; subject: string };
 
 type ParentPreviewSlot = Omit<TimetableSlot, "teacher_id"> & {
   subject: string;
@@ -243,6 +246,9 @@ export default function TeachersDashboardPage() {
   const [academicWeeks, setAcademicWeeks] = useState<AcademicWeek[]>([]);
   const [schoolHolidays, setSchoolHolidays] = useState<SchoolHoliday[]>([]);
   const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>([]);
+  const [personalTimetable, setPersonalTimetable] = useState<PersonalTimetableSlot[]>([]);
+  const [dashboardWeekId, setDashboardWeekId] = useState("");
+  const [planViewFilter, setPlanViewFilter] = useState<"all" | "needs_action" | "submitted" | "approved">("all");
   const [entries, setEntries] = useState<TeacherEntry[]>([]);
   const [mySubmissions, setMySubmissions] = useState<MySubmission[]>([]);
   const [isSupervisor, setIsSupervisor] = useState(false);
@@ -328,7 +334,7 @@ export default function TeachersDashboardPage() {
       }
 
       const departmentTeachersPromise = supervisorAccount ? supabase.rpc("get_my_department_teachers") : Promise.resolve({ data: [], error: null });
-      const [assignmentsResult, weeksResult, slotsResult, entriesResult, mySubmissionsResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult, holidaysResult] = await Promise.all([
+      const [assignmentsResult, weeksResult, slotsResult, entriesResult, mySubmissionsResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult, holidaysResult, personalTimetableResult] = await Promise.all([
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en, include_in_weekly_plan)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current, teacher_entry_enabled, parent_portal_visible").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, teacher_id, day_of_week, period_number, requires_weekly_plan_submission").eq("requires_weekly_plan_submission", true).order("day_of_week").order("period_number"),
@@ -341,11 +347,21 @@ export default function TeachersDashboardPage() {
         supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
         supabase.from("weekly_plan_teacher_access").select("is_open").eq("teacher_id", userData.user.id).maybeSingle(),
         supabase.from("weekly_plan_holidays").select("id, week_id, day_of_week, title, note"),
+        supabase.from("timetable_slots").select("id, class_id, subject_id, teacher_id, day_of_week, period_number, requires_weekly_plan_submission, school_classes(grade, section), subjects(name_en)").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
       ]);
       const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, mySubmissionsResult.error, reviewsResult.error, classesResult.error, subjectsResult.error, holidaysResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const requiredSlotRows = (slotsResult.data ?? []) as TimetableSlot[];
+      const personalSlotRows: PersonalTimetableSlot[] = (personalTimetableResult.data ?? []).map((slot) => {
+        const schoolClass = one(slot.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
+        const subject = one(slot.subjects as { name_en: string } | { name_en: string }[] | null);
+        return {
+          id: String(slot.id), class_id: String(slot.class_id), subject_id: String(slot.subject_id), teacher_id: String(slot.teacher_id),
+          day_of_week: Number(slot.day_of_week), period_number: Number(slot.period_number), requires_weekly_plan_submission: Boolean(slot.requires_weekly_plan_submission),
+          className: `Grade ${schoolClass?.grade ?? "—"} · ${schoolClass?.section ?? ""}`, subject: subject?.name_en ?? "Subject",
+        };
+      });
       const realAssignments: Assignment[] = (assignmentsResult.data ?? []).map((assignment) => {
         const schoolClass = one(assignment.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
         const subject = one(assignment.subjects as { name_en: string; include_in_weekly_plan: boolean } | { name_en: string; include_in_weekly_plan: boolean }[] | null);
@@ -433,6 +449,7 @@ export default function TeachersDashboardPage() {
       setAcademicWeeks(weeks);
       setSchoolHolidays((holidaysResult.data ?? []) as SchoolHoliday[]);
       setTimetableSlots(requiredSlotRows);
+      setPersonalTimetable(personalSlotRows);
       setEntries(realEntries);
       setMySubmissions(realMySubmissions);
       setReviewItems(realReviews);
@@ -441,8 +458,14 @@ export default function TeachersDashboardPage() {
       setSchoolSubjects((subjectsResult.data ?? []) as SchoolSubject[]);
       setSelectedDepartmentTeacherId((current) => realDepartmentTeachers.some((teacher) => teacher.userId === current) ? current : realDepartmentTeachers[0]?.userId ?? "");
       setSelectedReviewWeekId((current) => weeks.some((week) => week.id === current) ? current : weeks.find((week) => week.is_current)?.id ?? weeks[0]?.id ?? "");
+      const dashboardWeekChoices = weeks.filter((week) => week.teacher_entry_enabled || realEntries.some((entry) => entry.weekId === week.id) || supervisorAccount && realReviews.some((review) => review.weekId === week.id));
+      setDashboardWeekId((current) => dashboardWeekChoices.some((week) => week.id === current) ? current : dashboardWeekChoices.find((week) => week.is_current)?.id ?? dashboardWeekChoices[0]?.id ?? "");
       if (departmentTeachersResult.error) {
-        setMessage("Your dashboard is ready. Department teacher assignments could not be loaded yet; please refresh once.");
+        setMessage(window.localStorage.getItem("andalus-language") === "ar" ? "لوحتك جاهزة، لكن تعذّر تحميل تكليفات معلمي القسم. يرجى تحديث الصفحة." : "Your dashboard is ready. Department teacher assignments could not be loaded yet; please refresh once.");
+        setMessageTone("info");
+      }
+      if (personalTimetableResult.error) {
+        setMessage(window.localStorage.getItem("andalus-language") === "ar" ? "خططك جاهزة، لكن تعذّر تحميل جدول حصصك. يرجى تحديث الصفحة." : "Your plans are ready, but your timetable could not be loaded. Please refresh once.");
         setMessageTone("info");
       }
       setSelectedClassId((current) => realAssignments.some((assignment) => assignment.classId === current) ? current : realAssignments[0]?.classId ?? "");
@@ -636,7 +659,7 @@ export default function TeachersDashboardPage() {
 
   useEffect(() => { void loadPlanIntoBuilder(); }, [loadPlanIntoBuilder]);
 
-  const openWeeklyBuilder = async () => {
+  const openWeeklyBuilder = async (targetWeekId?: string, targetClassId?: string) => {
     if (!weeklyPlanCreationOpen) {
       setMessage("Weekly plan creation is currently closed by school administration.");
       setMessageTone("info");
@@ -657,11 +680,16 @@ export default function TeachersDashboardPage() {
       setMessageTone("info");
       return;
     }
-    const firstAssignment = selectedClass ?? assignments[0];
-    const firstWeek = selectedWeek ?? teacherEntryWeeks.find((week) => week.is_current) ?? teacherEntryWeeks[0];
+    const firstAssignment = assignments.find((assignment) => assignment.classId === targetClassId) ?? selectedClass ?? assignments[0];
+    const firstWeek = targetWeekId ? teacherEntryWeeks.find((week) => week.id === targetWeekId) : selectedWeek ?? teacherEntryWeeks.find((week) => week.is_current) ?? teacherEntryWeeks[0];
+    if (targetWeekId && !firstWeek) {
+      setMessage(dashboardArabic ? "هذا الأسبوع مغلق لكتابة الخطط؛ يمكنك معاينة الخطط المحفوظة فقط." : "This week is closed for writing plans; saved plans remain available for preview.");
+      setMessageTone("info");
+      return;
+    }
     if (!firstWeek || !(await verifyTeacherWeekAccess(firstWeek.id, false))) return;
-    if (!selectedClassId && firstAssignment) setSelectedClassId(firstAssignment.classId);
-    if (!selectedWeekId && firstWeek) setSelectedWeekId(firstWeek.id);
+    if (firstAssignment) setSelectedClassId(firstAssignment.classId);
+    setSelectedWeekId(firstWeek.id);
     setBuilderFeedback(null);
     setWeeklyBuilderReadOnly(false);
     setWeeklyBuilderOpen(true);
@@ -1324,9 +1352,31 @@ export default function TeachersDashboardPage() {
           : "draft";
     return { ...plan, status };
   }).sort((a, b) => Number(b.weekId === currentWeek?.id) - Number(a.weekId === currentWeek?.id) || a.week.localeCompare(b.week)), [entries, mySubmissions, currentWeek?.id]);
-  const approvedCount = entries.filter((entry) => entryReviewStatus(entry) === "approved").length;
-  const draftCount = entries.filter((entry) => ["draft", "changes_requested"].includes(entryReviewStatus(entry))).length;
   const waitingReviews = reviewItems.filter((item) => item.status === "submitted");
+  const dashboardWeeks = academicWeeks.filter((week) => week.teacher_entry_enabled || entries.some((entry) => entry.weekId === week.id) || isSupervisor && reviewItems.some((review) => review.weekId === week.id));
+  const dashboardWeek = academicWeeks.find((week) => week.id === dashboardWeekId);
+  const dashboardPlans = weeklyPlanRows.filter((plan) => plan.weekId === dashboardWeekId);
+  const actionablePlans = dashboardPlans.filter((plan) => plan.status === "draft" || plan.status === "changes_requested");
+  const submittedPlans = dashboardPlans.filter((plan) => plan.status === "submitted");
+  const approvedPlans = dashboardPlans.filter((plan) => plan.status === "approved");
+  const assignedClassChoices = Array.from(new Map(assignments.map((assignment) => [assignment.classId, { id: assignment.classId, name: `Grade ${assignment.grade} · ${assignment.section}` }])).values());
+  const unstartedClasses = assignedClassChoices.filter((schoolClass) =>
+    timetableSlots.some((slot) => slot.class_id === schoolClass.id && slot.teacher_id === profileId)
+    && !dashboardPlans.some((plan) => plan.classId === schoolClass.id));
+  const dashboardWaitingReviews = waitingReviews.filter((review) => review.weekId === dashboardWeekId);
+  const dashboardWaitingPlans = Array.from(new Map(dashboardWaitingReviews.map((review) => [`${review.teacherId}-${review.classId}`, review])).values());
+  const missingTeacherClassPlans = departmentTeachers.flatMap((teacher) => {
+    const assignedClasses = Array.from(new Map(teacher.assignments.filter((assignment) =>
+      timetableSlots.some((slot) => slot.class_id === assignment.classId && slot.subject_id === assignment.subjectId && slot.teacher_id === teacher.userId)
+    ).map((assignment) => [assignment.classId, assignment])).values());
+    return assignedClasses.filter((assignment) => !reviewItems.some((review) =>
+      review.weekId === dashboardWeekId && review.teacherId === teacher.userId && review.classId === assignment.classId
+    )).map((assignment) => ({ teacherId: teacher.userId, teacherName: teacher.name, classId: assignment.classId, className: `Grade ${assignment.grade} · ${assignment.section}` }));
+  });
+  const pendingTeacherCount = new Set(missingTeacherClassPlans.map((item) => item.teacherId)).size;
+  const todayDayIndex = dayNames.indexOf(new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "Africa/Cairo" }).format(new Date()));
+  const todayLessons = personalTimetable.filter((slot) => slot.day_of_week === todayDayIndex);
+  const visibleWeeklyPlans = weeklyPlanRows.filter((plan) => plan.weekId === dashboardWeekId && (planViewFilter === "all" || (planViewFilter === "needs_action" ? plan.status === "draft" || plan.status === "changes_requested" : plan.status === planViewFilter)));
   const selectedReviewWeek = academicWeeks.find((week) => week.id === selectedReviewWeekId);
   const supervisorReviewClasses = useMemo(() => {
     const assignedClasses = departmentTeachers.flatMap((teacher) => teacher.assignments.map((assignment) => [
@@ -1339,7 +1389,8 @@ export default function TeachersDashboardPage() {
     ] as const);
     return Array.from(new Map([...assignedClasses, ...submittedClasses]).values()).sort((a, b) => a.grade - b.grade || a.section.localeCompare(b.section));
   }, [departmentTeachers, reviewItems]);
-  const selectedClassReviewRawItems = reviewItems.filter((item) => item.classId === selectedReviewClassId && item.weekId === selectedReviewWeekId);
+  const effectiveReviewClassId = selectedReviewClassId && supervisorReviewClasses.some((schoolClass) => schoolClass.id === selectedReviewClassId) ? selectedReviewClassId : "";
+  const selectedClassReviewRawItems = reviewItems.filter((item) => (!effectiveReviewClassId || item.classId === effectiveReviewClassId) && item.weekId === selectedReviewWeekId);
   const selectedClassTeacherPlans = useMemo(() => Array.from(selectedClassReviewRawItems.reduce((groups, item) => {
     const key = `${item.teacherId}-${item.weeklyPlanId || `${item.weekId}-${item.classId}`}`;
     const current = groups.get(key) ?? {
@@ -1362,17 +1413,19 @@ export default function TeachersDashboardPage() {
       id: plan.key, weeklyPlanId: plan.weeklyPlanId, teacherId: plan.teacherId, weekId: plan.weekId, classId: plan.classId,
       teacherName: plan.teacherName, className: plan.className, week: plan.week,
       subject: plan.reviews.map((item) => item.subject).join(" + "), status: plan.status, note: plan.note, submittedAt: plan.submittedAt, entries: plan.entries, quizzes: plan.quizzes, weeklyNotes: plan.weeklyNotes,
-    })), [selectedClassTeacherPlans]);
+    })).sort((a, b) => Number(b.status === "submitted") - Number(a.status === "submitted") || a.className.localeCompare(b.className) || a.teacherName.localeCompare(b.teacherName)), [selectedClassTeacherPlans]);
   const selectedWeekWaitingReviews = reviewItems.filter((item) => item.weekId === selectedReviewWeekId && item.status === "submitted");
   const selectedWeekPendingCount = selectedWeekWaitingReviews.length;
-  useEffect(() => {
-    setSelectedReviewClassId((current) => supervisorReviewClasses.some((schoolClass) => schoolClass.id === current) ? current : supervisorReviewClasses[0]?.id ?? "");
-  }, [supervisorReviewClasses]);
   const selectedDepartmentTeacher = departmentTeachers.find((teacher) => teacher.userId === selectedDepartmentTeacherId);
-  const workspaceNavigation = isSupervisor ? [...navigation, ["Teacher Reviews", "RV"] as const, ["Department Teachers", "DT"] as const] : navigation;
+  const workspaceNavigation = isSupervisor ? supervisorNavigation : navigation;
+  const navLabel = (label: string) => dashboardArabic ? ({ Overview: "الرئيسية", "Weekly Plans": "خططي الأسبوعية", "My Timetable": "جدول حصصي", "My Classes": "فصولي", "My Subjects": "موادي", Calendar: "الأسابيع الدراسية", "Teacher Reviews": "مراجعة الخطط", "Department Teachers": "معلمو القسم", "Profile & assignments": "ملفي وتكليفاتي", Settings: "الإعدادات" } as Record<string, string>)[label] ?? label : label;
   const openWorkspaceSection = (label: string) => {
     setActiveNav(label);
     setMobileNavigationOpen(false);
+  };
+  const openDashboardPlanList = (filter: typeof planViewFilter) => {
+    setPlanViewFilter(filter);
+    openWorkspaceSection("Weekly Plans");
   };
   const openFirstWaitingReview = () => {
     const firstWaitingReview = waitingReviews[0];
@@ -1392,57 +1445,79 @@ export default function TeachersDashboardPage() {
   return (
     <main className="teacher-portal">
       <aside className="teacher-sidebar">
-        <div className="teacher-brand"><img src={`${basePath}/school-logo.png`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS</strong><span>Teacher Workspace</span></div></div>
-        <div className="teacher-school-year"><span>Academic year</span><strong>2026–2027</strong></div>
+        <div className="teacher-brand"><img src={`${basePath}/school-logo.png`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS</strong><span>{dashboardArabic ? isSupervisor ? "مساحة المشرف" : "مساحة المعلم" : isSupervisor ? "Supervisor Workspace" : "Teacher Workspace"}</span></div></div>
+        <div className="teacher-school-year"><span>{dashboardArabic ? "العام الدراسي" : "Academic year"}</span><strong>2026–2027</strong></div>
         <nav className="teacher-nav" aria-label="Teacher workspace navigation">
-          <p>Workspace</p>
-          {workspaceNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => openWorkspaceSection(label)}><span className="teacher-nav-icon">{icon}</span>{label}{label === "Weekly Plans" && <small>{entries.length}</small>}{label === "Teacher Reviews" && <small>{reviewItems.filter((item) => item.status === "submitted").length}</small>}{label === "Department Teachers" && <small>{departmentTeachers.length}</small>}</button>)}
-          <p>Account</p>
-          <button className={activeNav === "Profile & assignments" ? "active" : ""} onClick={() => openWorkspaceSection("Profile & assignments")}><span className="teacher-nav-icon">PR</span>Profile & assignments</button>
-          <button className={activeNav === "Settings" ? "active" : ""} onClick={() => openWorkspaceSection("Settings")}><span className="teacher-nav-icon">ST</span>Settings</button>
+          <p>{dashboardArabic ? "مساحة العمل" : "Workspace"}</p>
+          {workspaceNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => openWorkspaceSection(label)}><span className="teacher-nav-icon">{icon}</span>{navLabel(label)}{label === "Weekly Plans" && <small>{weeklyPlanRows.length}</small>}{label === "Teacher Reviews" && <small>{waitingReviews.length}</small>}{label === "Department Teachers" && <small>{departmentTeachers.length}</small>}</button>)}
+          <p>{dashboardArabic ? "الحساب" : "Account"}</p>
+          <button className={activeNav === "Profile & assignments" ? "active" : ""} onClick={() => openWorkspaceSection("Profile & assignments")}><span className="teacher-nav-icon">PR</span>{navLabel("Profile & assignments")}</button>
+          <button className={activeNav === "Settings" ? "active" : ""} onClick={() => openWorkspaceSection("Settings")}><span className="teacher-nav-icon">ST</span>{navLabel("Settings")}</button>
         </nav>
-        <div className="teacher-help-card"><span>?</span><strong>Need help?</strong><p>Contact the academic coordinator for account or assignment changes.</p><Link href="/support/">Open support</Link></div>
-        <div className="teacher-sidebar-profile"><span className="teacher-avatar">{initials(teacherName)}</span><div><strong>{teacherName}</strong><small>Teacher</small></div><button aria-label="Sign out" onClick={() => void signOut()}>↪</button></div>
+        <div className="teacher-help-card"><span>?</span><strong>{dashboardArabic ? "تحتاج مساعدة؟" : "Need help?"}</strong><p>{dashboardArabic ? "تواصل مع منسق المدرسة لتعديل الحساب أو التكليفات." : "Contact the academic coordinator for account or assignment changes."}</p><Link href="/support/">{dashboardArabic ? "الدعم الفني" : "Open support"}</Link></div>
+        <div className="teacher-sidebar-profile"><span className="teacher-avatar">{initials(teacherName)}</span><div><strong>{teacherName}</strong><small>{dashboardArabic ? isSupervisor ? "مشرف" : "معلم" : isSupervisor ? "Supervisor" : "Teacher"}</small></div><button aria-label={dashboardArabic ? "تسجيل الخروج" : "Sign out"} onClick={() => void signOut()}>↪</button></div>
       </aside>
 
       <section className="teacher-main">
         <div className={`teacher-mobile-menu ${mobileNavigationOpen ? "is-open" : ""}`} aria-hidden={!mobileNavigationOpen}>
           <button type="button" className="teacher-mobile-menu-backdrop" aria-label="Close workspace menu" onClick={() => setMobileNavigationOpen(false)} />
           <div className="teacher-mobile-menu-panel" role="dialog" aria-modal="true" aria-label="Teacher workspace menu">
-            <div className="teacher-mobile-menu-heading"><div className="teacher-brand"><img src={`${basePath}/school-logo.png`} alt="" /><div><strong>ALANDALUS</strong><span>Teacher Workspace</span></div></div><button type="button" aria-label="Close menu" onClick={() => setMobileNavigationOpen(false)}>×</button></div>
+            <div className="teacher-mobile-menu-heading"><div className="teacher-brand"><img src={`${basePath}/school-logo.png`} alt="" /><div><strong>ALANDALUS</strong><span>{dashboardArabic ? isSupervisor ? "مساحة المشرف" : "مساحة المعلم" : isSupervisor ? "Supervisor Workspace" : "Teacher Workspace"}</span></div></div><button type="button" aria-label="Close menu" onClick={() => setMobileNavigationOpen(false)}>×</button></div>
             <nav className="teacher-nav" aria-label="Teacher workspace navigation">
-              <p>Workspace</p>
-              {workspaceNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => openWorkspaceSection(label)}><span className="teacher-nav-icon">{icon}</span>{label}{label === "Weekly Plans" && <small>{entries.length}</small>}{label === "Teacher Reviews" && <small>{reviewItems.filter((item) => item.status === "submitted").length}</small>}{label === "Department Teachers" && <small>{departmentTeachers.length}</small>}</button>)}
-              <p>Account</p>
-              <button className={activeNav === "Profile & assignments" ? "active" : ""} onClick={() => openWorkspaceSection("Profile & assignments")}><span className="teacher-nav-icon">PR</span>Profile & assignments</button>
-              <button className={activeNav === "Settings" ? "active" : ""} onClick={() => openWorkspaceSection("Settings")}><span className="teacher-nav-icon">ST</span>Settings</button>
+              <p>{dashboardArabic ? "مساحة العمل" : "Workspace"}</p>
+              {workspaceNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => openWorkspaceSection(label)}><span className="teacher-nav-icon">{icon}</span>{navLabel(label)}{label === "Weekly Plans" && <small>{weeklyPlanRows.length}</small>}{label === "Teacher Reviews" && <small>{waitingReviews.length}</small>}{label === "Department Teachers" && <small>{departmentTeachers.length}</small>}</button>)}
+              <p>{dashboardArabic ? "الحساب" : "Account"}</p>
+              <button className={activeNav === "Profile & assignments" ? "active" : ""} onClick={() => openWorkspaceSection("Profile & assignments")}><span className="teacher-nav-icon">PR</span>{navLabel("Profile & assignments")}</button>
+              <button className={activeNav === "Settings" ? "active" : ""} onClick={() => openWorkspaceSection("Settings")}><span className="teacher-nav-icon">ST</span>{navLabel("Settings")}</button>
             </nav>
             <div className="teacher-sidebar-profile"><span className="teacher-avatar">{initials(teacherName)}</span><div><strong>{teacherName}</strong><small>Teacher</small></div><button aria-label="Sign out" onClick={() => void signOut()}>↪</button></div>
           </div>
         </div>
-        <header className="teacher-topbar"><button type="button" className="teacher-mobile-menu-button" aria-label="Open workspace menu" aria-expanded={mobileNavigationOpen} onClick={() => setMobileNavigationOpen(true)}>☰</button><div className="teacher-mobile-brand"><img src={`${basePath}/school-logo.png`} alt="" /><strong>Teacher Workspace</strong></div><label className="teacher-search"><span>⌕</span><input type="search" placeholder="Search plans, classes or subjects" /></label><div className="teacher-top-actions"><span className="teacher-sync"><i /> Supabase connected</span><button className="teacher-profile-chip"><span className="teacher-avatar">{initials(teacherName)}</span><span><strong>{teacherName}</strong><small>{departmentName}</small></span></button></div></header>
-        {isSupervisor && <nav className="teacher-mobile-supervisor-nav" aria-label="Supervisor workspace navigation">{supervisorNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => setActiveNav(label)}><span>{icon}</span><b>{label}</b>{label === "Teacher Reviews" && reviewItems.filter((item) => item.status === "submitted").length > 0 && <i>{reviewItems.filter((item) => item.status === "submitted").length}</i>}{label === "Department Teachers" && <i>{departmentTeachers.length}</i>}</button>)}</nav>}
+        <header className="teacher-topbar"><button type="button" className="teacher-mobile-menu-button" aria-label="Open workspace menu" aria-expanded={mobileNavigationOpen} onClick={() => setMobileNavigationOpen(true)}>☰</button><div className="teacher-mobile-brand"><img src={`${basePath}/school-logo.png`} alt="" /><strong>{dashboardArabic ? isSupervisor ? "لوحة المشرف" : "لوحة المعلم" : isSupervisor ? "Supervisor Workspace" : "Teacher Workspace"}</strong></div><span className="teacher-topbar-caption">{dashboardArabic ? "خططك وحصصك في مكان واحد" : "Your plans and lessons in one place"}</span><div className="teacher-top-actions"><span className="teacher-sync"><i /> {dashboardArabic ? "متصل بالمنصة" : "Workspace connected"}</span><button className="teacher-profile-chip"><span className="teacher-avatar">{initials(teacherName)}</span><span><strong>{teacherName}</strong><small>{departmentName}</small></span></button></div></header>
+        {isSupervisor && <nav className="teacher-mobile-supervisor-nav" aria-label="Supervisor workspace navigation">{supervisorNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => openWorkspaceSection(label)}><span>{icon}</span><b>{navLabel(label)}</b>{label === "Teacher Reviews" && waitingReviews.length > 0 && <i>{waitingReviews.length}</i>}{label === "Department Teachers" && <i>{departmentTeachers.length}</i>}</button>)}</nav>}
 
         <div className="teacher-content">
-          <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentWeek?.label ?? "Teacher workspace"}</p><h1>{activeNav === "Overview" ? `Welcome, ${teacherName}.` : activeNav}</h1><span>{activeNav === "Overview" ? "Your live assignments and weekly-plan progress are shown below." : "This section is connected to your approved school profile."}</span></div><div className="teacher-heading-actions"><button type="button" className="teacher-primary-button" disabled={saving || !weeklyPlanCreationOpen} aria-busy={loading} onClick={openWeeklyBuilder}><span>＋</span> {loading ? "Loading teacher data…" : weeklyPlanCreationOpen ? "Create weekly plan" : "Weekly plan creation closed"}</button></div></div>
+          <div className="teacher-page-heading"><div><p className="teacher-kicker">{dashboardWeek ? dashboardArabic ? `الأسبوع ${dashboardWeek.week_number} · ${academicWeekRange(dashboardWeek, true)}` : `Week ${dashboardWeek.week_number} · ${academicWeekRange(dashboardWeek)}` : dashboardArabic ? "مساحة العمل" : "Staff workspace"}</p><h1>{activeNav === "Overview" ? dashboardArabic ? `أهلًا، ${teacherName}` : `Welcome, ${teacherName}.` : navLabel(activeNav)}</h1><span>{activeNav === "Overview" ? dashboardArabic ? isSupervisor ? "خطط معلميك، خطتك، وحصصك أمامك في صفحة واحدة." : "تابع خططك وحصصك وما يحتاج منك إجراء هذا الأسبوع." : isSupervisor ? "Review your teachers' plans, write your own, and follow your lessons in one place." : "See the plans and lessons needing your attention this week." : dashboardArabic ? "اختر الإجراء المناسب وتابع حالته بوضوح." : "Choose the next action and follow its status clearly."}</span></div><div className="teacher-heading-actions"><button type="button" className="teacher-primary-button" disabled={saving || !weeklyPlanCreationOpen || !dashboardWeek?.teacher_entry_enabled} aria-busy={loading} onClick={() => void openWeeklyBuilder(dashboardWeekId)}><span>＋</span> {loading ? dashboardArabic ? "جارٍ تحميل البيانات…" : "Loading teacher data…" : weeklyPlanCreationOpen && dashboardWeek?.teacher_entry_enabled ? dashboardArabic ? isSupervisor ? "إعداد خطتي التعليمية" : "إعداد خطة الأسبوع" : isSupervisor ? "Write my teaching plan" : "Create weekly plan" : dashboardArabic ? "الأسبوع مغلق للتحرير" : "Week closed for editing"}</button></div></div>
 
           {message && <p className={`super-admin-live-message ${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
 
-          {(activeNav === "Overview" || activeNav === "Weekly Plans") && <>
-            <section className="teacher-stats" aria-label="Weekly plan summary">
-              <article><span className="stat-icon navy">AS</span><div><small>Assignments</small><strong>{assignments.length}</strong><p>Approved by Super Admin</p></div></article>
-              <article><span className="stat-icon magenta">AP</span><div><small>Approved entries</small><strong>{approvedCount}</strong><p>Approved by the responsible supervisor</p></div></article>
-              <article><span className="stat-icon cyan">DR</span><div><small>Draft entries</small><strong>{draftCount}</strong><p>Saved in Supabase</p></div></article>
-              <article><span className="stat-icon amber">TS</span><div><small>Timetable slots</small><strong>{timetableSlots.length}</strong><p>Controls plan placement</p></div></article>
-            </section>
+          {activeNav === "Overview" && <section className="staff-dashboard" aria-label={dashboardArabic ? "ملخص الأسبوع" : "Weekly overview"}>
+            <div className="staff-dashboard-hero"><div><span className="staff-dashboard-eyebrow">{dashboardArabic ? isSupervisor ? "لوحة متابعة المشرف" : "لوحة متابعة المعلم" : isSupervisor ? "Supervisor dashboard" : "Teacher dashboard"}</span><h2>{dashboardArabic ? "ابدأ بما يحتاج اهتمامك" : "Start with what needs your attention"}</h2><p>{dashboardArabic ? "الأرقام والإجراءات التالية تخص الأسبوع المختار فقط، وحصصك مأخوذة من جدول المدرسة." : "The figures and actions below belong to the selected week. Your lessons come from the school timetable."}</p></div><label>{dashboardArabic ? "الأسبوع الدراسي" : "School week"}<select value={dashboardWeekId} onChange={(event) => { setDashboardWeekId(event.target.value); setPlanViewFilter("all"); }} aria-label={dashboardArabic ? "اختر الأسبوع الدراسي" : "Choose school week"}>{dashboardWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select><small>{dashboardWeek ? dashboardWeek.teacher_entry_enabled ? dashboardArabic ? "مفتوح لكتابة الخطط" : "Open for plan writing" : dashboardArabic ? "مغلق للتحرير · المعاينة متاحة" : "Editing closed · preview available" : dashboardArabic ? "لا يوجد أسبوع متاح حاليًا" : "No available week right now"}</small></label></div>
+            <div className="staff-dashboard-metrics">
+              {isSupervisor && <button type="button" className="staff-metric review" onClick={() => { setSelectedReviewWeekId(dashboardWeekId); setSelectedReviewClassId(""); openWorkspaceSection("Teacher Reviews"); }}><span>{dashboardArabic ? "تنتظر مراجعتي" : "Waiting for my review"}</span><strong>{dashboardWaitingPlans.length}</strong><small>{dashboardArabic ? "افتح خطط المعلمين المرسلة" : "Open submitted teacher plans"}</small></button>}
+              <button type="button" className="staff-metric action" onClick={() => openDashboardPlanList("needs_action")}><span>{dashboardArabic ? "تحتاج مني إجراء" : "Need my action"}</span><strong>{actionablePlans.length + unstartedClasses.length}</strong><small>{dashboardArabic ? "مسودات أو فصول لم أبدأها" : "Drafts or classes not started"}</small></button>
+              <button type="button" className="staff-metric sent" onClick={() => openDashboardPlanList("submitted")}><span>{dashboardArabic ? "مرسلة للمراجعة" : "Sent for review"}</span><strong>{submittedPlans.length}</strong><small>{dashboardArabic ? "متابعة حالة خططي" : "Follow my plan status"}</small></button>
+              <button type="button" className="staff-metric approved" onClick={() => openDashboardPlanList("approved")}><span>{dashboardArabic ? isSupervisor ? "خططي المعتمدة تلقائيًا" : "خطط معتمدة" : isSupervisor ? "My auto-approved plans" : "Approved plans"}</span><strong>{approvedPlans.length}</strong><small>{dashboardArabic ? "عرض الخطط المعتمدة" : "View approved plans"}</small></button>
+              {isSupervisor && <button type="button" className="staff-metric missing" onClick={() => document.getElementById("staff-missing-teachers")?.scrollIntoView({ behavior: "smooth", block: "start" })}><span>{dashboardArabic ? "معلمون لهم فصول بلا خطة مرسلة" : "Teachers with classes not sent"}</span><strong>{pendingTeacherCount}</strong><small>{dashboardArabic ? "عرض الأسماء والفصول" : "See names and classes"}</small></button>}
+            </div>
+            <div className="staff-dashboard-panels">
+              <section className="teacher-card staff-dashboard-panel"><header><div><span>{dashboardArabic ? "خطوتك التالية" : "Your next step"}</span><h3>{dashboardArabic ? "خططي لهذا الأسبوع" : "My plans this week"}</h3></div><button type="button" onClick={() => openDashboardPlanList("all")}>{dashboardArabic ? "عرض كل الخطط" : "View all plans"} ←</button></header><div className="staff-task-list">
+                {actionablePlans.slice(0, 4).map((plan) => <button type="button" key={plan.planId} onClick={() => void openWeeklyPlan(plan)}><span className="staff-task-icon">✎</span><span><strong>{plan.className}</strong><small>{dashboardArabic ? plan.status === "changes_requested" ? "أُعيدت للتعديل" : "مسودة تحتاج استكمالًا" : plan.status === "changes_requested" ? "Changes requested" : "Draft to complete"}</small></span><em>←</em></button>)}
+                {unstartedClasses.slice(0, Math.max(0, 4 - actionablePlans.length)).map((schoolClass) => <button type="button" key={schoolClass.id} disabled={!dashboardWeek?.teacher_entry_enabled || !weeklyPlanCreationOpen} onClick={() => void openWeeklyBuilder(dashboardWeekId, schoolClass.id)}><span className="staff-task-icon">＋</span><span><strong>{schoolClass.name}</strong><small>{dashboardArabic ? "لم تبدأ خطته بعد" : "Plan not started yet"}</small></span><em>←</em></button>)}
+                {actionablePlans.length + unstartedClasses.length === 0 && <p className="staff-dashboard-empty">{dashboardArabic ? "لا توجد خطط تحتاج منك إجراء في هذا الأسبوع." : "No plans need your action this week."}</p>}
+              </div></section>
+              <section className="teacher-card staff-dashboard-panel timetable-preview"><header><div><span>{dashboardArabic ? "من جدول المدرسة" : "From the school timetable"}</span><h3>{dashboardArabic ? todayDayIndex >= 0 && todayDayIndex < 5 ? `حصص ${arabicDayNames[dayNames[todayDayIndex]]}` : "جدول حصصي" : todayDayIndex >= 0 && todayDayIndex < 5 ? `${dayNames[todayDayIndex]} lessons` : "My timetable"}</h3></div><button type="button" onClick={() => openWorkspaceSection("My Timetable")}>{dashboardArabic ? "الجدول كاملًا" : "Full timetable"} ←</button></header><div className="staff-task-list">
+                {todayLessons.slice(0, 5).map((slot) => <div className="staff-lesson-row" key={slot.id}><span>{dashboardArabic ? `ح ${slot.period_number}` : `P${slot.period_number}`}</span><strong>{slot.subject}</strong><small>{slot.className}</small></div>)}
+                {todayLessons.length === 0 && <p className="staff-dashboard-empty">{dashboardArabic ? todayDayIndex < 0 || todayDayIndex > 4 ? "لا توجد حصص اليوم. افتح الجدول لعرض أيام الدراسة." : "لا توجد حصص مسجلة لك اليوم." : todayDayIndex < 0 || todayDayIndex > 4 ? "No lessons today. Open the timetable for school days." : "No lessons are scheduled for you today."}</p>}
+              </div></section>
+            </div>
+            {isSupervisor && <div className="staff-supervisor-followup">
+              <section className="teacher-card staff-dashboard-panel staff-review-preview"><header><div><span>{dashboardArabic ? "متابعة معلمي القسم" : "Department follow-up"}</span><h3>{dashboardArabic ? "الخطط المنتظرة الآن" : "Plans waiting now"}</h3></div><button type="button" onClick={() => { setSelectedReviewWeekId(dashboardWeekId); setSelectedReviewClassId(""); openWorkspaceSection("Teacher Reviews"); }}>{dashboardArabic ? "فتح المراجعة" : "Open reviews"} ←</button></header><div className="staff-review-quick-list">{dashboardWaitingPlans.slice(0, 4).map((review) => <button type="button" key={`${review.teacherId}-${review.classId}`} onClick={() => { setSelectedReviewWeekId(dashboardWeekId); setSelectedReviewClassId(review.classId); openWorkspaceSection("Teacher Reviews"); }}><strong>{review.teacherName}</strong><span>{review.className}</span><em>{dashboardArabic ? "مراجعة" : "Review"} ←</em></button>)}{dashboardWaitingPlans.length === 0 && <p className="staff-dashboard-empty">{dashboardArabic ? "لا توجد خطط مرسلة تنتظر مراجعتك في هذا الأسبوع." : "No submitted plans are waiting for your review this week."}</p>}</div></section>
+              <section className="teacher-card staff-dashboard-panel staff-missing-preview" id="staff-missing-teachers"><header><div><span>{dashboardArabic ? "متابعة الإرسال" : "Submission follow-up"}</span><h3>{dashboardArabic ? "فصول لم تُرسل خططها بعد" : "Classes still missing plans"}</h3></div><strong>{pendingTeacherCount} {dashboardArabic ? "معلم" : "teachers"}</strong></header><div className="staff-review-quick-list">{missingTeacherClassPlans.map((item) => <div className="staff-missing-row" key={`${item.teacherId}-${item.classId}`}><strong>{item.teacherName}</strong><span>{item.className}</span></div>)}{missingTeacherClassPlans.length === 0 && <p className="staff-dashboard-empty">{dashboardArabic ? "كل معلمي القسم المكلفين بحصص أرسلوا خططهم لهذا الأسبوع." : "All department teachers with scheduled lessons submitted their plans this week."}</p>}</div></section>
+            </div>}
+          </section>}
+
+          {activeNav === "Weekly Plans" && <>
+            <div className="staff-plan-filters"><label>{dashboardArabic ? "الأسبوع الدراسي" : "School week"}<select value={dashboardWeekId} onChange={(event) => setDashboardWeekId(event.target.value)}>{dashboardWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select></label><label>{dashboardArabic ? "حالة الخطة" : "Plan status"}<select value={planViewFilter} onChange={(event) => setPlanViewFilter(event.target.value as typeof planViewFilter)}><option value="all">{dashboardArabic ? "كل الخطط" : "All plans"}</option><option value="needs_action">{dashboardArabic ? "تحتاج إجراء" : "Need action"}</option><option value="submitted">{dashboardArabic ? "مرسلة للمراجعة" : "Submitted"}</option><option value="approved">{dashboardArabic ? "معتمدة" : "Approved"}</option></select></label><span>{dashboardArabic ? `${visibleWeeklyPlans.length} خطة في العرض` : `${visibleWeeklyPlans.length} plans shown`}</span></div>
 
             <section className="teacher-card teacher-plans-card teacher-live-plans-card">
-              <div className="teacher-card-heading"><div><h2>{dashboardArabic ? activeNav === "Overview" ? "خططي الأسبوعية" : "كل خططي الأسبوعية" : activeNav === "Overview" ? "My weekly plans" : "All my weekly plans"}</h2><p>{dashboardArabic ? "يمثل كل صف خطة فصل واحد لأسبوع دراسي واحد. افتحها لاستكمال كتابة جميع الحصص." : "One row represents one class plan for one school week. Open it to continue writing all of its lessons."}</p></div></div>
+              <div className="teacher-card-heading"><div><h2>{dashboardArabic ? "خططي الأسبوعية" : "My weekly plans"}</h2><p>{dashboardArabic ? "يمثل كل صف خطة فصل واحد لأسبوع دراسي واحد. افتحها لاستكمال كتابة جميع الحصص." : "One row represents one class plan for one school week. Open it to continue writing all of its lessons."}</p></div></div>
               <div className="teacher-plan-table-wrap"><table className="teacher-plan-table teacher-weekly-plan-table"><thead><tr><th>{dashboardArabic ? "الأسبوع" : "Week"}</th><th>{dashboardArabic ? "الفصل" : "Class"}</th><th>{dashboardArabic ? "المواد المكتوبة" : "Subjects written"}</th><th>{dashboardArabic ? "الحالة" : "Status"}</th><th>{dashboardArabic ? "آخر حفظ" : "Last saved"}</th><th>{dashboardArabic ? "الإجراءات" : "Actions"}</th></tr></thead><tbody>
-                {weeklyPlanRows.map((plan) => { const statusLabel = dashboardArabic ? plan.status === "submitted" ? "تم الإرسال للمشرف" : plan.status === "changes_requested" ? "مطلوب إجراء تعديلات" : plan.status === "approved" ? "تم الاعتماد من المشرف" : "مسودة قيد الإعداد" : plan.status === "submitted" ? "Sent to supervisor" : plan.status === "changes_requested" ? "Changes requested" : plan.status === "approved" ? "Approved by supervisor" : "Draft in progress"; const statusEditable = plan.status === "draft" || plan.status === "changes_requested"; const weekOpen = Boolean(weeklyPlanCreationOpen && academicWeeks.find((week) => week.id === plan.weekId)?.teacher_entry_enabled); const editable = statusEditable && weekOpen; const canCopy = ["draft", "changes_requested", "submitted", "approved"].includes(plan.status); const statusTone = plan.status === "approved" ? "green" : plan.status === "submitted" ? "navy" : plan.status === "changes_requested" ? "rose" : "amber"; return <tr key={plan.planId}><td><strong>{plan.week}</strong><small>{dashboardArabic ? `${plan.lessonCount} حصص` : `${plan.lessonCount} lesson${plan.lessonCount === 1 ? "" : "s"}`}</small></td><td><strong>{plan.className}</strong></td><td>{plan.subjects.join(", ")}</td><td><span className={`teacher-status ${statusTone}`}><i />{statusLabel}</span></td><td>{plan.updated}</td><td><div className="teacher-plan-actions"><button type="button" className={`teacher-secondary-button ${editable ? "continue" : "preview"}`} disabled={saving} onClick={() => void openWeeklyPlan(plan)}>{dashboardArabic ? editable ? "استكمال الخطة" : "معاينة" : editable ? "Continue plan" : "Preview"}</button>{canCopy && <button type="button" className="teacher-secondary-button copy" disabled={saving} onClick={() => openCopyPlanDialog(plan)}>{dashboardArabic ? "نسخ الخطة" : "Copy plan"}</button>}{plan.status === "submitted" && weekOpen && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => { const submission = mySubmissions.find((item) => item.weeklyPlanId === plan.planId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>{dashboardArabic ? "سحب للتعديل" : "Withdraw"}</button>}{editable && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void clearWeeklyDraft(plan)}>{dashboardArabic ? "مسح المسودة" : "Clear draft"}</button>}</div></td></tr>; })}
-                {!loading && weeklyPlanRows.length === 0 && <tr><td className="super-empty" colSpan={6}>{dashboardArabic ? "لم تبدأ أي خطة أسبوعية حتى الآن." : "No weekly plans have been started yet."}</td></tr>}
+                {visibleWeeklyPlans.map((plan) => { const statusLabel = dashboardArabic ? plan.status === "submitted" ? "تم الإرسال للمشرف" : plan.status === "changes_requested" ? "مطلوب إجراء تعديلات" : plan.status === "approved" ? isSupervisor ? "خطة معتمدة تلقائيًا" : "تم الاعتماد من المشرف" : "مسودة قيد الإعداد" : plan.status === "submitted" ? "Sent to supervisor" : plan.status === "changes_requested" ? "Changes requested" : plan.status === "approved" ? isSupervisor ? "Auto-approved" : "Approved by supervisor" : "Draft in progress"; const statusEditable = plan.status === "draft" || plan.status === "changes_requested"; const weekOpen = Boolean(weeklyPlanCreationOpen && academicWeeks.find((week) => week.id === plan.weekId)?.teacher_entry_enabled); const editable = statusEditable && weekOpen; const canCopy = ["draft", "changes_requested", "submitted", "approved"].includes(plan.status); const statusTone = plan.status === "approved" ? "green" : plan.status === "submitted" ? "navy" : plan.status === "changes_requested" ? "rose" : "amber"; return <tr key={plan.planId}><td><strong>{plan.week}</strong><small>{dashboardArabic ? `${plan.lessonCount} حصص` : `${plan.lessonCount} lesson${plan.lessonCount === 1 ? "" : "s"}`}</small></td><td><strong>{plan.className}</strong></td><td>{plan.subjects.join(", ")}</td><td><span className={`teacher-status ${statusTone}`}><i />{statusLabel}</span></td><td>{plan.updated}</td><td><div className="teacher-plan-actions"><button type="button" className={`teacher-secondary-button ${editable ? "continue" : "preview"}`} disabled={saving} onClick={() => void openWeeklyPlan(plan)}>{dashboardArabic ? editable ? "استكمال الخطة" : "معاينة" : editable ? "Continue plan" : "Preview"}</button>{canCopy && <button type="button" className="teacher-secondary-button copy" disabled={saving} onClick={() => openCopyPlanDialog(plan)}>{dashboardArabic ? "نسخ الخطة" : "Copy plan"}</button>}{plan.status === "submitted" && weekOpen && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => { const submission = mySubmissions.find((item) => item.weeklyPlanId === plan.planId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>{dashboardArabic ? "سحب للتعديل" : "Withdraw"}</button>}{editable && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void clearWeeklyDraft(plan)}>{dashboardArabic ? "مسح المسودة" : "Clear draft"}</button>}</div></td></tr>; })}
+                {!loading && visibleWeeklyPlans.length === 0 && <tr><td className="super-empty" colSpan={6}>{dashboardArabic ? "لا توجد خطط بهذه الحالة في الأسبوع المختار." : "No plans match this status in the selected week."}</td></tr>}
               </tbody></table></div>
             </section>
+            {(planViewFilter === "all" || planViewFilter === "needs_action") && unstartedClasses.length > 0 && <section className="teacher-card staff-unstarted-card"><div className="teacher-card-heading"><div><h2>{dashboardArabic ? "فصول لم تبدأ خطتها" : "Classes not started yet"}</h2><p>{dashboardArabic ? "لن ينشئ الزر خطة إلا إذا كان هذا الأسبوع مفتوحًا للمعلمين." : "Writing is available only while this week is open for teachers."}</p></div></div><div className="staff-unstarted-list">{unstartedClasses.map((schoolClass) => <div key={schoolClass.id}><strong>{schoolClass.name}</strong><button type="button" className="teacher-secondary-button" disabled={!dashboardWeek?.teacher_entry_enabled || !weeklyPlanCreationOpen} onClick={() => void openWeeklyBuilder(dashboardWeekId, schoolClass.id)}>{dashboardArabic ? "ابدأ الخطة" : "Start plan"}</button></div>)}</div></section>}
 
             <section className="teacher-card teacher-review-status-card" hidden>
               <div className="teacher-card-heading"><div><p className="teacher-kicker">Plan follow-up</p><h2>My weekly plans</h2><p>The class plan becomes visible when every submitted plan is approved. Teachers who did not submit remain visible as Plan not published.</p></div></div>
@@ -1456,33 +1531,35 @@ export default function TeachersDashboardPage() {
             </section>
           </>}
 
-          {(activeNav === "My Classes" || activeNav === "My Subjects" || activeNav === "Profile & assignments") && <section className="teacher-card teacher-live-assignment-panel"><div><h2>{activeNav}</h2><p>Only the Super Admin can change these assignments.</p></div><div className="teacher-live-assignment-grid">
-            {(activeNav === "My Classes" || activeNav === "Profile & assignments") && <article><small>Approved Classes</small>{uniqueClasses.map((className) => <span key={className}>{className}</span>)}{uniqueClasses.length === 0 && <p>No classes assigned yet.</p>}</article>}
-            {(activeNav === "My Subjects" || activeNav === "Profile & assignments") && <article><small>Approved Subjects</small>{uniqueSubjects.map((subject) => <span key={subject}>{subject}</span>)}{uniqueSubjects.length === 0 && <p>No subjects assigned yet.</p>}</article>}
+          {activeNav === "My Timetable" && <section className="staff-timetable-page"><div className="staff-timetable-intro"><div><span>{dashboardArabic ? "من جدول المدرسة المعتمد" : "From the approved school timetable"}</span><h2>{dashboardArabic ? "جدول حصصي الأسبوعي" : "My weekly lesson timetable"}</h2><p>{dashboardArabic ? "اعرض كل حصصك حسب اليوم ورقم الحصة. محرر الخطة يستخدم الحصص المطلوبة للخطة فقط." : "See every assigned lesson by day and period. The plan editor uses only slots that require a weekly plan."}</p></div><strong>{personalTimetable.length} {dashboardArabic ? "حصة" : "lessons"}</strong></div><div className="staff-timetable-grid">{dayNames.map((day, dayIndex) => { const daySlots = personalTimetable.filter((slot) => slot.day_of_week === dayIndex); return <article className={`staff-timetable-day ${dayIndex === todayDayIndex ? "today" : ""}`} key={day}><header><span>{dashboardArabic ? arabicDayNames[day] : day}</span><small>{dashboardArabic ? `${daySlots.length} حصص` : `${daySlots.length} lessons`}</small></header><div>{daySlots.length ? daySlots.map((slot) => <div className="staff-timetable-lesson" key={slot.id}><b>{dashboardArabic ? `الحصة ${slot.period_number}` : `Period ${slot.period_number}`}</b><strong>{slot.subject}</strong><small>{slot.className}</small></div>) : <p>{dashboardArabic ? "لا توجد حصص مسجلة" : "No lessons scheduled"}</p>}</div></article>; })}</div>{personalTimetable.length === 0 && !loading && <p className="staff-dashboard-empty">{dashboardArabic ? "لم يُربط جدول حصص بهذا الحساب بعد. اطلب من إدارة المدرسة مراجعة الجدول." : "No timetable is linked to this account yet. Ask school administration to check the timetable."}</p>}</section>}
+
+          {(activeNav === "My Classes" || activeNav === "My Subjects" || activeNav === "Profile & assignments") && <section className="teacher-card teacher-live-assignment-panel"><div><h2>{navLabel(activeNav)}</h2><p>{dashboardArabic ? "تُحدّث التكليفات من إدارة المدرسة." : "School administration updates these assignments."}</p></div><div className="teacher-live-assignment-grid">
+            {(activeNav === "My Classes" || activeNav === "Profile & assignments") && <article><small>{dashboardArabic ? "الفصول المكلف بها" : "Approved classes"}</small>{uniqueClasses.map((className) => <span key={className}>{className}</span>)}{uniqueClasses.length === 0 && <p>{dashboardArabic ? "لا توجد فصول مرتبطة بك حتى الآن." : "No classes assigned yet."}</p>}</article>}
+            {(activeNav === "My Subjects" || activeNav === "Profile & assignments") && <article><small>{dashboardArabic ? "المواد المكلف بها" : "Approved subjects"}</small>{uniqueSubjects.map((subject) => <span key={subject}>{subject}</span>)}{uniqueSubjects.length === 0 && <p>{dashboardArabic ? "لا توجد مواد مرتبطة بك حتى الآن." : "No subjects assigned yet."}</p>}</article>}
           </div></section>}
 
-          {activeNav === "Calendar" && <section className="teacher-card teacher-live-assignment-panel"><div><h2>Academic Weeks</h2><p>Weeks currently open for teacher entry.</p></div><div className="teacher-week-list">{teacherEntryWeeks.map((week) => <span key={week.id} className={week.is_current ? "current" : ""}><strong>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`}</strong><small>{academicWeekRange(week, dashboardArabic)}</small></span>)}{teacherEntryWeeks.length === 0 && <p>No academic week is currently open for teacher entry.</p>}</div></section>}
+          {activeNav === "Calendar" && <section className="teacher-card teacher-live-assignment-panel"><div><h2>{dashboardArabic ? "الأسابيع الدراسية" : "Academic weeks"}</h2><p>{dashboardArabic ? "الأسابيع المفتوحة حاليًا لكتابة الخطط." : "Weeks currently open for teacher entry."}</p></div><div className="teacher-week-list">{teacherEntryWeeks.map((week) => <span key={week.id} className={week.is_current ? "current" : ""}><strong>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`}</strong><small>{academicWeekRange(week, dashboardArabic)}</small></span>)}{teacherEntryWeeks.length === 0 && <p>{dashboardArabic ? "لا يوجد أسبوع مفتوح حاليًا لكتابة الخطط." : "No academic week is currently open for teacher entry."}</p>}</div></section>}
 
-          {activeNav === "Settings" && <><section className="teacher-card teacher-live-assignment-panel"><div><h2>Account Settings</h2><p>Your account is authenticated and connected to Supabase.</p></div><div className="teacher-settings-row"><span><small>Name</small><strong>{teacherName}</strong></span><span><small>Department</small><strong>{departmentName}</strong></span><button className="teacher-secondary-button" onClick={() => void signOut()}>Sign out</button></div></section><StaffLanguagePreference /></>}
+          {activeNav === "Settings" && <><section className="teacher-card teacher-live-assignment-panel"><div><h2>{dashboardArabic ? "إعدادات الحساب" : "Account settings"}</h2><p>{dashboardArabic ? "بيانات حسابك المتصل بمنصة المدرسة." : "Your connected school account details."}</p></div><div className="teacher-settings-row"><span><small>{dashboardArabic ? "الاسم" : "Name"}</small><strong>{teacherName}</strong></span><span><small>{dashboardArabic ? "القسم" : "Department"}</small><strong>{departmentName}</strong></span><button className="teacher-secondary-button" onClick={() => void signOut()}>{dashboardArabic ? "تسجيل الخروج" : "Sign out"}</button></div></section><StaffLanguagePreference /></>}
 
           {isSupervisor && activeNav === "Department Teachers" && <section className="teacher-card department-teachers-card">
-            <div className="teacher-card-heading"><div><p className="teacher-kicker">Department management</p><h2>Department Teachers</h2><p>Manage only the teachers assigned to your supervision group.</p></div><span className="supervisor-review-authority">{departmentTeachers.length} teachers</span></div>
-            <div className="department-teachers-layout"><div className="department-teacher-list">{departmentTeachers.map((teacher, index) => <button key={teacher.userId || `${teacher.name}-${index}`} className={selectedDepartmentTeacherId === teacher.userId ? "active" : ""} onClick={() => selectDepartmentTeacher(teacher.userId)}><span>{initials(teacher.name)}</span><div><strong>{teacher.name}</strong><small>{teacher.userId ? `${teacher.assignments.length} class / subject assignments` : "Account not registered yet"}</small></div><em>Manage</em></button>)}{departmentTeachers.length === 0 && <p className="supervisor-review-empty">No teachers are linked to your department yet.</p>}</div>
-              {selectedDepartmentTeacher && <section className="department-teacher-editor"><div><p className="teacher-kicker">Teacher assignments</p><h3>{selectedDepartmentTeacher.name}</h3><p>Assign classes and subjects, or remove an existing assignment.</p></div>{!selectedDepartmentTeacher.userId ? <p className="supervisor-review-feedback">This teacher must create and activate a school account before classes and subjects can be assigned.</p> : <><div className="department-assignment-picker"><label>Class<select value={departmentAssignmentDraft.classId} onChange={(event) => setDepartmentAssignmentDraft((current) => ({ ...current, classId: event.target.value }))}><option value="">Select class</option>{schoolClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>Grade {schoolClass.grade} {schoolClass.section}</option>)}</select></label><label>Subject<select value={departmentAssignmentDraft.subjectId} onChange={(event) => setDepartmentAssignmentDraft((current) => ({ ...current, subjectId: event.target.value }))}><option value="">Select subject</option>{schoolSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_en}</option>)}</select></label><button disabled={saving || !departmentAssignmentDraft.classId || !departmentAssignmentDraft.subjectId} type="button" className="teacher-primary-button" onClick={() => void addDepartmentAssignment(selectedDepartmentTeacher.userId)}>Assign to teacher</button></div><div className="department-assignment-chips">{selectedDepartmentTeacher.assignments.map((assignment) => <span key={assignment.id}>{`Grade ${assignment.grade} ${assignment.section} · ${assignment.subject}`}<button disabled={saving} type="button" aria-label={`Remove ${assignment.subject}`} onClick={() => void removeDepartmentAssignment(assignment.id)}>×</button></span>)}{selectedDepartmentTeacher.assignments.length === 0 && <small>No classes or subjects assigned yet.</small>}</div></>}</section>}</div>
+            <div className="teacher-card-heading"><div><p className="teacher-kicker">{dashboardArabic ? "إدارة القسم" : "Department management"}</p><h2>{dashboardArabic ? "معلمو القسم" : "Department teachers"}</h2><p>{dashboardArabic ? "اعرض معلميك المرتبطين بك وتكليفاتهم من الفصول والمواد." : "See your linked teachers and their class and subject assignments."}</p></div><span className="supervisor-review-authority">{departmentTeachers.length} {dashboardArabic ? "معلم" : "teachers"}</span></div>
+            <div className="department-teachers-layout"><div className="department-teacher-list">{departmentTeachers.map((teacher, index) => <button key={teacher.userId || `${teacher.name}-${index}`} className={selectedDepartmentTeacherId === teacher.userId ? "active" : ""} onClick={() => selectDepartmentTeacher(teacher.userId)}><span>{initials(teacher.name)}</span><div><strong>{teacher.name}</strong><small>{teacher.userId ? dashboardArabic ? `${teacher.assignments.length} تكليف فصل ومادة` : `${teacher.assignments.length} class / subject assignments` : dashboardArabic ? "لم يُفعّل الحساب بعد" : "Account not registered yet"}</small></div><em>{dashboardArabic ? "إدارة" : "Manage"}</em></button>)}{departmentTeachers.length === 0 && <p className="supervisor-review-empty">{dashboardArabic ? "لا يوجد معلمون مرتبطون بقسمك حاليًا." : "No teachers are linked to your department yet."}</p>}</div>
+              {selectedDepartmentTeacher && <section className="department-teacher-editor"><div><p className="teacher-kicker">{dashboardArabic ? "تكليفات المعلم" : "Teacher assignments"}</p><h3>{selectedDepartmentTeacher.name}</h3><p>{dashboardArabic ? "أضف الفصل والمادة أو احذف تكليفًا موجودًا." : "Assign classes and subjects, or remove an existing assignment."}</p></div>{!selectedDepartmentTeacher.userId ? <p className="supervisor-review-feedback">{dashboardArabic ? "يجب إنشاء حساب المعلم وتفعيله قبل تكليفه بفصل أو مادة." : "This teacher must create and activate a school account before classes and subjects can be assigned."}</p> : <><div className="department-assignment-picker"><label>{dashboardArabic ? "الفصل" : "Class"}<select value={departmentAssignmentDraft.classId} onChange={(event) => setDepartmentAssignmentDraft((current) => ({ ...current, classId: event.target.value }))}><option value="">{dashboardArabic ? "اختر الفصل" : "Select class"}</option>{schoolClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>Grade {schoolClass.grade} {schoolClass.section}</option>)}</select></label><label>{dashboardArabic ? "المادة" : "Subject"}<select value={departmentAssignmentDraft.subjectId} onChange={(event) => setDepartmentAssignmentDraft((current) => ({ ...current, subjectId: event.target.value }))}><option value="">{dashboardArabic ? "اختر المادة" : "Select subject"}</option>{schoolSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_en}</option>)}</select></label><button disabled={saving || !departmentAssignmentDraft.classId || !departmentAssignmentDraft.subjectId} type="button" className="teacher-primary-button" onClick={() => void addDepartmentAssignment(selectedDepartmentTeacher.userId)}>{dashboardArabic ? "إضافة التكليف" : "Assign to teacher"}</button></div><div className="department-assignment-chips">{selectedDepartmentTeacher.assignments.map((assignment) => <span key={assignment.id}>{`Grade ${assignment.grade} ${assignment.section} · ${assignment.subject}`}<button disabled={saving} type="button" aria-label={dashboardArabic ? `حذف تكليف ${assignment.subject}` : `Remove ${assignment.subject}`} onClick={() => void removeDepartmentAssignment(assignment.id)}>×</button></span>)}{selectedDepartmentTeacher.assignments.length === 0 && <small>{dashboardArabic ? "لا توجد فصول أو مواد مكلف بها حاليًا." : "No classes or subjects assigned yet."}</small>}</div></>}</section>}</div>
           </section>}
           {isSupervisor && activeNav === "Teacher Reviews" && <section className="teacher-card supervisor-review-card">
             <div className="teacher-card-heading supervisor-review-heading">
-              <div><p className="teacher-kicker">{dashboardArabic ? "مساحة عمل المشرف" : "Supervisor workspace"}</p><h2>{dashboardArabic ? "مراجعة الخطط الأسبوعية" : "Weekly plan review"}</h2><p>{dashboardArabic ? "اختر الأسبوع ثم الفصل والشعبة؛ سيظهر كل معلم مرتبط بك وجميع المواد التي أرسلها لهذا الفصل معًا." : "Choose the week, then the class. Every linked teacher and all subjects they submitted for that class appear together."}</p></div>
+              <div><p className="teacher-kicker">{dashboardArabic ? "مساحة عمل المشرف" : "Supervisor workspace"}</p><h2>{dashboardArabic ? "مراجعة الخطط الأسبوعية" : "Weekly plan review"}</h2><p>{dashboardArabic ? "اختر الأسبوع لعرض جميع خطط معلميك؛ ويمكنك تحديد فصل وشعبة لتضييق النتائج." : "Choose a week to see every linked teacher plan. Filter by class only when needed."}</p></div>
               <button type="button" className="supervisor-review-authority supervisor-review-shortcut" disabled={waitingReviews.length === 0} onClick={openFirstWaitingReview}><strong>{dashboardArabic ? `${waitingReviews.length} خطط تحتاج للمراجعة` : `${waitingReviews.length} subject entries waiting for review`}</strong><span>{dashboardArabic ? "عرض الخطط المعلقة" : "Open waiting plans"} ←</span></button>
             </div>
             <div className="supervisor-review-selector">
               <label>{dashboardArabic ? "١. الأسبوع الدراسي" : "1. School week"}<select value={selectedReviewWeekId} onChange={(event) => setSelectedReviewWeekId(event.target.value)}><option value="">{dashboardArabic ? "اختر الأسبوع" : "Select week"}</option>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select></label>
-              <label>{dashboardArabic ? "٢. الفصل والشعبة" : "2. Class & section"}<select value={selectedReviewClassId} onChange={(event) => setSelectedReviewClassId(event.target.value)} disabled={!selectedReviewWeek || supervisorReviewClasses.length === 0}><option value="">{dashboardArabic ? "اختر الفصل" : "Select class"}</option>{supervisorReviewClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}</select></label>
-              <div className="supervisor-review-found"><span>{dashboardArabic ? `تم العثور على ${selectedClassReviewItems.length} خطة معلم في الفصل المحدد` : `${selectedClassReviewItems.length} teacher plan${selectedClassReviewItems.length === 1 ? "" : "s"} found in this class`}</span>{selectedWeekPendingCount > 0 && <button type="button" onClick={openSelectedWeekWaitingReview}>{dashboardArabic ? `عرض الخطط المرسلة لهذا الأسبوع (${selectedWeekPendingCount})` : `Show submitted plans this week (${selectedWeekPendingCount})`}</button>}</div>
+              <label>{dashboardArabic ? "٢. الفصل والشعبة · اختياري" : "2. Class & section · optional"}<select value={effectiveReviewClassId} onChange={(event) => setSelectedReviewClassId(event.target.value)} disabled={!selectedReviewWeek || supervisorReviewClasses.length === 0}><option value="">{dashboardArabic ? "كل الفصول والشعب" : "All classes and sections"}</option>{supervisorReviewClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}</select></label>
+              <div className="supervisor-review-found"><span>{dashboardArabic ? `تم العثور على ${selectedClassReviewItems.length} خطة معلم في العرض` : `${selectedClassReviewItems.length} teacher plan${selectedClassReviewItems.length === 1 ? "" : "s"} shown`}</span>{selectedWeekPendingCount > 0 && <button type="button" onClick={openSelectedWeekWaitingReview}>{dashboardArabic ? `انتقل إلى خطة تنتظر مراجعتك (${selectedWeekPendingCount})` : `Jump to a plan awaiting review (${selectedWeekPendingCount})`}</button>}</div>
               <button type="button" className="teacher-primary-button supervisor-approve-all" disabled={saving || selectedWeekPendingCount === 0} onClick={requestBulkApproval}>{dashboardArabic ? `اعتماد جميع خطط معلمي القسم لهذا الأسبوع (${selectedWeekPendingCount})` : `Approve every submitted department plan this week (${selectedWeekPendingCount})`}</button>
             </div>
             <div className="supervisor-review-list" id="supervisor-review-results">
-              {!selectedReviewWeek || !selectedReviewClassId ? <p className="supervisor-review-empty">{dashboardArabic ? "اختر الأسبوع الدراسي ثم الفصل والشعبة." : "Select the school week, then the class and section."}</p> : selectedClassReviewItems.map((review) => <article key={review.id}>
+              {!selectedReviewWeek ? <p className="supervisor-review-empty">{dashboardArabic ? "اختر الأسبوع الدراسي لعرض خطط معلميك." : "Select a school week to view teacher plans."}</p> : selectedClassReviewItems.map((review) => <article key={review.id}>
                 <header><div><span className={`teacher-status ${review.status === "approved" ? "green" : review.status === "changes_requested" ? "amber" : "navy"}`}><i />{reviewStatusLabel(review.status, dashboardArabic)}</span><h3>{review.teacherName}</h3><p>{review.subject} · {review.className} · {review.week}</p></div><small>{dashboardArabic ? `أُرسلت في ${review.submittedAt}` : `Submitted ${review.submittedAt}`}</small></header>
                 <div className="supervisor-entry-grid">{review.entries.map((entry) => <section key={`${entry.subject}-${entry.day}-${entry.period}`}><strong>{entry.subject} · {dashboardArabic ? arabicDayNames[entry.day] ?? entry.day : entry.day} · {dashboardArabic ? `الحصة ${entry.period}` : `Period ${entry.period}`}</strong><p><b>{dashboardArabic ? "عمل الحصة" : "Classwork"}</b>{entry.classwork || "—"}</p><p><b>{dashboardArabic ? "الواجب المنزلي" : "Homework"}</b>{entry.homework || "—"}</p><p><b>{dashboardArabic ? "ملاحظات كلاسيرا" : "Classera"}</b>{entry.notes || "—"}</p></section>)}</div>
                 {(review.quizzes.length > 0 || review.weeklyNotes.some((note) => Boolean(parseEnglishDictation(note)))) && <div className="supervisor-plan-extras">{review.quizzes.length > 0 && <section><strong>{dashboardArabic ? "الاختبارات والتقييمات" : "Quizzes & assessments"}</strong>{review.quizzes.map((quiz, index) => <p key={`${quiz.subject}-${index}`}><b>{quiz.subject}{quiz.date ? ` · ${quiz.date}` : ""}</b>{quiz.details}</p>)}</section>}{review.weeklyNotes.map(parseEnglishDictation).filter((dictation): dictation is EnglishDictation => Boolean(dictation)).map((dictation) => <section key={`dictation-${dictation.day}`}><strong>Vocabulary for Dictation on {dayNames[dictation.day]}</strong><div className="dictation-word-grid compact">{dictation.words.map((word) => <span key={word}>{word}</span>)}</div></section>)}</div>}
@@ -1490,7 +1567,7 @@ export default function TeachersDashboardPage() {
                 {review.status === "changes_requested" && <p className="supervisor-review-feedback"><strong>{dashboardArabic ? "ملاحظتك للمراجعة" : "Your review note"}</strong>{review.note || (dashboardArabic ? "طُلب من المعلم مراجعة هذه الخطة وتعديلها." : "The teacher has been asked to revise this plan.")}</p>}
                 {review.status === "approved" && <p className="supervisor-review-feedback approved"><strong>{dashboardArabic ? "معتمدة من هذه الشعبة" : "Approved for this department"}</strong>{dashboardArabic ? "تم اعتماد خطة الشعبة كاملة. ستظهر خطة الفصل عند عدم بقاء أي خطة مرسلة قيد المراجعة، وتظهر حصص غير المرسلين بعبارة Plan not published." : "This department plan was approved. The class plan is visible when no submitted plan remains under review; missing teachers show Plan not published."}</p>}
               </article>)}
-              {selectedReviewWeek && selectedReviewClassId && selectedClassReviewItems.length === 0 && <p className="supervisor-review-empty">{dashboardArabic ? <>لم يرسل أي معلم خطة لهذا الفصل في <strong>{selectedReviewWeek.label}</strong> حتى الآن.</> : <>No teacher has sent a plan for this class in <strong>{selectedReviewWeek.label}</strong> yet.</>}</p>}
+              {selectedReviewWeek && selectedClassReviewItems.length === 0 && <p className="supervisor-review-empty">{dashboardArabic ? <>لا توجد خطط لمعلميك في <strong>{selectedReviewWeek.label}</strong> ضمن هذا الاختيار.</> : <>No linked teacher plans match this selection in <strong>{selectedReviewWeek.label}</strong>.</>}</p>}
             </div>
           </section>}
         </div>

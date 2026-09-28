@@ -283,7 +283,7 @@ test("adds a department-supervisor review workflow without removing the supervis
   assert.match(teacherSource, /Send to supervisor for approval/);
   assert.match(teacherSource, /Waiting for supervisor approval/);
   assert.match(teacherSource, /Approve whole plan/);
-  assert.match(teacherSource, /Manage only the teachers assigned to your supervision group/);
+  assert.match(teacherSource, /See your linked teachers and their class and subject assignments/);
   assert.match(loginSource, /administrative_role/);
   assert.match(loginSource, /isSupervisor/);
   assert.match(workflowSql, /create table if not exists public\.plan_submissions/);
@@ -330,7 +330,7 @@ test("keeps weekly-plan creation responsive while data is loading", async () => 
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
 
   assert.match(teacherSource, /if \(loading\)[\s\S]*still loading/);
-  assert.match(teacherSource, /const firstAssignment = selectedClass \?\? assignments\[0\]/);
+  assert.match(teacherSource, /const firstAssignment = assignments\.find\(\(assignment\) => assignment\.classId === targetClassId\) \?\? selectedClass \?\? assignments\[0\]/);
   assert.match(teacherSource, /type=\"button\" className=\"teacher-primary-button\" disabled=\{saving[^}]*\}/);
   assert.match(teacherSource, /aria-busy=\{loading\}/);
 });
@@ -559,8 +559,26 @@ test("lets supervisors jump directly to submitted plans in the selected week", a
 
   assert.match(source, /const selectedWeekWaitingReviews = reviewItems\.filter/);
   assert.match(source, /const openSelectedWeekWaitingReview = \(\) =>/);
-  assert.match(source, /عرض الخطط المرسلة لهذا الأسبوع/);
+  assert.match(source, /انتقل إلى خطة تنتظر مراجعتك/);
   assert.match(source, /nextReview\.classId/);
+});
+
+test("organizes teacher and supervisor home around the selected week and personal timetable", async () => {
+  const source = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(source, /const dashboardPlans = weeklyPlanRows\.filter\(\(plan\) => plan\.weekId === dashboardWeekId\)/);
+  assert.match(source, /const dashboardWeeks = academicWeeks\.filter\(\(week\) => week\.teacher_entry_enabled/);
+  assert.match(source, /const dashboardWaitingReviews = waitingReviews\.filter\(\(review\) => review\.weekId === dashboardWeekId\)/);
+  assert.match(source, /const missingTeacherClassPlans = departmentTeachers\.flatMap/);
+  assert.match(source, /id="staff-missing-teachers"/);
+  assert.match(source, /eq\("teacher_id", userData\.user\.id\)\.order\("day_of_week"\)\.order\("period_number"\)/);
+  assert.match(source, /activeNav === "My Timetable"/);
+  assert.match(source, /كل الفصول والشعب/);
+  assert.match(source, /openWeeklyPlan\(plan\)/);
+  assert.match(styles, /\.staff-dashboard-hero/);
+  assert.match(styles, /\.staff-timetable-grid/);
+  assert.match(styles, /\.staff-supervisor-followup/);
 });
 
 test("localizes the academic-week visibility controls in Arabic", async () => {
