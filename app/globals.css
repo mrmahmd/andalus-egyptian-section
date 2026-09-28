@@ -2552,3 +2552,30 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 .teacher-portal:not(.super-admin-portal) .supervisor-entry-grid section:nth-child(3n + 2) { border-color: #e9ddec; background: linear-gradient(145deg, #fbf2fa, #fff); }
 .teacher-portal:not(.super-admin-portal) .supervisor-entry-grid section:nth-child(3n) { border-color: #d7eadd; background: linear-gradient(145deg, #f0faf4, #fff); }
 .teacher-portal:not(.super-admin-portal) .supervisor-review-actions button { min-height: 46px; font-weight: 800; }
+
+/* Make supporting copy legible without changing dashboard spacing or hierarchy. */
+.teacher-portal:not(.super-admin-portal) .staff-dashboard-empty,
+.teacher-portal:not(.super-admin-portal) .staff-metric small,
+.teacher-portal:not(.super-admin-portal) .staff-task-list small,
+.teacher-portal:not(.super-admin-portal) .staff-lesson-row small,
+.teacher-portal:not(.super-admin-portal) .staff-review-quick-list span,
+.teacher-portal:not(.super-admin-portal) .staff-missing-row span,
+.teacher-portal:not(.super-admin-portal) .staff-timetable-day > header small,
+.teacher-portal:not(.super-admin-portal) .staff-timetable-day > div > p,
+.teacher-portal:not(.super-admin-portal) .staff-timetable-lesson small,
+.teacher-portal:not(.super-admin-portal) .teacher-card-heading p,
+.teacher-portal:not(.super-admin-portal) .teacher-live-assignment-panel > div:first-child p,
+.teacher-portal:not(.super-admin-portal) .teacher-week-list small,
+.teacher-portal:not(.super-admin-portal) .department-teacher-list small,
+.teacher-portal:not(.super-admin-portal) .supervisor-review-list header > small {
+  font-weight: 700;
+}
+.teacher-portal:not(.super-admin-portal) .staff-dashboard-empty,
+.teacher-portal:not(.super-admin-portal) .staff-task-list small,
+.teacher-portal:not(.super-admin-portal) .staff-lesson-row small,
+.teacher-portal:not(.super-admin-portal) .staff-review-quick-list span,
+.teacher-portal:not(.super-admin-portal) .staff-timetable-lesson small,
+.teacher-portal:not(.super-admin-portal) .teacher-card-heading p,
+.teacher-portal:not(.super-admin-portal) .department-teacher-list small {
+  color: #3d5b76;
+}
