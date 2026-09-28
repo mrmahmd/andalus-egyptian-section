@@ -383,7 +383,7 @@ test("confirms teacher submission and copies each written subject as an independ
   assert.match(teacherSource, /Confirm plan submission/);
   assert.match(teacherSource, /Plan sent successfully/);
   assert.match(teacherSource, /setSubmissionSuccessOpen\(true\)/);
-  assert.match(teacherSource, /finishSuccessfulSubmission[\s\S]*setWeeklyBuilderOpen\(false\)[\s\S]*setActiveNav\("Overview"\)/);
+  assert.match(teacherSource, /finishSuccessfulSubmission[\s\S]*closeWeeklyEditor\(true\)/);
   assert.doesNotMatch(teacherSource, /className="weekly-copy-panel"/);
   assert.match(teacherSource, /const canCopy = \["draft", "changes_requested", "submitted", "approved"\]\.includes\(plan\.status\)/);
   assert.match(teacherSource, /canCopy && <button[\s\S]*openCopyPlanDialog\(plan\)[\s\S]*Copy plan/);
@@ -401,7 +401,7 @@ test("confirms teacher submission and copies each written subject as an independ
   assert.match(teacherSource, /isEnglishCopy \? isEnglishSubject\(assignment\.subject\)/);
   assert.match(globalCss, /teacher-plan-actions \.teacher-secondary-button\.continue[\s\S]*linear-gradient/);
   assert.match(globalCss, /teacher-plan-actions \.teacher-secondary-button\.copy[\s\S]*linear-gradient/);
-  assert.match(teacherSource, /setSelectedClassId\(copiedClassId\)[\s\S]*setSelectedWeekId\(copiedWeekId\)[\s\S]*setWeeklyBuilderOpen\(true\)/);
+  assert.match(teacherSource, /setSelectedClassId\(copiedClassId\)[\s\S]*setSelectedWeekId\(copiedWeekId\)[\s\S]*openWeeklyEditor\(\)/);
 });
 
 test("keeps teacher and class publication states truthful for partial plans", async () => {
@@ -579,6 +579,20 @@ test("organizes teacher and supervisor home around the selected week and persona
   assert.match(styles, /\.staff-dashboard-hero/);
   assert.match(styles, /\.staff-timetable-grid/);
   assert.match(styles, /\.staff-supervisor-followup/);
+});
+
+test("keeps staff sessions and dashboard history intact when using browser back", async () => {
+  const dashboard = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const login = await readFile(new URL("../app/teachers/login/page.tsx", import.meta.url), "utf8");
+
+  assert.match(dashboard, /window\.history\.pushState\(\{ staffSection: label \}/);
+  assert.match(dashboard, /window\.addEventListener\("popstate", restoreLocation\)/);
+  assert.match(dashboard, /window\.history\.pushState\(\{ staffEditor: true \}/);
+  assert.match(dashboard, /const closeWeeklyEditor = useCallback/);
+  assert.match(dashboard, /if \(userError\) throw userError;\s*if \(!userData\.user\)/);
+  assert.match(login, /async function restoreSignedInStaff\(\)/);
+  assert.match(login, /window\.addEventListener\("pageshow", restoreFromBrowserCache\)/);
+  assert.match(login, /window\.location\.replace\(`\$\{basePath\}\$\{destination\}`\)/);
 });
 
 test("localizes the academic-week visibility controls in Arabic", async () => {

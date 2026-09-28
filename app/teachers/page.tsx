@@ -266,6 +266,7 @@ export default function TeachersDashboardPage() {
   const [departmentAssignmentDraft, setDepartmentAssignmentDraft] = useState({ classId: "", subjectId: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const editorSaveInProgress = useRef(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"success" | "error" | "info">("info");
   const [selectedWeekId, setSelectedWeekId] = useState("");
@@ -299,6 +300,30 @@ export default function TeachersDashboardPage() {
   const [submissionSuccessArabic, setSubmissionSuccessArabic] = useState(false);
   const [editorCompletionKind, setEditorCompletionKind] = useState<EditorCompletionKind>("submitted");
 
+  useEffect(() => { editorSaveInProgress.current = saving && weeklyBuilderOpen; }, [saving, weeklyBuilderOpen]);
+
+  const openWeeklyEditor = useCallback(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("editor") !== "1") {
+      url.searchParams.set("editor", "1");
+      window.history.pushState({ staffEditor: true }, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+    setWeeklyBuilderOpen(true);
+  }, []);
+
+  const closeWeeklyEditor = useCallback((showOverview = false) => {
+    setWeeklyBuilderOpen(false);
+    const url = new URL(window.location.href);
+    if (showOverview) {
+      url.searchParams.delete("editor");
+      url.searchParams.set("section", "Overview");
+      window.history.replaceState({ staffSection: "Overview" }, "", `${url.pathname}${url.search}${url.hash}`);
+      setActiveNav("Overview");
+    } else if (url.searchParams.get("editor") === "1") {
+      window.history.back();
+    }
+  }, []);
+
   useEffect(() => {
     queueMicrotask(() => setDashboardArabic(window.localStorage.getItem("andalus-language") === "ar"));
     const compactQuery = window.matchMedia("(max-width: 760px)");
@@ -308,14 +333,47 @@ export default function TeachersDashboardPage() {
     return () => compactQuery.removeEventListener("change", syncCompactBuilder);
   }, []);
 
+  useEffect(() => {
+    if (!profileId) return;
+    let active = true;
+    const restoreLocation = () => {
+      if (!active) return;
+      const url = new URL(window.location.href);
+      if (editorSaveInProgress.current && url.searchParams.get("editor") !== "1") {
+        url.searchParams.set("editor", "1");
+        window.history.pushState({ staffEditor: true }, "", `${url.pathname}${url.search}${url.hash}`);
+        return;
+      }
+      const availableSections = new Set<string>([
+        ...(isSupervisor ? supervisorNavigation : navigation).map(([label]) => label),
+        "Profile & assignments", "Settings",
+      ]);
+      const requestedSection = url.searchParams.get("section");
+      setActiveNav(requestedSection && availableSections.has(requestedSection) ? requestedSection : "Overview");
+      setWeeklyBuilderOpen(false);
+      setSendConfirmationOpen(false);
+      setCopyDialogOpen(false);
+      setParentPreviewOpen(false);
+      setBulkApprovalConfirmationOpen(false);
+      if (url.searchParams.has("editor")) {
+        url.searchParams.delete("editor");
+        window.history.replaceState({ staffSection: requestedSection }, "", `${url.pathname}${url.search}${url.hash}`);
+      }
+    };
+    queueMicrotask(restoreLocation);
+    window.addEventListener("popstate", restoreLocation);
+    return () => { active = false; window.removeEventListener("popstate", restoreLocation); };
+  }, [profileId, isSupervisor]);
+
   const loadTeacherDashboard = useCallback(async () => {
     setLoading(true);
     setMessage("");
     try {
       const supabase = getSupabaseBrowserClient();
       const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) {
-        window.location.assign(`${basePath}/teachers/login/`);
+      if (userError) throw userError;
+      if (!userData.user) {
+        window.location.replace(`${basePath}/teachers/login/`);
         return;
       }
 
@@ -329,7 +387,7 @@ export default function TeachersDashboardPage() {
       const supervisorAccount = profile?.role === "admin" && String(staffRecord?.administrative_role ?? "").includes("Supervisor");
       if (!profile || (profile.role !== "teacher" && !supervisorAccount) || profile.status !== "active") {
         const destination = profile?.role === "super_admin" ? "/super-admin/" : profile?.role === "admin" ? "/admin/" : "/teachers/login/";
-        window.location.assign(`${basePath}${destination}`);
+        window.location.replace(`${basePath}${destination}`);
         return;
       }
 
@@ -502,7 +560,7 @@ export default function TeachersDashboardPage() {
       setMessage(text);
       setMessageTone("error");
       setBuilderFeedback({ tone: "error", text });
-      if (closeEditorWhenClosed) setWeeklyBuilderOpen(false);
+      if (closeEditorWhenClosed) closeWeeklyEditor();
       return false;
     } catch (error) {
       const text = arabic
@@ -513,7 +571,7 @@ export default function TeachersDashboardPage() {
       setBuilderFeedback({ tone: "error", text });
       return false;
     }
-  }, []);
+  }, [closeWeeklyEditor]);
 
   useEffect(() => {
     const recheckOpenEditor = () => {
@@ -692,7 +750,7 @@ export default function TeachersDashboardPage() {
     setSelectedWeekId(firstWeek.id);
     setBuilderFeedback(null);
     setWeeklyBuilderReadOnly(false);
-    setWeeklyBuilderOpen(true);
+    openWeeklyEditor();
   };
 
   const updateSlotDraft = (slotId: string, field: keyof SlotDraft, value: string) => {
@@ -896,8 +954,7 @@ export default function TeachersDashboardPage() {
         await loadTeacherDashboard();
         setSubmissionSuccessArabic(actionArabic);
         setEditorCompletionKind(submitForReview ? isSupervisor ? "approved" : "submitted" : "draft");
-        setWeeklyBuilderOpen(false);
-        setActiveNav("Overview");
+        closeWeeklyEditor(true);
         setSubmissionSuccessOpen(true);
       } else {
         setAutoSaveState("saved");
@@ -951,8 +1008,7 @@ export default function TeachersDashboardPage() {
   const finishSuccessfulSubmission = () => {
     setSubmissionSuccessOpen(false);
     if (editorCompletionKind !== "error") {
-      setWeeklyBuilderOpen(false);
-      setActiveNav("Overview");
+      closeWeeklyEditor(true);
     }
   };
 
@@ -996,7 +1052,7 @@ export default function TeachersDashboardPage() {
     setSelectedWeekId(submission.weekId);
     setBuilderFeedback(null);
     setWeeklyBuilderReadOnly(false);
-    setWeeklyBuilderOpen(true);
+    openWeeklyEditor();
   };
 
   const openEntryEditor = async (entry: TeacherEntry) => {
@@ -1005,7 +1061,7 @@ export default function TeachersDashboardPage() {
     setSelectedWeekId(entry.weekId);
     setBuilderFeedback(null);
     setWeeklyBuilderReadOnly(false);
-    setWeeklyBuilderOpen(true);
+    openWeeklyEditor();
   };
 
   const entryReviewStatus = (entry: TeacherEntry) => mySubmissions.find((submission) => submission.classId === entry.classId && submission.weekId === entry.weekId && submission.subjectId === entry.subjectId)?.status ?? "draft";
@@ -1050,7 +1106,7 @@ export default function TeachersDashboardPage() {
     setSelectedWeekId(plan.weekId);
     setBuilderFeedback(canEdit ? null : { tone: "info", text: dashboardArabic ? "هذه معاينة فقط. الأسبوع مغلق للتحرير أو أن الخطة مرسلة/معتمدة، لذلك لا يمكن تغيير أي بيانات." : "Preview only. This week is closed for editing or the plan is submitted/approved, so no data can be changed." });
     setWeeklyBuilderReadOnly(!canEdit);
-    setWeeklyBuilderOpen(true);
+    openWeeklyEditor();
   };
 
   const openCopyPlanDialog = (plan: WeeklyPlanRow) => {
@@ -1085,7 +1141,7 @@ export default function TeachersDashboardPage() {
     setSlotDrafts({});
     setBuilderFeedback({ tone: "info", text: "The existing draft was kept unchanged. Review or edit it before sending it to the supervisor." });
     setWeeklyBuilderReadOnly(false);
-    setWeeklyBuilderOpen(true);
+    openWeeklyEditor();
   };
 
   const clearWeeklyDraft = async (plan: WeeklyPlanRow) => {
@@ -1222,7 +1278,7 @@ export default function TeachersDashboardPage() {
       setMessage(copiedMessage);
       setMessageTone("success");
       setBuilderFeedback({ tone: "success", text: copiedMessage });
-      setWeeklyBuilderOpen(true);
+      openWeeklyEditor();
     } catch (error) {
       setCopyFeedback(error instanceof Error ? error.message : "The plan could not be copied.");
     } finally {
@@ -1333,7 +1389,7 @@ export default function TeachersDashboardPage() {
   const signOut = async () => {
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
-    window.location.assign(`${basePath}/teachers/login/`);
+    window.location.replace(`${basePath}/teachers/login/`);
   };
 
   const currentWeek = academicWeeks.find((week) => week.is_current) ?? academicWeeks[0];
@@ -1420,6 +1476,12 @@ export default function TeachersDashboardPage() {
   const workspaceNavigation = isSupervisor ? supervisorNavigation : navigation;
   const navLabel = (label: string) => dashboardArabic ? ({ Overview: "الرئيسية", "Weekly Plans": "خططي الأسبوعية", "My Timetable": "جدول حصصي", "My Classes": "فصولي", "My Subjects": "موادي", Calendar: "الأسابيع الدراسية", "Teacher Reviews": "مراجعة الخطط", "Department Teachers": "معلمو القسم", "Profile & assignments": "ملفي وتكليفاتي", Settings: "الإعدادات" } as Record<string, string>)[label] ?? label : label;
   const openWorkspaceSection = (label: string) => {
+    if (activeNav !== label) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("section", label);
+      url.searchParams.delete("editor");
+      window.history.pushState({ staffSection: label }, "", `${url.pathname}${url.search}${url.hash}`);
+    }
     setActiveNav(label);
     setMobileNavigationOpen(false);
   };
@@ -1432,7 +1494,7 @@ export default function TeachersDashboardPage() {
     if (!firstWaitingReview) return;
     setSelectedReviewWeekId(firstWaitingReview.weekId);
     setSelectedReviewClassId(firstWaitingReview.classId);
-    setActiveNav("Teacher Reviews");
+    openWorkspaceSection("Teacher Reviews");
     window.setTimeout(() => document.getElementById("supervisor-review-results")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
   const openSelectedWeekWaitingReview = () => {
@@ -1575,8 +1637,8 @@ export default function TeachersDashboardPage() {
 
       {bulkApprovalConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setBulkApprovalConfirmationOpen(false)}><section className="weekly-send-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="bulk-approval-title" dir={bulkApprovalArabic ? "rtl" : "ltr"}><span aria-hidden="true">✓</span><h3 id="bulk-approval-title">{bulkApprovalArabic ? "اعتماد كل خطط الأسبوع" : "Approve every plan this week"}</h3><p>{bulkApprovalArabic ? `سيتم اعتماد ${selectedWeekPendingCount} خطة مادة مرسلة لكل معلميك في جميع الفصول والشعب خلال الأسبوع المحدد، وضمن نطاق إشرافك فقط. ستُنشر خطة الفصل عندما لا تبقى أي خطة مرسلة قيد المراجعة، وتظهر حصص غير المرسلين بعبارة Plan not published.` : `${selectedWeekPendingCount} submitted subject plan${selectedWeekPendingCount === 1 ? "" : "s"} from all your linked teachers across every class and section in the selected week will be approved. Each class plan publishes when no submitted plan remains under review; missing teachers show Plan not published.`}</p><div><button type="button" className="teacher-secondary-button" onClick={() => setBulkApprovalConfirmationOpen(false)}>{bulkApprovalArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={saving} onClick={() => void approveAllSelectedWeekPlans()}>{bulkApprovalArabic ? "نعم، اعتماد الجميع" : "Yes, approve all"}</button></div></section></div>}
 
-      {weeklyBuilderOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && setWeeklyBuilderOpen(false)}><section className={`teacher-editor-modal weekly-builder-modal ${weeklyBuilderReadOnly ? "is-read-only" : ""}`} role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
-        <div className="teacher-modal-heading"><div><p>{dashboardArabic ? `الأسبوع ${selectedWeek.week_number}` : `Week ${selectedWeek.week_number}`} · {academicWeekRange(selectedWeek, dashboardArabic)}</p><h2 id="weekly-builder-title">{weeklyBuilderReadOnly ? dashboardArabic ? "معاينة الخطة الأسبوعية" : "Weekly plan preview" : dashboardArabic ? "إعداد الخطة الأسبوعية" : "Build the whole week"}</h2></div><button disabled={saving} aria-label={dashboardArabic ? "إغلاق محرر الخطة" : "Close weekly builder"} onClick={() => setWeeklyBuilderOpen(false)}>×</button></div>
+      {weeklyBuilderOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && closeWeeklyEditor()}><section className={`teacher-editor-modal weekly-builder-modal ${weeklyBuilderReadOnly ? "is-read-only" : ""}`} role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
+        <div className="teacher-modal-heading"><div><p>{dashboardArabic ? `الأسبوع ${selectedWeek.week_number}` : `Week ${selectedWeek.week_number}`} · {academicWeekRange(selectedWeek, dashboardArabic)}</p><h2 id="weekly-builder-title">{weeklyBuilderReadOnly ? dashboardArabic ? "معاينة الخطة الأسبوعية" : "Weekly plan preview" : dashboardArabic ? "إعداد الخطة الأسبوعية" : "Build the whole week"}</h2></div><button disabled={saving} aria-label={dashboardArabic ? "إغلاق محرر الخطة" : "Close weekly builder"} onClick={() => closeWeeklyEditor()}>×</button></div>
         <div className="teacher-editor-context"><span>{weeklyBuilderReadOnly ? dashboardArabic ? "وضع المعاينة فقط" : "Preview-only mode" : dashboardArabic ? "حفظ واحد لخطة الأسبوع كاملة" : "One save for the whole week"}</span><i />{weeklyBuilderReadOnly ? dashboardArabic ? "يمكنك مشاهدة الخطة، ولا يمكن تعديلها أو حفظها في هذا الوضع." : "You can view the plan, but it cannot be edited or saved in this mode." : dashboardArabic ? "تُرتب المدخلات تلقائيًا حسب حصص جدولك." : "Entries are placed according to your timetable slots."}{!weeklyBuilderReadOnly && <b className={`teacher-autosave-state ${autoSaveState}`}>{autoSaveState === "saving" ? dashboardArabic ? "جارٍ حفظ المسودة…" : "Saving draft…" : autoSaveState === "saved" ? dashboardArabic ? "تم حفظ المسودة تلقائيًا" : "Draft saved automatically" : dashboardArabic ? "الحفظ التلقائي مُفعّل" : "Auto-save is on"}</b>}</div>
         <form onSubmit={(event) => { event.preventDefault(); if (!weeklyBuilderReadOnly) confirmAndSendWholeWeek(); }}>
           {builderFeedback && <div className={`weekly-builder-feedback ${builderFeedback.tone}`} role="status">{builderFeedback.text}</div>}
@@ -1589,7 +1651,7 @@ export default function TeachersDashboardPage() {
           <div className={`weekly-builder-days days-${visibleBuilderDayIndexes.length}`}>{visibleBuilderDayIndexes.map((index) => { const day = dayNames[index]; const daySlots = selectedClassSlots.filter((slot) => slot.day_of_week === index); return <section className="weekly-builder-day" key={day}><header><strong>{dashboardArabic ? arabicDayNames[day] : day}</strong><small>{dashboardArabic ? `${daySlots.length} حصص` : `${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"}`}</small></header>{daySlots.map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = isEnglishSubject(assignment?.subject ?? ""); return <article key={slot.id}><header><span>{dashboardArabic ? `الحصة ${slot.period_number}` : `Period ${slot.period_number}`}</span><strong>{isEnglish ? "English" : assignment?.subject ?? (dashboardArabic ? "المادة" : "Subject")}</strong></header>{assignment?.subject === "Integrated Science" && <label>{dashboardArabic ? "فرع العلوم" : "Science component"}<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">{dashboardArabic ? "اختر الكيمياء أو الفيزياء أو الأحياء" : "Select Chemistry, Physics or Biology"}</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>{dashboardArabic ? "برنامج اللغة الإنجليزية" : "English programme"}<select value={draft.englishProgramme} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}><option value="">{dashboardArabic ? "اختر AL أو OL" : "Select AL or OL"}</option>{englishProgrammes.map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">{dashboardArabic ? "يُضاف AL أو OL تلقائيًا قبل عمل الحصة بالصيغة: AL - Classwork." : "AL or OL is added automatically before Classwork using the format: AL - Classwork."}</p>}<label>{dashboardArabic ? "عمل الحصة" : "Classwork"}<textarea rows={3} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder={dashboardArabic ? "اكتب الدرس والوحدة والصفحات" : "Lesson, unit and pages"} /></label><label>{dashboardArabic ? "الواجب المنزلي" : "Homework"}<textarea rows={3} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder={dashboardArabic ? "اكتب واجب هذه الحصة" : "Homework for this lesson"} /></label><label>{dashboardArabic ? "ملاحظات كلاسيرا" : "Classera notes"}<textarea rows={3} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder={dashboardArabic ? "تذكير أو مواد مطلوبة" : "Reminder or materials"} /></label></article>})}</section>})}</div>
           {departmentName === "English Department" && <section className="weekly-builder-extra english-dictation-editor"><div className="weekly-builder-section-heading"><div><span>DW</span><div><strong>{dashboardArabic ? "كلمات الإملاء باللغة الإنجليزية" : "English Dictation Words"}</strong><small>{dashboardArabic ? "اختر يوم الإملاء، ثم اكتب كل كلمة في سطر أو افصل الكلمات بفواصل." : "Choose the dictation day, then enter one word per line or separate words with commas."}</small></div></div></div><div className="weekly-builder-dictation-row"><label>{dashboardArabic ? "يوم الإملاء" : "Dictation day"}<select value={dictationDay} onChange={(event) => setDictationDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{dashboardArabic ? arabicDayNames[day] : day}</option>)}</select></label><label>{dashboardArabic ? "الكلمات" : "Words"}<textarea className="weekly-builder-notes" rows={3} value={dictationWords} onChange={(event) => setDictationWords(event.target.value)} placeholder="school, teacher, classroom, homework" /></label></div></section>}
           </fieldset>
-          <div className="teacher-editor-footer"><span>{weeklyBuilderReadOnly ? dashboardArabic ? "هذه معاينة فقط؛ لن يتم حفظ أو إرسال أي تغييرات." : "This is a read-only preview; no changes will be saved or submitted." : dashboardArabic ? selectedClassSlots.length > 0 ? isSupervisor ? "تُعتمد خطتك التعليمية تلقائيًا عند الإرسال. ولا تمنع حصص المعلمين غير المرسلة نشر باقي الخطة." : "احفظ عملك كمسودة خاصة، ثم أرسل الخطة المكتملة إلى المشرف للاعتماد." : "يتوقف الحفظ حتى يتم ربط جدول الحصص." : selectedClassSlots.length > 0 ? isSupervisor ? "Your teaching plan is approved automatically when sent. Missing teachers do not block the class plan and appear as Plan not published." : "Save privately as a draft, then send the completed plan to your supervisor. Missing teachers do not block an otherwise approved class plan." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button teacher-preview-button" onClick={() => void openParentPreview()}>{dashboardArabic ? "معاينة خطة ولي الأمر" : "Preview parent plan"}</button><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => setWeeklyBuilderOpen(false)}>{weeklyBuilderReadOnly ? dashboardArabic ? "إغلاق المعاينة" : "Close preview" : dashboardArabic ? "إلغاء" : "Cancel"}</button>{!weeklyBuilderReadOnly && <><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>{saving ? dashboardArabic ? "جارٍ الحفظ…" : "Saving…" : dashboardArabic ? "حفظ كمسودة" : "Save draft"}</button><button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "submitted" || builderStatus === "approved"} className="teacher-primary-button" type="submit">{saving ? dashboardArabic ? "جارٍ إكمال الحفظ التلقائي…" : "Send after automatic save" : isSupervisor ? dashboardArabic ? "اعتماد خطتي التعليمية" : "Approve my teaching plan" : dashboardArabic ? "إرسال للمشرف للاعتماد" : "Send to supervisor for approval"}</button></>}</div></div>
+          <div className="teacher-editor-footer"><span>{weeklyBuilderReadOnly ? dashboardArabic ? "هذه معاينة فقط؛ لن يتم حفظ أو إرسال أي تغييرات." : "This is a read-only preview; no changes will be saved or submitted." : dashboardArabic ? selectedClassSlots.length > 0 ? isSupervisor ? "تُعتمد خطتك التعليمية تلقائيًا عند الإرسال. ولا تمنع حصص المعلمين غير المرسلة نشر باقي الخطة." : "احفظ عملك كمسودة خاصة، ثم أرسل الخطة المكتملة إلى المشرف للاعتماد." : "يتوقف الحفظ حتى يتم ربط جدول الحصص." : selectedClassSlots.length > 0 ? isSupervisor ? "Your teaching plan is approved automatically when sent. Missing teachers do not block the class plan and appear as Plan not published." : "Save privately as a draft, then send the completed plan to your supervisor. Missing teachers do not block an otherwise approved class plan." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button teacher-preview-button" onClick={() => void openParentPreview()}>{dashboardArabic ? "معاينة خطة ولي الأمر" : "Preview parent plan"}</button><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => closeWeeklyEditor()}>{weeklyBuilderReadOnly ? dashboardArabic ? "إغلاق المعاينة" : "Close preview" : dashboardArabic ? "إلغاء" : "Cancel"}</button>{!weeklyBuilderReadOnly && <><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>{saving ? dashboardArabic ? "جارٍ الحفظ…" : "Saving…" : dashboardArabic ? "حفظ كمسودة" : "Save draft"}</button><button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "submitted" || builderStatus === "approved"} className="teacher-primary-button" type="submit">{saving ? dashboardArabic ? "جارٍ إكمال الحفظ التلقائي…" : "Send after automatic save" : isSupervisor ? dashboardArabic ? "اعتماد خطتي التعليمية" : "Approve my teaching plan" : dashboardArabic ? "إرسال للمشرف للاعتماد" : "Send to supervisor for approval"}</button></>}</div></div>
         </form>
         {sendConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setSendConfirmationOpen(false)}><section className="weekly-send-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="weekly-send-confirmation-title" dir={sendConfirmationArabic ? "rtl" : "ltr"}><span aria-hidden="true">✓</span><h3 id="weekly-send-confirmation-title">{sendConfirmationArabic ? isSupervisor ? "تأكيد اعتماد خطتك" : "تأكيد إرسال الخطة" : isSupervisor ? "Confirm automatic approval" : "Confirm plan submission"}</h3><p>{sendConfirmationArabic ? isSupervisor ? "سيتم اعتماد حصصك التعليمية تلقائيًا داخل المنصة. ستظهر خطة الفصل عند عدم وجود خطة مرسلة قيد المراجعة، وتظهر حصص غير المرسلين بعبارة Plan not published." : "هل تريد إرسال هذه الخطة الأسبوعية إلى المشرف للاعتماد؟ بعد الإرسال ستُغلق الخطة حتى يراجعها المشرف أو تسحبها للتعديل." : isSupervisor ? "Your own teaching lessons will be approved automatically. The class plan is visible when no submitted plan remains under review; missing teachers show Plan not published." : "Send this weekly plan to the supervisor for approval? After sending, the plan will be locked until it is reviewed or withdrawn."}</p><div><button type="button" className="teacher-secondary-button" onClick={() => setSendConfirmationOpen(false)}>{sendConfirmationArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" onClick={sendConfirmedWeeklyPlan}>{saving ? sendConfirmationArabic ? "الحفظ التلقائي جارٍ — اعتمد بعدها" : "Autosaving — approve next" : sendConfirmationArabic ? isSupervisor ? "نعم، اعتماد خطتي" : "نعم، إرسال للمشرف" : isSupervisor ? "Yes, approve my plan" : "Yes, send to supervisor"}</button></div></section></div>}
       </section></div>}

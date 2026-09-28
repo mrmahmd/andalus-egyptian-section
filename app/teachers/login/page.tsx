@@ -37,6 +37,35 @@ export default function TeacherLoginPage() {
 
   useEffect(() => {
     let active = true;
+    async function restoreSignedInStaff() {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData.user || !active) return;
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("role, status, staff_directory(administrative_role)")
+          .eq("user_id", userData.user.id)
+          .maybeSingle();
+        if (profileError || !profile || profile.status !== "active" || !active) return;
+        const staffRecord = Array.isArray(profile.staff_directory) ? profile.staff_directory[0] : profile.staff_directory;
+        const isSupervisor = profile.role === "admin" && String(staffRecord?.administrative_role ?? "").includes("Supervisor");
+        const destination = profile.role === "super_admin" ? "/super-admin/" : isSupervisor || profile.role === "teacher" ? "/teachers/" : profile.role === "admin" ? "/admin/" : "";
+        if (destination) window.location.replace(`${basePath}${destination}`);
+      } catch {
+        // A temporary network error must not sign out an existing session.
+      }
+    }
+    void restoreSignedInStaff();
+    const restoreFromBrowserCache = (event: PageTransitionEvent) => {
+      if (event.persisted) void restoreSignedInStaff();
+    };
+    window.addEventListener("pageshow", restoreFromBrowserCache);
+    return () => { active = false; window.removeEventListener("pageshow", restoreFromBrowserCache); };
+  }, [basePath]);
+
+  useEffect(() => {
+    let active = true;
     async function loadDirectory() {
       try {
         const supabase = getSupabaseBrowserClient();
@@ -177,7 +206,7 @@ export default function TeacherLoginPage() {
       const staffRecord = Array.isArray(profile.staff_directory) ? profile.staff_directory[0] : profile.staff_directory;
       const isSupervisor = profile.role === "admin" && String(staffRecord?.administrative_role ?? "").includes("Supervisor");
       const destination = profile.role === "super_admin" ? "/super-admin/" : isSupervisor ? "/teachers/" : profile.role === "admin" ? "/admin/" : "/teachers/";
-      window.location.assign(`${basePath}${destination}`);
+      window.location.replace(`${basePath}${destination}`);
     } catch (error) {
       const text = error instanceof Error ? error.message : "Something went wrong. Please try again.";
       const normalized = text.toLowerCase();
