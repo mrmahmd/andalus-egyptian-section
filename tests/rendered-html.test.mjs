@@ -210,23 +210,31 @@ test("renders the read-only administrator published-plan report", async () => {
   assert.match(html, /<th>Report<\/th>/);
 });
 
-test("renders the Super Admin account approval center", async () => {
+test("opens Super Admin on the weekly overview with account navigation", async () => {
   const html = await readFile(
     new URL("super-admin/index.html", outputRoot),
     "utf8",
   );
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
 
   assert.match(html, /Super Admin Control Center/);
   assert.match(html, /Account Approvals/);
-  assert.match(html, /Live school directory/);
+  assert.match(html, /School dashboard/);
+  assert.match(html, /Teacher and supervisor achievement/);
+  assert.match(html, /View report/);
   assert.match(html, /Manage Public Plans/);
-  assert.match(html, /Real school staff directory/);
-  assert.match(html, /Loading the real school directory/);
+  assert.match(source, /Real school staff directory/);
+  assert.match(source, /Loading the real school directory/);
   assert.match(html, /All Accounts/);
   assert.match(html, /Roles &amp; Permissions/);
   assert.match(html, /Classes &amp; Subjects/);
   assert.match(html, /Activity Log/);
   assert.match(html, /System Settings/);
+  assert.match(source, /setActiveSection\] = useState<DashboardSection>\("overview"\)/);
+  assert.match(source, /if \(requestedSection && allowedSections\.includes\(requestedSection\)\)/);
+  assert.doesNotMatch(source, /savedSection && allowedSections/);
+  assert.match(source, /تقرير إنجاز المعلمين والمشرفين للأسبوع رقم/);
+  assert.match(source, /setReportPending\(true\);\s*const loaded = await loadDashboard\(\)/);
 });
 
 test("saves teacher assignments immediately and enforces English programme grades", async () => {
@@ -506,7 +514,7 @@ test("routes Moamen El Haddad submissions to Mahmoud Helmy", async () => {
 test("keeps the Super Admin section on refresh and exposes every section on mobile", async () => {
   const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
 
-  assert.match(source, /andalus-super-admin-section/);
+  assert.match(source, /const requestedSection = new URLSearchParams\(window\.location\.search\)\.get\("section"\)/);
   assert.match(source, /url\.searchParams\.set\("section", section\)/);
   assert.match(source, /aria-label="Open navigation"/);
   assert.match(source, /teacher-mobile-menu/);

@@ -8,7 +8,7 @@ import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 
 type AccountRole = "Teacher" | "Admin";
 type AccountStatus = "Not Registered" | "Pending" | "Active" | "Suspended" | "Rejected";
-type DashboardSection = "approvals" | "accounts" | "roles" | "plans" | "weeks" | "holidays" | "classes" | "activity" | "settings";
+type DashboardSection = "overview" | "approvals" | "accounts" | "roles" | "plans" | "weeks" | "holidays" | "classes" | "activity" | "settings";
 
 type AssignmentItem = {
   id?: string;
@@ -120,6 +120,14 @@ type ClassCoverage = {
   departments: string[];
 };
 
+type AchievementReport = {
+  weekNumber: number;
+  weekRange: string;
+  generatedAt: string;
+  teachers: { id: string; name: string; department: string; classes: string; completed: number; total: number; percent: number; status: string }[];
+  supervisors: { id: string; name: string; department: string; teacherNames: string; approved: number; total: number; percent: number; lastApproval: string }[];
+};
+
 type AcademicWeekOption = { id: string; week_number: number; label: string; starts_on: string; ends_on: string; is_current: boolean; teacher_entry_enabled: boolean; parent_portal_visible: boolean };
 type SchoolHoliday = { id: string; week_id: string; day_of_week: number; title: string; note: string | null };
 type EditableEntry = { id: string; day_of_week: number; period_number: number; course: string; classwork: string; homework: string; classeraNotes: string };
@@ -204,7 +212,9 @@ export default function SuperAdminPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All Roles");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
-  const [activeSection, setActiveSection] = useState<DashboardSection>("accounts");
+  const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
+  const [reportPending, setReportPending] = useState(false);
+  const [achievementReport, setAchievementReport] = useState<AchievementReport | null>(null);
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [dashboardArabic, setDashboardArabic] = useState(false);
   const [reviewAccount, setReviewAccount] = useState<ManagedAccount | null>(null);
@@ -392,8 +402,10 @@ export default function SuperAdminPage() {
           updated: formatDate(plan.updated_at),
         };
       }));
+      return true;
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "The real school account directory could not be loaded.");
+      return false;
     } finally {
       setLoading(false);
     }
@@ -401,20 +413,42 @@ export default function SuperAdminPage() {
 
   useEffect(() => {
     queueMicrotask(() => setDashboardArabic(window.localStorage.getItem("andalus-language") === "ar"));
+    const previewMode = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+      ? new URLSearchParams(window.location.search).get("preview") : null;
+    if (previewMode === "overview" || previewMode === "report") {
+      queueMicrotask(() => {
+        const weeks = localWeekVisibilityPreview();
+        setLocalPreview(true);
+        setActiveSection("overview");
+        setAcademicWeeks(weeks);
+        setSelectedPlanWeekId(weeks[3].id);
+        setLoading(false);
+        if (previewMode === "report") setAchievementReport({
+          weekNumber: 4, weekRange: "٢٧ سبتمبر - ٣ أكتوبر ٢٠٢٦", generatedAt: "٢٨ سبتمبر ٢٠٢٦، ٨:٣٠ م",
+          teachers: [
+            { id: "preview-1", name: "محمد فريد", department: "قسم اللغة الإنجليزية", classes: "4A ✓، 4B ✓، 5A ○", completed: 2, total: 3, percent: 67, status: "مكتمل جزئيًا" },
+            { id: "preview-2", name: "مؤمن الحداد", department: "قسم اللغة الإنجليزية", classes: "3A ✓، 3B ✓", completed: 2, total: 2, percent: 100, status: "مكتمل" },
+            { id: "preview-3", name: "معلم تجريبي", department: "قسم اللغة العربية", classes: "6A ○", completed: 0, total: 1, percent: 0, status: "لم يكتمل" },
+          ],
+          supervisors: [{ id: "preview-4", name: "محمود حلمي", department: "قسم اللغة الإنجليزية", teacherNames: "محمد فريد، مؤمن الحداد", approved: 4, total: 5, percent: 80, lastApproval: "٢٨/٩/٢٠٢٦، ٧:٤٥ م" }],
+        });
+      });
+      return;
+    }
     const previewRequested = ["localhost", "127.0.0.1"].includes(window.location.hostname)
       && new URLSearchParams(window.location.search).get("preview") === "week-visibility";
     if (previewRequested) {
-      setLocalPreview(true);
-      setActiveSection("weeks");
-      setAcademicWeeks(localWeekVisibilityPreview());
-      setLoading(false);
+      queueMicrotask(() => {
+        setLocalPreview(true);
+        setActiveSection("weeks");
+        setAcademicWeeks(localWeekVisibilityPreview());
+        setLoading(false);
+      });
       return;
     }
     const requestedSection = new URLSearchParams(window.location.search).get("section") as DashboardSection | null;
-    const savedSection = window.localStorage.getItem("andalus-super-admin-section") as DashboardSection | null;
-    const allowedSections: DashboardSection[] = ["approvals", "accounts", "roles", "plans", "weeks", "holidays", "classes", "activity", "settings"];
-    if (requestedSection && allowedSections.includes(requestedSection)) setActiveSection(requestedSection);
-    else if (savedSection && allowedSections.includes(savedSection)) setActiveSection(savedSection);
+    const allowedSections: DashboardSection[] = ["overview", "approvals", "accounts", "roles", "plans", "weeks", "holidays", "classes", "activity", "settings"];
+    if (requestedSection && allowedSections.includes(requestedSection)) queueMicrotask(() => setActiveSection(requestedSection));
     const timer = window.setTimeout(() => { void loadDashboard(); }, 0);
     return () => window.clearTimeout(timer);
   }, [loadDashboard]);
@@ -533,6 +567,7 @@ export default function SuperAdminPage() {
     ? filteredAccounts.filter((account) => account.status === "Pending" || account.status === "Rejected")
     : filteredAccounts;
   const sectionCopy: Record<DashboardSection, { kicker: string; title: string; description: string }> = {
+    overview: { kicker: "Super Administration", title: "School dashboard", description: "A clear snapshot of the selected week and the actions that need your attention." },
     approvals: { kicker: "Super Administration", title: "Account Approvals", description: "Review new teacher and administrator account requests." },
     accounts: { kicker: "Live school directory", title: "All Accounts", description: "Real teachers and administrators loaded securely from the school database." },
     roles: { kicker: "Access control", title: "Roles & Permissions", description: "See exactly what each school role is allowed to manage." },
@@ -543,14 +578,15 @@ export default function SuperAdminPage() {
     activity: { kicker: "Account history", title: "Activity Log", description: "Recent account registration, approval and access activity." },
     settings: { kicker: "Platform status", title: "System Settings", description: "Review the active platform configuration and connected services." },
   };
-  const currentSection = activeSection === "weeks" && dashboardArabic
-    ? { kicker: "إدارة الأسابيع الدراسية", title: "التحكم في فتح وإظهار الأسابيع", description: "حدد الأسابيع المتاحة للمعلمين، والأسابيع التي يمكن لأولياء الأمور مشاهدتها." }
-    : sectionCopy[activeSection];
+  const currentSection = dashboardArabic && activeSection === "overview"
+    ? { kicker: "لوحة الإدارة العليا", title: "الرئيسية", description: "نظرة واضحة على إنجاز الأسبوع المحدد والإجراءات التي تحتاج متابعتك." }
+    : dashboardArabic && activeSection === "weeks"
+      ? { kicker: "إدارة الأسابيع الدراسية", title: "التحكم في فتح وإظهار الأسابيع", description: "حدد الأسابيع المتاحة للمعلمين، والأسابيع التي يمكن لأولياء الأمور مشاهدتها." }
+      : sectionCopy[activeSection];
 
   const openSection = (section: DashboardSection) => {
     setActiveSection(section);
     setMobileNavigationOpen(false);
-    window.localStorage.setItem("andalus-super-admin-section", section);
     const url = new URL(window.location.href);
     url.searchParams.set("section", section);
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
@@ -570,12 +606,12 @@ export default function SuperAdminPage() {
       const requirements = timetableRequirements.filter((requirement) => requirement.classId === schoolClass.id);
       const requiredTeacherIds = Array.from(new Set(requirements.map((requirement) => requirement.teacherId)));
       const plan = plansByClass.get(schoolClass.id) ?? null;
-      const completedTeacherIds = new Set(planSubmissions
-        .filter((submission) => submission.weeklyPlanId === plan?.id && (submission.status === "submitted" || submission.status === "approved"))
-        .map((submission) => submission.teacherId));
       const meaningfulEntryKeys = new Set(planEntrySummaries
         .filter((entry) => entry.weeklyPlanId === plan?.id && entry.hasContent)
         .map((entry) => `${entry.teacherId}:${entry.subjectId}`));
+      const completedTeacherIds = new Set(planSubmissions
+        .filter((submission) => submission.weeklyPlanId === plan?.id && (submission.status === "submitted" || submission.status === "approved") && meaningfulEntryKeys.has(`${submission.teacherId}:${submission.subjectId}`))
+        .map((submission) => submission.teacherId));
       const publishedTeacherIds = new Set(plan?.status === "published" && selectedPlanWeek?.parent_portal_visible
         ? planSubmissions
           .filter((submission) => submission.weeklyPlanId === plan.id && submission.status === "approved" && meaningfulEntryKeys.has(`${submission.teacherId}:${submission.subjectId}`))
@@ -693,6 +729,67 @@ export default function SuperAdminPage() {
     : 0;
   const bulkPublishCandidates = weeklyClassCoverage.filter((coverage) => coverage.plan && coverage.plan.entries > 0 && coverage.plan.status !== "published");
   const holidaysForSelectedWeek = useMemo(() => schoolHolidays.filter((holiday) => holiday.week_id === selectedHolidayWeekId), [schoolHolidays, selectedHolidayWeekId]);
+
+  useEffect(() => {
+    if (!reportPending || loading || !selectedPlanWeek) return;
+    const rowsByTeacher = new Map<string, PlanTrackingRow[]>();
+    planTrackingRows.forEach((row) => {
+      const rows = rowsByTeacher.get(row.teacher.staffId) ?? [];
+      rows.push(row);
+      rowsByTeacher.set(row.teacher.staffId, rows);
+    });
+    const coverageByClass = new Map(weeklyClassCoverage.map((coverage) => [coverage.classId, coverage]));
+    const isCompleted = (row: PlanTrackingRow) => Boolean(coverageByClass.get(row.classId)?.completedTeachers.some((teacher) => teacher.userId === row.teacher.userId));
+    const isApproved = (row: PlanTrackingRow) => {
+      const planId = coverageByClass.get(row.classId)?.plan?.id;
+      if (!planId) return false;
+      const meaningfulSubjects = new Set(planEntrySummaries.filter((entry) => entry.weeklyPlanId === planId && entry.teacherId === row.teacher.userId && entry.hasContent).map((entry) => entry.subjectId));
+      return planSubmissions.some((submission) => submission.weeklyPlanId === planId && submission.teacherId === row.teacher.userId && submission.status === "approved" && meaningfulSubjects.has(submission.subjectId));
+    };
+    const teachers = Array.from(rowsByTeacher.entries()).map(([id, rows]) => {
+      const completed = rows.filter(isCompleted).length;
+      const total = rows.length;
+      return {
+        id, name: rows[0].teacher.name, department: rows[0].department,
+        classes: rows.map((row) => `${row.grade}${row.section} ${isCompleted(row) ? "✓" : "○"}`).join("، "),
+        completed, total, percent: total ? Math.round(completed / total * 100) : 0,
+        status: completed === total ? "مكتمل" : completed ? "مكتمل جزئيًا" : "لم يكتمل",
+      };
+    }).sort((a, b) => a.department.localeCompare(b.department) || a.name.localeCompare(b.name));
+    const supervisorIds = new Set(supervisorLinks.map((link) => link.supervisorStaffId));
+    const supervisors = accounts.filter((account) => supervisorIds.has(account.staffId)).map((supervisor) => {
+      const linkedTeacherIds = new Set(supervisorLinks.filter((link) => link.supervisorStaffId === supervisor.staffId).map((link) => link.teacherStaffId));
+      const linkedRows = planTrackingRows.filter((row) => linkedTeacherIds.has(row.teacher.staffId));
+      const approved = linkedRows.filter(isApproved).length;
+      const total = linkedRows.length;
+      const linkedPlanIds = new Set(linkedRows.map((row) => coverageByClass.get(row.classId)?.plan?.id).filter((value): value is string => Boolean(value)));
+      const approvedAt = planSubmissions.filter((submission) => linkedPlanIds.has(submission.weeklyPlanId) && linkedRows.some((row) => row.teacher.userId === submission.teacherId) && submission.status === "approved" && submission.reviewedAt)
+        .map((submission) => submission.reviewedAt as string).sort().at(-1);
+      return {
+        id: supervisor.staffId, name: supervisor.name, department: supervisor.department,
+        teacherNames: Array.from(new Set(linkedRows.map((row) => row.teacher.name))).join("، ") || "—",
+        approved, total, percent: total ? Math.round(approved / total * 100) : 0,
+        lastApproval: approvedAt ? new Intl.DateTimeFormat("ar-SA", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Riyadh" }).format(new Date(approvedAt)) : "—",
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+    const timer = window.setTimeout(() => {
+      setAchievementReport({
+        weekNumber: selectedPlanWeek.week_number,
+        weekRange: formatAcademicWeekRange(selectedPlanWeek, "ar-EG"),
+        generatedAt: new Intl.DateTimeFormat("ar-SA", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Riyadh" }).format(new Date()),
+        teachers, supervisors,
+      });
+      setReportPending(false);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [accounts, loading, planEntrySummaries, planSubmissions, planTrackingRows, reportPending, selectedPlanWeek, supervisorLinks, weeklyClassCoverage]);
+
+  const openAchievementReport = async () => {
+    if (!selectedPlanWeekId) return;
+    setReportPending(true);
+    const loaded = await loadDashboard();
+    if (!loaded) setReportPending(false);
+  };
 
   const changeOwnPassword = async () => {
     const arabicUi = typeof window !== "undefined" && window.localStorage.getItem("andalus-language") === "ar";
@@ -956,6 +1053,7 @@ export default function SuperAdminPage() {
         <div className="teacher-school-year"><span>Academic year</span><strong>2026–2027</strong></div>
         <nav className="teacher-nav" aria-label="Super administrator navigation">
           <p>Super Administration</p>
+          <button className={activeSection === "overview" ? "active" : ""} onClick={() => openSection("overview")}><span className="teacher-nav-icon">⌂</span>{dashboardArabic ? "الرئيسية" : "Dashboard"}</button>
           <button className={activeSection === "approvals" ? "active" : ""} onClick={() => openSection("approvals")}><span className="teacher-nav-icon">AP</span>Account Approvals<small>{pendingCount}</small></button>
           <button className={activeSection === "accounts" ? "active" : ""} onClick={() => openSection("accounts")}><span className="teacher-nav-icon">AC</span>All Accounts</button>
           <button className={activeSection === "roles" ? "active" : ""} onClick={() => openSection("roles")}><span className="teacher-nav-icon">RL</span>Roles & Permissions</button>
@@ -977,6 +1075,7 @@ export default function SuperAdminPage() {
           <div className="teacher-mobile-menu-heading"><div className="teacher-brand"><img src={`${basePath}/school-logo.png`} alt="" /><div><strong>ALANDALUS</strong><span>Super Admin</span></div></div><button type="button" aria-label="Close navigation" onClick={() => setMobileNavigationOpen(false)}>×</button></div>
           <nav className="teacher-nav" aria-label="Mobile Super administrator navigation">
             <p>Super Administration</p>
+            <button className={activeSection === "overview" ? "active" : ""} onClick={() => openSection("overview")}><span className="teacher-nav-icon">⌂</span>{dashboardArabic ? "الرئيسية" : "Dashboard"}</button>
             <button className={activeSection === "approvals" ? "active" : ""} onClick={() => openSection("approvals")}><span className="teacher-nav-icon">AP</span>Account Approvals<small>{pendingCount}</small></button>
             <button className={activeSection === "accounts" ? "active" : ""} onClick={() => openSection("accounts")}><span className="teacher-nav-icon">AC</span>All Accounts</button>
             <button className={activeSection === "roles" ? "active" : ""} onClick={() => openSection("roles")}><span className="teacher-nav-icon">RL</span>Roles & Permissions</button>
@@ -995,10 +1094,25 @@ export default function SuperAdminPage() {
         <header className="teacher-topbar"><div className="teacher-mobile-brand"><button type="button" className="teacher-mobile-menu-button" aria-label="Open navigation" onClick={() => setMobileNavigationOpen(true)}>☰</button><img src={`${basePath}/school-logo.png`} alt="" /><strong>Super Admin</strong></div><label className="teacher-search"><span>⌕</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search real staff names or assignments" /></label><div className="teacher-top-actions"><span className="teacher-sync"><i /> Supabase connected</span><button className="teacher-icon-button" aria-label="Notifications">◇<b>{pendingCount}</b></button><button className="teacher-profile-chip"><span className="teacher-avatar super-admin-avatar">MF</span><span><strong>{currentAdminName}</strong><small>Super Admin</small></span></button></div></header>
 
         <div className="teacher-content super-admin-content">
-          <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentSection.kicker}</p><h1>{currentSection.title}</h1><span>{currentSection.description}</span></div>{activeSection !== "plans" && <button type="button" className="teacher-primary-button super-admin-plans-link" onClick={() => openSection("plans")}>Manage public weekly plans <span>→</span></button>}</div>
+          <div className="teacher-page-heading"><div><p className="teacher-kicker">{currentSection.kicker}</p><h1>{currentSection.title}</h1><span>{currentSection.description}</span></div>{activeSection !== "plans" && activeSection !== "overview" && <button type="button" className="teacher-primary-button super-admin-plans-link" onClick={() => openSection("plans")}>{dashboardArabic ? "إدارة الخطط المنشورة" : "Manage public weekly plans"} <span>→</span></button>}</div>
 
           {errorMessage && <p className="super-admin-live-message error" role="alert">{errorMessage}</p>}
           {successMessage && <p className="super-admin-live-message success" role="status">{successMessage}</p>}
+
+          {activeSection === "overview" && <div className="super-overview" dir={dashboardArabic ? "rtl" : "ltr"}>
+            <section className="super-overview-hero">
+              <div><span>{dashboardArabic ? "متابعة حية للمدرسة" : "Live school overview"}</span><h2>{dashboardArabic ? "كل ما تحتاج متابعته، في مكان واحد" : "Everything that needs your attention"}</h2><p>{dashboardArabic ? "اختر الأسبوع لعرض إنجاز المعلمين، اعتماد المشرفين، وحالة النشر دون تغيير أي خطة." : "Choose a week to see teacher completion, supervisor approvals and publication status without changing any plan."}</p></div>
+              <label>{dashboardArabic ? "الأسبوع الدراسي" : "School week"}<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : week.label} · {formatAcademicWeekRange(week, dashboardArabic ? "ar-EG" : "en-GB")}</option>)}</select></label>
+            </section>
+            <section className="super-overview-stats" aria-label="Weekly school progress">
+              <article><span>{dashboardArabic ? "إنجاز المعلمين" : "Teacher completion"}</span><strong>{schoolWeeklyCompletionPercent}%</strong><p>{completedTeacherClassCount} / {requiredTeacherClassCount} {dashboardArabic ? "تكليفات معلم وفصل" : "teacher-class assignments"}</p><i style={{ width: `${schoolWeeklyCompletionPercent}%` }} /></article>
+              <article><span>{dashboardArabic ? "بانتظار المشرف" : "Waiting for supervisor"}</span><strong>{trackingStatusCounts.submitted}</strong><p>{dashboardArabic ? "خطة مرسلة تحتاج مراجعة" : "submitted plans need review"}</p></article>
+              <article><span>{dashboardArabic ? "الفصول المنشورة" : "Published classes"}</span><strong>{fullyPublishedClassCount + partiallyPublishedClassCount}<small> / {weeklyClassCoverage.length}</small></strong><p>{dashboardArabic ? "يشمل النشر الجزئي للخطط المعتمدة" : "includes partially published approved plans"}</p></article>
+              <article><span>{dashboardArabic ? "طلبات حسابات" : "Account requests"}</span><strong>{pendingCount}</strong><p>{dashboardArabic ? "تنتظر قرار الموافقة" : "awaiting your approval"}</p></article>
+            </section>
+            <section className="super-overview-lower"><article className="teacher-card super-overview-actions"><div><span>{dashboardArabic ? "إجراءات سريعة" : "Quick actions"}</span><h2>{dashboardArabic ? "ابدأ من هنا" : "Start here"}</h2></div><button type="button" onClick={() => openSection("plans")}>{dashboardArabic ? "عرض مسار الخطط" : "Track weekly plans"}<b>↗</b></button><button type="button" onClick={() => openSection("approvals")}>{dashboardArabic ? `مراجعة طلبات الحسابات (${pendingCount})` : `Review accounts (${pendingCount})`}<b>↗</b></button><button type="button" onClick={() => openSection("weeks")}>{dashboardArabic ? "التحكم في إظهار الأسابيع" : "Control week visibility"}<b>↗</b></button></article>
+              <article className="teacher-card super-overview-report"><span>{dashboardArabic ? "التقرير الأسبوعي" : "Weekly report"}</span><h2>{dashboardArabic ? "إنجاز المعلمين والمشرفين" : "Teacher and supervisor achievement"}</h2><p>{dashboardArabic ? "تقرير بالأسماء والفصول ونسب الإنجاز والاعتمادات لحظة طلبه، جاهز للطباعة أو الحفظ PDF." : "A point-in-time report with names, classes, completion and approvals, ready to print or save as PDF."}</p><button type="button" className="teacher-primary-button" disabled={loading || reportPending || !selectedPlanWeekId} onClick={() => void openAchievementReport()}>{reportPending ? (dashboardArabic ? "جارٍ تحديث البيانات…" : "Refreshing data…") : (dashboardArabic ? "عرض التقرير" : "View report")}</button></article></section>
+          </div>}
 
           {(activeSection === "approvals" || activeSection === "accounts") && <>
             <section className="teacher-stats" aria-label="Account approval summary">
@@ -1126,6 +1240,8 @@ export default function SuperAdminPage() {
           </section>}
         </div>
       </section>
+
+      {achievementReport && <div className="super-report-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setAchievementReport(null)}><section className="super-report-dialog" role="dialog" aria-modal="true" aria-labelledby="achievement-report-title" dir="rtl"><div className="super-report-toolbar"><strong>تقرير الأسبوع {achievementReport.weekNumber}</strong><div><button type="button" onClick={() => window.print()}>طباعة / حفظ PDF</button><button type="button" onClick={() => setAchievementReport(null)}>إغلاق</button></div></div><div className="super-report-paper"><header><img src={`${basePath}/school-logo.png`} alt="شعار مدارس الأندلس الأهلية" /><div><span>مدارس الأندلس الأهلية · المسار المصري</span><h2 id="achievement-report-title">تقرير إنجاز المعلمين والمشرفين للأسبوع رقم {achievementReport.weekNumber}</h2><p>{achievementReport.weekRange}</p></div></header><div className="super-report-meta"><span>وقت استخراج التقرير: {achievementReport.generatedAt}</span><span>حالة البيانات لحظة الضغط على «عرض التقرير»</span></div><section><h3>أولًا: إنجاز المعلمين</h3><p>تُحسب نسبة المعلم على فصوله المكلف بها؛ يكتمل الفصل عند إرسال خطته بصرف النظر عن عدد المواد التي يدرّسها.</p><table><thead><tr><th>المعلم</th><th>القسم</th><th>الفصول <small>✓ مكتمل · ○ غير مكتمل</small></th><th>المكتمل</th><th>النسبة</th><th>الحالة</th></tr></thead><tbody>{achievementReport.teachers.map((teacher) => <tr key={teacher.id}><td>{teacher.name}</td><td>{teacher.department}</td><td>{teacher.classes}</td><td>{teacher.completed} / {teacher.total}</td><td><b className={teacher.percent === 100 ? "complete" : ""}>{teacher.percent}%</b></td><td>{teacher.status}</td></tr>)}{achievementReport.teachers.length === 0 && <tr><td colSpan={6}>لا توجد تكليفات معلّم مرتبطة بالجدول لهذا الأسبوع.</td></tr>}</tbody></table></section><section><h3>ثانيًا: اعتماد المشرفين</h3><p>النسبة مبنية على خطط فصول المعلمين المرتبطين بكل مشرف، وفق حالة الاعتماد المسجلة وقت استخراج التقرير.</p><table><thead><tr><th>المشرف</th><th>القسم</th><th>المعلمون المرتبطون</th><th>خطط الفصول المعتمدة</th><th>المتبقي</th><th>نسبة الاعتماد</th><th>آخر اعتماد</th></tr></thead><tbody>{achievementReport.supervisors.map((supervisor) => <tr key={supervisor.id}><td>{supervisor.name}</td><td>{supervisor.department}</td><td>{supervisor.teacherNames}</td><td>{supervisor.approved} / {supervisor.total}</td><td>{supervisor.total - supervisor.approved}</td><td><b className={supervisor.percent === 100 && supervisor.total > 0 ? "complete" : ""}>{supervisor.percent}%</b></td><td>{supervisor.lastApproval}</td></tr>)}{achievementReport.supervisors.length === 0 && <tr><td colSpan={7}>لا يوجد ربط إشراف مفعّل في البيانات الحالية.</td></tr>}</tbody></table></section><footer>منصة الخطط الأسبوعية · مدارس الأندلس الأهلية — المسار المصري</footer></div></section></div>}
 
       {bulkPublishConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setBulkPublishConfirmationOpen(false)}><section className="weekly-send-confirmation super-bulk-publish-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="bulk-school-publish-title"><span aria-hidden="true">SA</span><h3 id="bulk-school-publish-title">Approve and publish the whole school week?</h3><p>This Super Admin override will publish every non-empty class plan in <strong>{academicWeeks.find((week) => week.id === selectedPlanWeekId)?.label ?? "the selected week"}</strong>. Empty or unstarted classes remain unpublished, and the teacher-completion report remains unchanged so missing teachers stay visible.</p><div className="super-bulk-publish-summary"><strong>{bulkPublishCandidates.length}<small>plans ready to force publish</small></strong><strong>{unpublishedClassCount}<small>classes currently not published</small></strong><strong>{weeklyClassCoverage.filter((coverage) => coverage.completionPercent < 100).length}<small>classes below 100% teacher completion</small></strong></div><div><button type="button" className="teacher-secondary-button" onClick={() => setBulkPublishConfirmationOpen(false)}>Cancel</button><button type="button" className="teacher-primary-button" disabled={busy || bulkPublishCandidates.length === 0} onClick={() => void publishAllSchoolPlans()}>Yes, approve and publish</button></div></section></div>}
 
