@@ -90,6 +90,7 @@ type PlanEntrySummary = {
   dayOfWeek: number;
   periodNumber: number;
   hasContent: boolean;
+  hasClasswork: boolean;
 };
 
 type SupervisorLink = { supervisorStaffId: string; teacherStaffId: string };
@@ -122,6 +123,8 @@ type ClassCoverage = {
   publishedTeachers: ManagedAccount[];
   publicationState: "not_published" | "partially_published" | "fully_published";
   completionPercent: number;
+  completedLessons: number;
+  requiredLessons: number;
   departments: string[];
 };
 
@@ -139,6 +142,7 @@ type EditableEntry = { id: string; day_of_week: number; period_number: number; c
 type EditablePlan = { id: string; className: string; week: string; entries: EditableEntry[] };
 
 const holidayDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
+const arabicDayNames = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
 
 function localWeekVisibilityPreview(): AcademicWeekOption[] {
   return Array.from({ length: 17 }, (_, index) => {
@@ -188,9 +192,23 @@ function initials(name: string) {
 function hasCompletedTeachingWeek(planId: string | undefined, teacherId: string, requirements: TimetableRequirement[], entries: PlanEntrySummary[]) {
   if (!planId || requirements.length === 0) return false;
   const writtenSlots = new Set(entries
-    .filter((entry) => entry.weeklyPlanId === planId && entry.teacherId === teacherId && entry.hasContent)
+    .filter((entry) => entry.weeklyPlanId === planId && entry.teacherId === teacherId && entry.hasClasswork)
     .map((entry) => `${entry.dayOfWeek}:${entry.periodNumber}`));
   return requirements.every((requirement) => writtenSlots.has(`${requirement.dayOfWeek}:${requirement.periodNumber}`));
+}
+
+function completedLessonCount(planId: string | undefined, teacherId: string, requirements: TimetableRequirement[], entries: PlanEntrySummary[]) {
+  if (!planId) return 0;
+  const writtenSlots = new Set(entries
+    .filter((entry) => entry.weeklyPlanId === planId && entry.teacherId === teacherId && entry.hasClasswork)
+    .map((entry) => `${entry.dayOfWeek}:${entry.periodNumber}`));
+  return requirements.filter((requirement) => writtenSlots.has(`${requirement.dayOfWeek}:${requirement.periodNumber}`)).length;
+}
+
+function lessonCompletionPercent(completed: number, total: number) {
+  if (total <= 0 || completed <= 0) return 0;
+  if (completed >= total) return 100;
+  return Math.max(1, Math.min(99, Math.floor((completed / total) * 100)));
 }
 
 export default function SuperAdminPage() {
@@ -228,6 +246,7 @@ export default function SuperAdminPage() {
   const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
   const [reportPending, setReportPending] = useState(false);
   const [achievementReport, setAchievementReport] = useState<AchievementReport | null>(null);
+  const [overviewGapView, setOverviewGapView] = useState<"teachers" | "supervisors" | null>(null);
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [dashboardArabic, setDashboardArabic] = useState(false);
   const [reviewAccount, setReviewAccount] = useState<ManagedAccount | null>(null);
@@ -415,6 +434,7 @@ export default function SuperAdminPage() {
         weeklyPlanId: String(entry.weekly_plan_id), teacherId: String(entry.teacher_id), subjectId: String(entry.subject_id),
         dayOfWeek: Number(entry.day_of_week), periodNumber: Number(entry.period_number),
         hasContent: [entry.classwork, entry.homework, entry.classera_notes].some((value) => String(value ?? "").trim().length > 0),
+        hasClasswork: String(entry.classwork ?? "").trim().length > 0,
       })));
       setSupervisorLinks((supervisorLinksResult.data ?? []).map((link) => ({ supervisorStaffId: String(link.supervisor_staff_id), teacherStaffId: String(link.teacher_staff_id) })));
       setWeeklyPlanCreationOpen(accessResult.data?.is_open ?? true);
@@ -639,13 +659,26 @@ export default function SuperAdminPage() {
     setSuccessMessage("");
   };
 
-  const planDepartments = useMemo(() => Array.from(new Set(timetableRequirements.map((requirement) => requirement.department))).sort(), [timetableRequirements]);
   const selectedPlanWeek = academicWeeks.find((week) => week.id === selectedPlanWeekId) ?? null;
+  const effectiveTimetableRequirements = useMemo(() => {
+    if (!selectedPlanWeek || selectedPlanWeek.week_number >= 5) return timetableRequirements;
+    const gradeFiveB = classes.find((schoolClass) => schoolClass.grade === 5 && schoolClass.section === "B");
+    if (!gradeFiveB) return timetableRequirements;
+    const sundaySix = timetableRequirements.find((requirement) => requirement.classId === gradeFiveB.id && requirement.dayOfWeek === 0 && requirement.periodNumber === 6);
+    const tuesdayOne = timetableRequirements.find((requirement) => requirement.classId === gradeFiveB.id && requirement.dayOfWeek === 2 && requirement.periodNumber === 1);
+    if (!sundaySix || !tuesdayOne) return timetableRequirements;
+    return timetableRequirements.map((requirement) => {
+      const historicalSubject = requirement === sundaySix ? tuesdayOne : requirement === tuesdayOne ? sundaySix : null;
+      return historicalSubject ? { ...requirement, teacherId: historicalSubject.teacherId, subjectId: historicalSubject.subjectId, subjectName: historicalSubject.subjectName, department: historicalSubject.department } : requirement;
+    });
+  }, [classes, selectedPlanWeek, timetableRequirements]);
+  const planDepartments = useMemo(() => Array.from(new Set(effectiveTimetableRequirements.map((requirement) => requirement.department))).sort(), [effectiveTimetableRequirements]);
   const weeklyClassCoverage = useMemo<ClassCoverage[]>(() => {
     const plansByClass = new Map(weeklyPlans.filter((plan) => plan.weekId === selectedPlanWeekId).map((plan) => [plan.classId, plan]));
     const accountsByUser = new Map(accounts.filter((account) => account.userId).map((account) => [account.userId as string, account]));
     return classes.map((schoolClass) => {
-      const requirements = timetableRequirements.filter((requirement) => requirement.classId === schoolClass.id);
+      const holidayDays = new Set(schoolHolidays.filter((holiday) => holiday.week_id === selectedPlanWeekId).map((holiday) => holiday.day_of_week));
+      const requirements = effectiveTimetableRequirements.filter((requirement) => requirement.classId === schoolClass.id && !holidayDays.has(requirement.dayOfWeek));
       const requiredTeacherIds = Array.from(new Set(requirements.map((requirement) => requirement.teacherId)));
       const plan = plansByClass.get(schoolClass.id) ?? null;
       const meaningfulEntryKeys = new Set(planEntrySummaries
@@ -656,6 +689,8 @@ export default function SuperAdminPage() {
         .map((submission) => submission.teacherId));
       const completedTeacherIds = new Set(requiredTeacherIds.filter((teacherId) => submittedTeacherIds.has(teacherId)
         && hasCompletedTeachingWeek(plan?.id, teacherId, requirements.filter((requirement) => requirement.teacherId === teacherId), planEntrySummaries)));
+      const completedLessons = requirements.reduce((total, requirement) => total + (submittedTeacherIds.has(requirement.teacherId)
+        ? completedLessonCount(plan?.id, requirement.teacherId, [requirement], planEntrySummaries) : 0), 0);
       const publishedTeacherIds = new Set(plan?.status === "published" && selectedPlanWeek?.parent_portal_visible
         ? planSubmissions
           .filter((submission) => submission.weeklyPlanId === plan.id && submission.status === "approved" && meaningfulEntryKeys.has(`${submission.teacherId}:${submission.subjectId}`))
@@ -680,11 +715,13 @@ export default function SuperAdminPage() {
         missingTeachers,
         publishedTeachers,
         publicationState,
-        completionPercent: requiredTeachers.length > 0 ? Math.round((completedTeachers.length / requiredTeachers.length) * 100) : 0,
+        completionPercent: lessonCompletionPercent(completedLessons, requirements.length),
+        completedLessons,
+        requiredLessons: requirements.length,
         departments: Array.from(new Set(requirements.map((requirement) => requirement.department))).sort(),
       };
     }).sort((a, b) => a.grade - b.grade || a.section.localeCompare(b.section));
-  }, [accounts, classes, planEntrySummaries, planSubmissions, selectedPlanWeek?.parent_portal_visible, selectedPlanWeekId, timetableRequirements, weeklyPlans]);
+  }, [accounts, classes, effectiveTimetableRequirements, planEntrySummaries, planSubmissions, schoolHolidays, selectedPlanWeek?.parent_portal_visible, selectedPlanWeekId, weeklyPlans]);
   const planTrackingRows = useMemo<PlanTrackingRow[]>(() => {
     const accountsByUser = new Map(accounts.filter((account) => account.userId).map((account) => [account.userId as string, account]));
     const accountsByStaff = new Map(accounts.map((account) => [account.staffId, account]));
@@ -700,7 +737,7 @@ export default function SuperAdminPage() {
     });
 
     const teacherClassRequirements = new Map<string, TimetableRequirement[]>();
-    timetableRequirements.forEach((requirement) => {
+    effectiveTimetableRequirements.forEach((requirement) => {
       const key = `${requirement.classId}:${requirement.teacherId}`;
       const rows = teacherClassRequirements.get(key) ?? [];
       rows.push(requirement);
@@ -719,7 +756,8 @@ export default function SuperAdminPage() {
         .map((entry) => entry.subjectId));
       const meaningfulSubmissions = submissions.filter((submission) => meaningfulSubjectIds.has(submission.subjectId));
       const latestSubmission = submissions.slice().sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
-      const weekComplete = hasCompletedTeachingWeek(plan?.id, first.teacherId, requirements, planEntrySummaries);
+      const holidayDays = new Set(schoolHolidays.filter((holiday) => holiday.week_id === selectedPlanWeekId).map((holiday) => holiday.day_of_week));
+      const weekComplete = hasCompletedTeachingWeek(plan?.id, first.teacherId, requirements.filter((requirement) => !holidayDays.has(requirement.dayOfWeek)), planEntrySummaries);
       let status: PlanTrackingStatus = "not_started";
       if (meaningfulSubmissions.some((submission) => submission.status === "changes_requested")) status = "changes_requested";
       else if (meaningfulSubmissions.some((submission) => submission.status === "submitted")) status = "submitted";
@@ -743,7 +781,7 @@ export default function SuperAdminPage() {
         weekComplete,
       }];
     }).sort((a, b) => a.grade - b.grade || a.section.localeCompare(b.section) || a.teacher.name.localeCompare(b.teacher.name));
-  }, [accounts, classes, planEntrySummaries, planSubmissions, selectedPlanWeek?.parent_portal_visible, selectedPlanWeekId, supervisorLinks, timetableRequirements, weeklyPlans]);
+  }, [accounts, classes, effectiveTimetableRequirements, planEntrySummaries, planSubmissions, schoolHolidays, selectedPlanWeek?.parent_portal_visible, selectedPlanWeekId, supervisorLinks, weeklyPlans]);
   const filteredPlanTrackingRows = useMemo(() => planTrackingRows.filter((row) => (
     (planGradeFilter === "all" || String(row.grade) === planGradeFilter)
     && (planSectionFilter === "all" || row.section === planSectionFilter)
@@ -753,6 +791,16 @@ export default function SuperAdminPage() {
   const trackingStatusCounts = useMemo(() => planTrackingRows.reduce<Record<PlanTrackingStatus, number>>((counts, row) => ({ ...counts, [row.status]: counts[row.status] + 1 }), {
     not_started: 0, draft: 0, submitted: 0, changes_requested: 0, approved_waiting: 0, published: 0,
   }), [planTrackingRows]);
+  const overviewTeacherGaps = useMemo(() => planTrackingRows.flatMap((row) => {
+    const planId = weeklyClassCoverage.find((coverage) => coverage.classId === row.classId)?.plan?.id;
+    const holidayDays = new Set(schoolHolidays.filter((holiday) => holiday.week_id === selectedPlanWeekId).map((holiday) => holiday.day_of_week));
+    const requirements = effectiveTimetableRequirements.filter((requirement) => requirement.classId === row.classId && requirement.teacherId === row.teacher.userId && !holidayDays.has(requirement.dayOfWeek));
+    const written = new Set(planEntrySummaries.filter((entry) => entry.weeklyPlanId === planId && entry.teacherId === row.teacher.userId && entry.hasClasswork).map((entry) => `${entry.dayOfWeek}:${entry.periodNumber}`));
+    const sent = planSubmissions.some((submission) => submission.weeklyPlanId === planId && submission.teacherId === row.teacher.userId && (submission.status === "submitted" || submission.status === "approved"));
+    const missing = requirements.filter((requirement) => !sent || !written.has(`${requirement.dayOfWeek}:${requirement.periodNumber}`));
+    return missing.length ? [{ row, completed: sent ? requirements.length - missing.length : 0, total: requirements.length, missing }] : [];
+  }), [effectiveTimetableRequirements, planEntrySummaries, planSubmissions, planTrackingRows, schoolHolidays, selectedPlanWeekId, weeklyClassCoverage]);
+  const overviewSupervisorGaps = planTrackingRows.filter((row) => row.status === "submitted");
   const filteredClassCoverage = useMemo(() => weeklyClassCoverage.filter((coverage) => {
     const published = coverage.publicationState !== "not_published";
     return (planGradeFilter === "all" || String(coverage.grade) === planGradeFilter)
@@ -768,8 +816,9 @@ export default function SuperAdminPage() {
   const unpublishedClassCount = weeklyClassCoverage.filter((coverage) => coverage.publicationState === "not_published").length;
   const fullyCompletedClassCount = weeklyClassCoverage.filter((coverage) => coverage.completionPercent === 100).length;
   const requiredTeacherClassCount = weeklyClassCoverage.reduce((total, coverage) => total + coverage.requiredTeachers.length, 0);
-  const completedTeacherClassCount = weeklyClassCoverage.reduce((total, coverage) => total + coverage.completedTeachers.length, 0);
-  const schoolWeeklyCompletionPercent = requiredTeacherClassCount > 0 ? Math.round((completedTeacherClassCount / requiredTeacherClassCount) * 100) : 0;
+  const requiredLessonCount = weeklyClassCoverage.reduce((total, coverage) => total + coverage.requiredLessons, 0);
+  const completedLessonTotal = weeklyClassCoverage.reduce((total, coverage) => total + coverage.completedLessons, 0);
+  const schoolWeeklyCompletionPercent = lessonCompletionPercent(completedLessonTotal, requiredLessonCount);
   const schoolWeeklyPublicationPercent = requiredTeacherClassCount > 0
     ? Math.round((weeklyClassCoverage.reduce((total, coverage) => total + coverage.publishedTeachers.length, 0) / requiredTeacherClassCount) * 100)
     : 0;
@@ -795,12 +844,20 @@ export default function SuperAdminPage() {
     const teachers = Array.from(rowsByTeacher.entries()).map(([id, rows]) => {
       const completed = rows.filter(isCompleted).length;
       const total = rows.length;
+      const lessonProgress = rows.reduce((progress, row) => {
+        const holidayDays = new Set(schoolHolidays.filter((holiday) => holiday.week_id === selectedPlanWeekId).map((holiday) => holiday.day_of_week));
+        const requirements = effectiveTimetableRequirements.filter((requirement) => requirement.classId === row.classId && requirement.teacherId === row.teacher.userId && !holidayDays.has(requirement.dayOfWeek));
+        const planId = coverageByClass.get(row.classId)?.plan?.id;
+        const sent = planSubmissions.some((submission) => submission.weeklyPlanId === planId && submission.teacherId === row.teacher.userId && (submission.status === "submitted" || submission.status === "approved"));
+        return { completed: progress.completed + (sent ? completedLessonCount(planId, row.teacher.userId ?? "", requirements, planEntrySummaries) : 0), total: progress.total + requirements.length };
+      }, { completed: 0, total: 0 });
+      const percent = lessonCompletionPercent(lessonProgress.completed, lessonProgress.total);
       return {
         id, name: rows[0].teacher.name,
         completedClasses: rows.filter(isCompleted).map((row) => `${row.grade}${row.section}`),
         incompleteClasses: rows.filter((row) => !isCompleted(row)).map((row) => `${row.grade}${row.section}`),
-        completed, total, percent: total ? Math.round(completed / total * 100) : 0,
-        status: completed === total ? "مكتمل" : completed ? "مكتمل جزئيًا" : "لم يكتمل",
+        completed, total, percent,
+        status: percent === 100 ? "مكتمل" : percent > 0 ? "مكتمل جزئيًا" : "لم يكتمل",
       };
     }).sort((a, b) => a.name.localeCompare(b.name, "ar"));
     const supervisorIds = new Set(supervisorLinks.map((link) => link.supervisorStaffId));
@@ -828,7 +885,7 @@ export default function SuperAdminPage() {
       setReportPending(false);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [accounts, loading, planEntrySummaries, planSubmissions, planTrackingRows, reportPending, selectedPlanWeek, supervisorLinks, weeklyClassCoverage]);
+  }, [accounts, effectiveTimetableRequirements, loading, planEntrySummaries, planSubmissions, planTrackingRows, reportPending, schoolHolidays, selectedPlanWeek, selectedPlanWeekId, supervisorLinks, weeklyClassCoverage]);
 
   const openAchievementReport = async () => {
     if (!selectedPlanWeekId) return;
@@ -1151,11 +1208,12 @@ export default function SuperAdminPage() {
               <label>{dashboardArabic ? "الأسبوع الدراسي" : "School week"}<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : week.label} · {formatAcademicWeekRange(week, dashboardArabic ? "ar-EG" : "en-GB")}</option>)}</select></label>
             </section>
             <section className="super-overview-stats" aria-label="Weekly school progress">
-              <article><span>{dashboardArabic ? "إنجاز المعلمين" : "Teacher completion"}</span><strong>{schoolWeeklyCompletionPercent}%</strong><p>{completedTeacherClassCount} / {requiredTeacherClassCount} {dashboardArabic ? "تكليفات معلم وفصل" : "teacher-class assignments"}</p><i style={{ width: `${schoolWeeklyCompletionPercent}%` }} /></article>
-              <article><span>{dashboardArabic ? "بانتظار المشرف" : "Waiting for supervisor"}</span><strong>{trackingStatusCounts.submitted}</strong><p>{dashboardArabic ? "خطة مرسلة تحتاج مراجعة" : "submitted plans need review"}</p></article>
+              <article><span>{dashboardArabic ? "إنجاز المعلمين" : "Teacher completion"}</span><strong>{schoolWeeklyCompletionPercent}%</strong><p>{completedLessonTotal} / {requiredLessonCount} {dashboardArabic ? "حصة مكتملة في الفصول المكلفين بها" : "assigned lessons with Classwork"}</p><i style={{ width: `${schoolWeeklyCompletionPercent}%` }} />{schoolWeeklyCompletionPercent < 100 && <button type="button" className="super-overview-gap-button" onClick={() => setOverviewGapView(overviewGapView === "teachers" ? null : "teachers")}>{dashboardArabic ? "عرض نواقص المعلمين" : "View teacher gaps"}</button>}</article>
+              <article><span>{dashboardArabic ? "بانتظار المشرف" : "Waiting for supervisor"}</span><strong>{trackingStatusCounts.submitted}</strong><p>{dashboardArabic ? "خطة مرسلة تحتاج مراجعة" : "submitted plans need review"}</p>{overviewSupervisorGaps.length > 0 && <button type="button" className="super-overview-gap-button" onClick={() => setOverviewGapView(overviewGapView === "supervisors" ? null : "supervisors")}>{dashboardArabic ? "عرض الاعتمادات الناقصة" : "View pending approvals"}</button>}</article>
               <article><span>{dashboardArabic ? "الفصول المنشورة" : "Published classes"}</span><strong>{fullyPublishedClassCount + partiallyPublishedClassCount}<small> / {weeklyClassCoverage.length}</small></strong><p>{dashboardArabic ? "يشمل النشر الجزئي للخطط المعتمدة" : "includes partially published approved plans"}</p></article>
               <article><span>{dashboardArabic ? "طلبات حسابات" : "Account requests"}</span><strong>{pendingCount}</strong><p>{dashboardArabic ? "تنتظر قرار الموافقة" : "awaiting your approval"}</p></article>
             </section>
+            {overviewGapView && <section className="teacher-card super-overview-gaps" aria-live="polite"><div className="super-overview-gaps-heading"><h2>{overviewGapView === "teachers" ? dashboardArabic ? "نواقص عمل الحصة لدى المعلمين" : "Missing teacher Classwork" : dashboardArabic ? "خطط تنتظر قرار المشرف" : "Plans awaiting supervisor decisions"}</h2><button type="button" onClick={() => setOverviewGapView(null)} aria-label={dashboardArabic ? "إغلاق التفاصيل" : "Close details"}>×</button></div><p>{dashboardArabic ? `الأسبوع ${selectedPlanWeek?.week_number ?? "—"} · الحالة الحالية` : `Week ${selectedPlanWeek?.week_number ?? "—"} · current status`}</p><div className="super-overview-gap-list">{overviewGapView === "teachers" ? overviewTeacherGaps.map(({ row, completed, total, missing }) => <article key={row.key}><strong>{row.teacher.name} · {dashboardArabic ? "الصف" : "Grade"} {row.grade}{row.section}</strong><span>{completed}/{total} · {row.status === "not_started" || row.status === "draft" ? dashboardArabic ? "لم تُرسل الخطة" : "Plan not sent" : dashboardArabic ? "حصص بلا عمل حصة" : "Lessons without Classwork"}</span><div>{missing.map((requirement) => <small key={`${requirement.dayOfWeek}:${requirement.periodNumber}`} dir="auto">{dashboardArabic ? arabicDayNames[requirement.dayOfWeek] : holidayDays[requirement.dayOfWeek]} · {dashboardArabic ? "حصة" : "Period"} {requirement.periodNumber}</small>)}</div></article>) : overviewSupervisorGaps.map((row) => <article key={row.key}><strong>{row.supervisorName}</strong><span>{row.teacher.name} · {dashboardArabic ? "الصف" : "Grade"} {row.grade}{row.section}</span><div><small>{row.status === "changes_requested" ? dashboardArabic ? "مطلوب تعديل من المعلم" : "Changes requested" : dashboardArabic ? "بانتظار مراجعة المشرف" : "Awaiting supervisor review"}</small></div></article>)}</div></section>}
             <section className="super-overview-lower"><article className="teacher-card super-overview-actions"><div><span>{dashboardArabic ? "إجراءات سريعة" : "Quick actions"}</span><h2>{dashboardArabic ? "ابدأ من هنا" : "Start here"}</h2></div><button type="button" onClick={() => openSection("plans")}>{dashboardArabic ? "عرض مسار الخطط" : "Track weekly plans"}<b>↗</b></button><button type="button" onClick={() => openSection("approvals")}>{dashboardArabic ? `مراجعة طلبات الحسابات (${pendingCount})` : `Review accounts (${pendingCount})`}<b>↗</b></button><button type="button" onClick={() => openSection("weeks")}>{dashboardArabic ? "التحكم في إظهار الأسابيع" : "Control week visibility"}<b>↗</b></button></article>
               <article className="teacher-card super-overview-report"><span>{dashboardArabic ? "التقرير الأسبوعي" : "Weekly report"}</span><h2>{dashboardArabic ? "إنجاز المعلمين والمشرفين" : "Teacher and supervisor achievement"}</h2><p>{dashboardArabic ? "تقرير بالأسماء والفصول ونسب الإنجاز والاعتمادات لحظة طلبه، جاهز للطباعة أو الحفظ PDF." : "A point-in-time report with names, classes, completion and approvals, ready to print or save as PDF."}</p><button type="button" className="teacher-primary-button" disabled={loading || reportPending || !selectedPlanWeekId} onClick={() => void openAchievementReport()}>{reportPending ? (dashboardArabic ? "جارٍ تحديث البيانات…" : "Refreshing data…") : (dashboardArabic ? "عرض التقرير" : "View report")}</button></article></section>
           </div>}
@@ -1200,13 +1258,13 @@ export default function SuperAdminPage() {
               <article><small>Fully published classes</small><strong>{fullyPublishedClassCount}<em> / {weeklyClassCoverage.length}</em></strong><p>Every assigned teacher is visible</p></article>
               <article><small>Partially published</small><strong>{partiallyPublishedClassCount}</strong><p>Approved teachers are visible; missing teachers stay blank</p></article>
               <article><small>Not published</small><strong>{unpublishedClassCount}</strong><p>Includes plans still being written or reviewed</p></article>
-              <article><small>100% teacher completion</small><strong>{fullyCompletedClassCount}</strong><p>Every assigned teacher sent a weekly plan</p></article>
+              <article><small>100% teacher completion</small><strong>{fullyCompletedClassCount}</strong><p>Every assigned lesson has Classwork in a sent plan</p></article>
               <article className="overall completion"><small>School weekly-plan completion</small><strong>{schoolWeeklyCompletionPercent}%</strong><div><i style={{ width: `${schoolWeeklyCompletionPercent}%` }} /></div><p>Selected week: <b>{selectedPlanWeek?.label || `Week ${selectedPlanWeek?.week_number ?? "—"}`}</b></p></article>
               <article className="overall publication"><small>School publication rate</small><strong>{schoolWeeklyPublicationPercent}%</strong><div><i style={{ width: `${schoolWeeklyPublicationPercent}%` }} /></div><p>Selected week: <b>{selectedPlanWeek?.label || `Week ${selectedPlanWeek?.week_number ?? "—"}`}</b></p></article>
             </section>
 
             <section className="teacher-card super-admin-accounts-card super-plan-report-card">
-              <div className="super-admin-toolbar super-plan-report-toolbar"><div><h2>Weekly school publication report</h2><p>Teacher completion counts each teacher once, regardless of how many subjects they teach.</p></div><div className="super-plan-report-actions"><Link className="teacher-secondary-button" href="/weekly-plan">Open family plan page</Link><button type="button" className="teacher-primary-button super-bulk-publish-button" disabled={busy || bulkPublishCandidates.length === 0} onClick={() => setBulkPublishConfirmationOpen(true)}>Approve & publish all school plans</button></div></div>
+              <div className="super-admin-toolbar super-plan-report-toolbar"><div><h2>Weekly school publication report</h2><p>Completion is based on sent lessons with Classwork; approval and publication are tracked separately.</p></div><div className="super-plan-report-actions"><Link className="teacher-secondary-button" href="/weekly-plan">Open family plan page</Link><button type="button" className="teacher-primary-button super-bulk-publish-button" disabled={busy || bulkPublishCandidates.length === 0} onClick={() => setBulkPublishConfirmationOpen(true)}>Approve & publish all school plans</button></div></div>
               <div className="super-admin-filters super-plan-report-filters">
                 <label>School week<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label || `Week ${week.week_number}`}</option>)}</select></label>
                 <label>Grade<select value={planGradeFilter} onChange={(event) => setPlanGradeFilter(event.target.value)}><option value="all">All grades</option>{Array.from(new Set(classes.map((schoolClass) => schoolClass.grade))).map((grade) => <option key={grade} value={grade}>Grade {grade}</option>)}</select></label>
@@ -1224,7 +1282,7 @@ export default function SuperAdminPage() {
                     : coverage.publicationState === "partially_published"
                       ? `Partially published · ${coverage.publishedTeachers.length} of ${coverage.requiredTeachers.length} teachers`
                       : plan ? coverage.completedTeachers.length > 0 ? "Awaiting remaining approvals" : "Draft started" : "Not started";
-                  return <tr key={coverage.classId}><td><strong>Grade {coverage.grade} · {coverage.section}</strong></td><td><div className="super-class-completion"><strong>{coverage.completionPercent}%</strong><div><i style={{ width: `${coverage.completionPercent}%` }} /></div><small>{coverage.completedTeachers.length} of {coverage.requiredTeachers.length} teachers completed</small></div></td><td><details className="super-plan-teacher-details"><summary>View teacher status</summary><div>{coverage.completedTeachers.map((teacher) => <span className="complete" key={teacher.userId}>✓ {teacher.name}</span>)}{coverage.missingTeachers.map((teacher) => <span className="missing" key={teacher.userId}>○ {teacher.name}</span>)}{coverage.requiredTeachers.length === 0 && <span>No assigned teachers</span>}</div></details></td><td><span className={`super-account-status ${published ? "published" : "draft"}`}><i />{statusLabel}</span>{plan?.manualPublicationOverride ? <small className="super-plan-override-note">Super Admin override</small> : null}</td><td>{plan?.entries ?? 0}</td><td>{plan?.updated ?? "—"}</td><td>{plan ? <div className="super-row-actions"><Link href={`/weekly-plan/?grade=${coverage.grade}&section=${coverage.section}&week=${academicWeeks.find((week) => week.id === selectedPlanWeekId)?.week_number ?? 1}`}>View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit"}</button><button disabled={busy} className={plan.manualPublicationOverride ? "super-plan-delete" : "review"} onClick={() => void setPlanPublicationOverride(plan, !plan.manualPublicationOverride)}>{plan.manualPublicationOverride ? "Remove override" : "Force publish"}</button><button disabled={busy} className="super-plan-delete" onClick={() => void removeWeeklyPlan(plan)}>Delete</button></div> : <span className="super-waiting-registration">Waiting for teachers</span>}</td></tr>;
+                  return <tr key={coverage.classId}><td><strong>Grade {coverage.grade} · {coverage.section}</strong></td><td><div className="super-class-completion"><strong>{coverage.completionPercent}%</strong><div><i style={{ width: `${coverage.completionPercent}%` }} /></div><small>{coverage.completedLessons} of {coverage.requiredLessons} lessons with Classwork</small></div></td><td><details className="super-plan-teacher-details"><summary>View teacher status</summary><div>{coverage.completedTeachers.map((teacher) => <span className="complete" key={teacher.userId}>✓ {teacher.name}</span>)}{coverage.missingTeachers.map((teacher) => <span className="missing" key={teacher.userId}>○ {teacher.name}</span>)}{coverage.requiredTeachers.length === 0 && <span>No assigned teachers</span>}</div></details></td><td><span className={`super-account-status ${published ? "published" : "draft"}`}><i />{statusLabel}</span>{plan?.manualPublicationOverride ? <small className="super-plan-override-note">Super Admin override</small> : null}</td><td>{plan?.entries ?? 0}</td><td>{plan?.updated ?? "—"}</td><td>{plan ? <div className="super-row-actions"><Link href={`/weekly-plan/?grade=${coverage.grade}&section=${coverage.section}&week=${academicWeeks.find((week) => week.id === selectedPlanWeekId)?.week_number ?? 1}`}>View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit"}</button><button disabled={busy} className={plan.manualPublicationOverride ? "super-plan-delete" : "review"} onClick={() => void setPlanPublicationOverride(plan, !plan.manualPublicationOverride)}>{plan.manualPublicationOverride ? "Remove override" : "Force publish"}</button><button disabled={busy} className="super-plan-delete" onClick={() => void removeWeeklyPlan(plan)}>Delete</button></div> : <span className="super-waiting-registration">Waiting for teachers</span>}</td></tr>;
                 })}
                 {!loading && filteredClassCoverage.length === 0 && <tr><td className="super-empty" colSpan={7}>No classes match the selected filters.</td></tr>}
               </tbody></table></div>
@@ -1296,7 +1354,7 @@ export default function SuperAdminPage() {
               <div className="super-report-meta"><span>وقت استخراج التقرير: {achievementReport.generatedAt}</span><span>حالة البيانات لحظة الضغط على «عرض التقرير»</span></div>
               <section>
                 <h3>أولًا: إنجاز المعلمين</h3>
-                <p>تُحسب نسبة المعلم على فصوله المكلف بها؛ يكتمل الفصل عند إرسال خطته بصرف النظر عن عدد المواد التي يدرّسها.</p>
+                <p>تُحسب النسبة من حصص المعلم المجدولة في جميع فصوله بعد إرسال الخطة؛ تكفي كتابة عمل الحصة، والواجب وملاحظات كلاسيرا اختياريان. يكتمل الفصل عند كتابة عمل الحصة لكل حصصه.</p>
                 <table className="super-report-teacher-table"><thead><tr><th>المعلم</th><th>فصول المعلم</th><th>المنجز</th><th>النسبة</th><th>الحالة</th></tr></thead><tbody>
                   {achievementReport.teachers.map((teacher) => <tr key={teacher.id}>
                     <td className="super-report-person">{teacher.name}</td>

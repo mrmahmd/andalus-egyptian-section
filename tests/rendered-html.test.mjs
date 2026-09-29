@@ -488,8 +488,8 @@ test("adds Super Admin teacher completion reporting, self password change and bu
   const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
   const languageSource = await readFile(new URL("../app/language-switcher.tsx", import.meta.url), "utf8");
 
-  assert.match(source, /completionPercent: requiredTeachers\.length > 0/);
-  assert.match(source, /schoolWeeklyCompletionPercent = requiredTeacherClassCount > 0/);
+  assert.match(source, /completionPercent: lessonCompletionPercent\(completedLessons, requirements\.length\)/);
+  assert.match(source, /schoolWeeklyCompletionPercent = lessonCompletionPercent\(completedLessonTotal, requiredLessonCount\)/);
   assert.match(source, /Selected week:/);
   assert.match(source, /supervisor_staff_links/);
   assert.match(source, /submitted_at, reviewed_at, updated_at/);
@@ -640,18 +640,37 @@ test("keeps the class publication table inside the page without a horizontal scr
   assert.match(styles, /\.super-plan-report-table \.super-row-actions \{ display: grid;/);
 });
 
-test("offers explicit owner-only published corrections without reopening normal drafts", async () => {
+test("offers explicit owner-only approved corrections without reopening normal drafts", async () => {
   const teacher = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const migration = await readFile(new URL("../supabase/migrations/20260929120000_allow_owner_published_plan_corrections.sql", import.meta.url), "utf8");
+  const approvedMigration = await readFile(new URL("../supabase/migrations/20260929180000_allow_approved_unpublished_plan_corrections.sql", import.meta.url), "utf8");
 
-  assert.match(teacher, /plan\.status === "approved" && plan\.publicationStatus === "published" && weeklyPlanCreationOpen/);
-  assert.match(teacher, /publishedEditPlanId \? dashboardArabic \? "تعديل الخطة المنشورة"/);
+  assert.match(teacher, /plan\.status === "approved" && weeklyPlanCreationOpen/);
+  assert.match(teacher, /"تعديل الخطة المعتمدة"/);
   assert.match(teacher, /if \(!weeklyBuilderOpen \|\| weeklyBuilderReadOnly \|\| publishedEditPlanId \|\|/);
   assert.match(teacher, /\.rpc\("update_my_published_plan"/);
-  assert.match(teacher, /Save and publish changes/);
+  assert.match(teacher, /"Save changes"/);
   assert.match(migration, /security invoker/);
   assert.match(migration, /submission\.status = 'approved'/);
   assert.match(migration, /plan_record\.status = 'published'/);
   assert.match(migration, /revoke all on function public\.update_my_published_plan/);
   assert.doesNotMatch(migration, /update public\.plan_submissions/);
+  assert.match(approvedMigration, /plan_record\.status in \('draft', 'published'\)/);
+  assert.match(approvedMigration, /security invoker/);
+  assert.doesNotMatch(approvedMigration, /update public\.plan_submissions/);
+});
+
+test("warns before sending missing Classwork and keeps the report design while recalculating percentages", async () => {
+  const teacher = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const admin = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+
+  assert.match(teacher, /missingClassworkSlots = editableClassSlots\.filter/);
+  assert.match(teacher, /العودة لاستكمال الخطة/);
+  assert.match(teacher, /إرسال للمشرف على أي حال/);
+  assert.match(admin, /hasClasswork: String\(entry\.classwork \?\? ""\)\.trim\(\)\.length > 0/);
+  assert.match(admin, /completedLessonCount\(/);
+  assert.match(admin, /overviewTeacherGaps/);
+  assert.match(admin, /overviewSupervisorGaps/);
+  assert.match(admin, /super-report-class-line done/);
+  assert.match(admin, /super-report-class-line pending/);
 });
