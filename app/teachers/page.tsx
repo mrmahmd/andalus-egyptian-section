@@ -682,14 +682,18 @@ export default function TeachersDashboardPage() {
     try {
       const supabase = getSupabaseBrowserClient();
       const { data: plan, error: planError } = await supabase.from("weekly_plans")
-        .select("id, plan_entries(timetable_slot_id, subject_id, day_of_week, period_number, classwork, homework, classera_notes), plan_quizzes(subject_id, quiz_date, details), plan_notes(note_text, teacher_id)")
+        .select("id, plan_entries(timetable_slot_id, teacher_id, subject_id, day_of_week, period_number, classwork, homework, classera_notes), plan_quizzes(subject_id, quiz_date, details), plan_notes(note_text, teacher_id)")
+        .eq("plan_entries.teacher_id", profileId)
+        .eq("plan_quizzes.teacher_id", profileId)
+        .eq("plan_notes.teacher_id", profileId)
         .eq("class_id", selectedClassId).eq("week_id", selectedWeekId).maybeSingle();
       if (planError) throw planError;
       setSavedPlanId(plan?.id ? String(plan.id) : "");
-      const rows = (plan?.plan_entries ?? []) as Array<{ timetable_slot_id: string | null; subject_id: string; day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string }>;
+      const rows = (plan?.plan_entries ?? []) as Array<{ timetable_slot_id: string | null; teacher_id: string; subject_id: string; day_of_week: number; period_number: number; classwork: string; homework: string; classera_notes: string }>;
       const nextDrafts: Record<string, SlotDraft> = {};
       selectedClassSlots.forEach((slot) => {
-        const row = rows.find((entry) => entry.timetable_slot_id === slot.id) ?? rows.find((entry) => entry.day_of_week === slot.day_of_week && entry.period_number === slot.period_number && entry.subject_id === slot.subject_id);
+        const row = rows.find((entry) => entry.teacher_id === profileId && entry.subject_id === slot.subject_id && entry.timetable_slot_id === slot.id)
+          ?? rows.find((entry) => entry.teacher_id === profileId && entry.subject_id === slot.subject_id && entry.day_of_week === slot.day_of_week && entry.period_number === slot.period_number);
         if (!row) return;
         const assignment = assignmentForSlot(slot);
         let classwork = row.classwork ?? "";
@@ -872,7 +876,25 @@ export default function TeachersDashboardPage() {
         weeklyPlanId = String(createdPlan.id);
       }
 
-      const entryRows = editableClassSlots.filter((slot) => !approvedSubjectIds.has(slot.subject_id)).map((slot) => {
+      // The timetable can change after an earlier teacher has saved a lesson.
+      // Never overwrite that teacher's entry through the shared day/period key.
+      const writableSlots = editableClassSlots.filter((slot) => !approvedSubjectIds.has(slot.subject_id));
+      const { data: occupiedEntries, error: occupiedEntriesError } = await supabase.from("plan_entries")
+        .select("teacher_id, subject_id, day_of_week, period_number")
+        .eq("weekly_plan_id", weeklyPlanId);
+      if (occupiedEntriesError) throw occupiedEntriesError;
+      const conflictingSlot = writableSlots.find((slot) => (occupiedEntries ?? []).some((entry) =>
+        entry.day_of_week === slot.day_of_week
+        && entry.period_number === slot.period_number
+        && (entry.teacher_id !== profileId || entry.subject_id !== slot.subject_id)));
+      if (conflictingSlot) {
+        const arabic = window.localStorage.getItem("andalus-language") === "ar";
+        throw new Error(arabic
+          ? `تعذر حفظ حصة ${arabicDayNames[dayNames[conflictingSlot.day_of_week]]} رقم ${conflictingSlot.period_number}: توجد خطة سابقة لمعلم أو مادة أخرى في موضعها بعد تعديل الجدول. أخبر مسؤول المنصة؛ لن تُستبدل خطة المعلم الآخر.`
+          : `Cannot save ${dayNames[conflictingSlot.day_of_week]} period ${conflictingSlot.period_number}: another teacher's or subject's saved lesson occupies this timetable position. Contact the Super Admin; the other plan was not overwritten.`);
+      }
+
+      const entryRows = writableSlots.map((slot) => {
         const assignment = assignmentForSlot(slot);
         const draft = slotDraftFor(slot);
         const classwork = draft.classwork.trim();
@@ -975,7 +997,10 @@ export default function TeachersDashboardPage() {
       if (silent) { autoSavedSignature.current = ""; setAutoSaveState("idle"); }
       else {
         const actionArabic = window.localStorage.getItem("andalus-language") === "ar";
-        const errorText = actionArabic ? "تعذر تنفيذ الأمر وحفظ الخطة. لم يُغلق المحرر حتى لا تفقد ما كتبته؛ حاول مرة أخرى." : error instanceof Error ? error.message : "The weekly plan could not be saved.";
+        const details = error instanceof Error ? error.message : typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? `Code ${error.code}` : "";
+        const errorText = actionArabic
+          ? details.startsWith("تعذر حفظ حصة") ? details : `تعذر حفظ الخطة. لم يُغلق المحرر حتى لا تفقد ما كتبته.${details ? ` (${details})` : ""}`
+          : details || "The weekly plan could not be saved.";
         setMessage(errorText);
         setMessageTone("error");
         setBuilderFeedback({ tone: "error", text: errorText });

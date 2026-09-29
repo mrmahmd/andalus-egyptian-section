@@ -13,6 +13,17 @@ test("renders the parent-facing homepage", async () => {
   assert.doesNotMatch(html, /teacher login|create teacher account/i);
 });
 
+test("teacher editor never hydrates or overwrites another teacher's displaced lesson", async () => {
+  const source = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /\.eq\("plan_entries\.teacher_id", profileId\)/);
+  assert.match(source, /entry\.teacher_id === profileId && entry\.subject_id === slot\.subject_id && entry\.timetable_slot_id === slot\.id/);
+  assert.match(source, /entry\.teacher_id === profileId && entry\.subject_id === slot\.subject_id && entry\.day_of_week === slot\.day_of_week/);
+  assert.match(source, /const conflictingSlot = writableSlots\.find/);
+  assert.match(source, /entry\.teacher_id !== profileId \|\| entry\.subject_id !== slot\.subject_id/);
+  assert.match(source, /لن تُستبدل خطة المعلم الآخر/);
+});
+
 test("renders published timetable lessons in merged school-day groups", async () => {
   const source = await readFile(new URL("../app/weekly-plan/page.tsx", import.meta.url), "utf8");
 
