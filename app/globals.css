@@ -807,6 +807,7 @@ button, select, input { font: inherit; }
 .teacher-portal:not(.super-admin-portal) .teacher-plan-actions .teacher-secondary-button.continue { background: linear-gradient(125deg, #0b3b78, #0b78ad); }
 .teacher-portal:not(.super-admin-portal) .teacher-plan-actions .teacher-secondary-button.preview { background: linear-gradient(125deg, #5d3b97, #8c43a8); }
 .teacher-portal:not(.super-admin-portal) .teacher-plan-actions .teacher-secondary-button.copy { background: linear-gradient(125deg, #07829b, #12a79f); }
+.teacher-portal:not(.super-admin-portal) .teacher-plan-actions .teacher-secondary-button.published-edit { background: linear-gradient(125deg, #0c7464, #2caf86); }
 .teacher-portal:not(.super-admin-portal) .teacher-plan-actions .teacher-secondary-button.warning { background: linear-gradient(125deg, #c26c12, #e59b22); color: #fff; }
 .teacher-portal:not(.super-admin-portal) .teacher-plan-actions .teacher-secondary-button.danger { background: linear-gradient(125deg, #a92262, #d33a72); color: #fff; }
 .teacher-portal:not(.super-admin-portal) .teacher-plan-actions .teacher-secondary-button:disabled { cursor: not-allowed; opacity: .5; transform: none; filter: grayscale(.2); box-shadow: none; }

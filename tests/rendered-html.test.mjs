@@ -639,3 +639,19 @@ test("keeps the class publication table inside the page without a horizontal scr
   assert.match(styles, /\.super-plan-report-table \{ min-width: 0; table-layout: fixed; \}/);
   assert.match(styles, /\.super-plan-report-table \.super-row-actions \{ display: grid;/);
 });
+
+test("offers explicit owner-only published corrections without reopening normal drafts", async () => {
+  const teacher = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../supabase/migrations/20260929120000_allow_owner_published_plan_corrections.sql", import.meta.url), "utf8");
+
+  assert.match(teacher, /plan\.status === "approved" && plan\.publicationStatus === "published" && weeklyPlanCreationOpen/);
+  assert.match(teacher, /publishedEditPlanId \? dashboardArabic \? "تعديل الخطة المنشورة"/);
+  assert.match(teacher, /if \(!weeklyBuilderOpen \|\| weeklyBuilderReadOnly \|\| publishedEditPlanId \|\|/);
+  assert.match(teacher, /\.rpc\("update_my_published_plan"/);
+  assert.match(teacher, /Save and publish changes/);
+  assert.match(migration, /security invoker/);
+  assert.match(migration, /submission\.status = 'approved'/);
+  assert.match(migration, /plan_record\.status = 'published'/);
+  assert.match(migration, /revoke all on function public\.update_my_published_plan/);
+  assert.doesNotMatch(migration, /update public\.plan_submissions/);
+});
