@@ -607,6 +607,7 @@ Object.assign(staffAr, {
   "Sent to supervisor": "أرسلها إلى المشرف",
   "Supervisor decision": "قرار المشرف",
   "Not assigned": "لم يُعيّن مشرف",
+  "Automatic approval (supervisor plan)": "اعتماد تلقائي لخطة المشرف",
   "No teacher plans match the selected route filters.": "لا توجد خطط معلمين مطابقة لفلاتر المسار المحددة."
 });
 

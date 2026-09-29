@@ -252,6 +252,20 @@ test("keeps the achievement report readable with separate completed and incomple
   assert.match(css, /\.super-report-class-line\.pending \{ background:/);
 });
 
+test("loads every plan-content page and separates supervisor approval from full-week completion", async () => {
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+  const language = await readFile(new URL("../app/language-switcher.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /from\("plan_entries"\)[\s\S]*?\.order\("id"\)\.range\(offset, offset \+ 499\)/);
+  assert.match(source, /from\("plan_submissions"\)[\s\S]*?\.order\("id"\)\.range\(offset, offset \+ 499\)/);
+  assert.match(source, /if \(page\.length < pageSize\) return rows/);
+  assert.match(source, /requirements\.every\(\(requirement\) => writtenSlots\.has/);
+  assert.match(source, /hasCompletedTeachingWeek\(plan\?\.id, teacherId/);
+  assert.match(source, /teacher\.role === "Admin" \? "Automatic approval \(supervisor plan\)"/);
+  assert.match(source, /بعض حصص المعلم في هذا الأسبوع ما زالت فارغة/);
+  assert.match(language, /"Automatic approval \(supervisor plan\)": "اعتماد تلقائي لخطة المشرف"/);
+});
+
 test("saves teacher assignments immediately and enforces English programme grades", async () => {
   const superAdminSource = await readFile(
     new URL("../app/super-admin/page.tsx", import.meta.url),
