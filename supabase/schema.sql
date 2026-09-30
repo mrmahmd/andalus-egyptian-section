@@ -116,6 +116,9 @@ create table if not exists public.weekly_plans (
   week_id uuid not null references public.academic_weeks(id) on delete cascade,
   class_teacher_name text not null default 'Mr.Mohamed Farid',
   status text not null default 'draft' check (status in ('draft', 'published', 'archived')),
+  manual_publication_override boolean not null default false,
+  publication_override_by uuid references public.profiles(user_id) on delete set null,
+  publication_override_at timestamptz,
   published_by uuid references public.profiles(user_id) on delete set null,
   published_at timestamptz,
   created_at timestamptz not null default now(),
@@ -317,7 +320,13 @@ as $$
     where plan_record.id = target_plan_id
       and plan_record.status = 'published'
       and week_record.parent_portal_visible
-      and submission.status = 'approved'
+      and (
+        submission.status = 'approved'
+        or (
+          plan_record.manual_publication_override
+          and submission.status = 'submitted'
+        )
+      )
   );
 $$;
 revoke all on function private.parent_can_read_approved_plan_content(uuid, uuid, uuid)

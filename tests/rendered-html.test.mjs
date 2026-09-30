@@ -441,6 +441,24 @@ test("publishes approved partial class plans without exposing missing teachers' 
   assert.match(publishingSql, /select private\.refresh_weekly_plan_publication_state\(id\)/);
 });
 
+test("shows submitted content under every Super Admin publication override without approving it", async () => {
+  const overrideSql = await readFile(new URL("../supabase/20260930_fix_parent_read_for_super_admin_override.sql", import.meta.url), "utf8");
+  const schemaSql = await readFile(new URL("../supabase/schema.sql", import.meta.url), "utf8");
+  const adminSource = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+
+  for (const sql of [overrideSql, schemaSql]) {
+    assert.match(sql, /plan_record\.status = 'published'/);
+    assert.match(sql, /week_record\.parent_portal_visible/);
+    assert.match(sql, /submission\.status = 'approved'/);
+    assert.match(sql, /plan_record\.manual_publication_override\s+and submission\.status = 'submitted'/);
+    assert.doesNotMatch(sql, /submission\.status = 'draft'/);
+  }
+  assert.match(overrideSql, /create or replace function private\.parent_can_read_approved_plan_content/);
+  assert.doesNotMatch(overrideSql, /update public\.(?:weekly_plans|plan_submissions|plan_entries)/);
+  assert.match(adminSource, /const publishAllSchoolPlans = async \(\) =>[\s\S]*?supabase\.rpc\("set_weekly_plan_publication_override"/);
+  assert.match(adminSource, /const setPlanPublicationOverride = async \(plan: ManagedPlan, shouldPublish: boolean\) =>[\s\S]*?supabase\.rpc\("set_weekly_plan_publication_override"/);
+});
+
 test("queues supervisor submission behind autosave and auto-approves supervisors' own lessons", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const migration = await readFile(new URL("../supabase/migrations/20260919194546_resync_mohamed_hamad_and_autoapprove_supervisor_teaching_plans.sql", import.meta.url), "utf8");
