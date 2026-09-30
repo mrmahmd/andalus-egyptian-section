@@ -265,11 +265,26 @@ test("keeps the achievement report readable with separate completed and incomple
   assert.match(report, /super-report-class-line done/);
   assert.match(report, /super-report-class-line pending/);
   assert.match(report, /teacher\.completedClasses\.map/);
+  assert.match(report, /teacher\.sentWithGapsClasses\.map/);
   assert.match(report, /teacher\.incompleteClasses\.map/);
+  assert.match(report, /super-report-class-line sent-with-gaps/);
   assert.doesNotMatch(report, /teacher\.department|supervisor\.department|supervisor\.teacherNames/);
   assert.match(css, /\.super-report-paper table \{ table-layout: fixed; font-size: 13px; \}/);
   assert.match(css, /\.super-report-class-line\.done \{ background:/);
+  assert.match(css, /\.super-report-class-line\.sent-with-gaps \{ background:/);
   assert.match(css, /\.super-report-class-line\.pending \{ background:/);
+});
+
+test("keeps weekly teacher percentages intact while separating sent plans with empty lessons", async () => {
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+  const report = source.split("{achievementReport && (")[1]?.split("{bulkPublishConfirmationOpen")[0] ?? "";
+  assert.match(source, /const sentWithGapsRows = rows\.filter\(\(row\) => !isCompleted\(row\) && hasSentAllClassSubjects\(row\)\)/);
+  assert.match(source, /subjectIds\.size > 0 && \[\.\.\.subjectIds\]\.every/);
+  assert.match(source, /sentWithGapsClasses: sentWithGapsRows\.map/);
+  assert.match(source, /incompleteClasses: rows\.filter\(\(row\) => !isCompleted\(row\) && !sentWithGapsKeys\.has\(row\.key\)\)/);
+  assert.match(source, /const percent = lessonCompletionPercent\(lessonProgress\.completed, lessonProgress\.total\)/);
+  assert.match(source, /percent > 0 \|\| sentWithGapsRows\.length > 0 \? "مكتمل جزئيًا"/);
+  assert.match(report, /<th>المعلم<\/th><th>فصول المعلم<\/th><th>المنجز<\/th><th>النسبة<\/th><th>الحالة<\/th>/);
 });
 
 test("counts supervisor achievement from received teacher-class plans only", async () => {

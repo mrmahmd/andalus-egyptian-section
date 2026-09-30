@@ -133,7 +133,7 @@ type AchievementReport = {
   weekNumber: number;
   weekRange: string;
   generatedAt: string;
-  teachers: { id: string; name: string; completedClasses: string[]; incompleteClasses: string[]; completed: number; total: number; percent: number; status: string }[];
+  teachers: { id: string; name: string; completedClasses: string[]; sentWithGapsClasses: string[]; incompleteClasses: string[]; completed: number; total: number; percent: number; status: string }[];
   supervisors: { id: string; name: string; approved: number; total: number; percent: number | null; lastApproval: string }[];
 };
 
@@ -490,9 +490,9 @@ export default function SuperAdminPage() {
         if (previewMode === "report") setAchievementReport({
           weekNumber: 4, weekRange: "٢٧ سبتمبر - ٣ أكتوبر ٢٠٢٦", generatedAt: "٢٨ سبتمبر ٢٠٢٦، ٨:٣٠ م",
           teachers: [
-            { id: "preview-1", name: "محمد فريد", completedClasses: ["4A", "4B"], incompleteClasses: ["5A"], completed: 2, total: 3, percent: 67, status: "مكتمل جزئيًا" },
-            { id: "preview-2", name: "مؤمن الحداد", completedClasses: ["3A", "3B"], incompleteClasses: [], completed: 2, total: 2, percent: 100, status: "مكتمل" },
-            { id: "preview-3", name: "معلم تجريبي", completedClasses: [], incompleteClasses: ["6A"], completed: 0, total: 1, percent: 0, status: "لم يكتمل" },
+            { id: "preview-1", name: "محمد فريد", completedClasses: ["4A", "4B"], sentWithGapsClasses: ["5A"], incompleteClasses: [], completed: 2, total: 3, percent: 67, status: "مكتمل جزئيًا" },
+            { id: "preview-2", name: "مؤمن الحداد", completedClasses: ["3A", "3B"], sentWithGapsClasses: [], incompleteClasses: [], completed: 2, total: 2, percent: 100, status: "مكتمل" },
+            { id: "preview-3", name: "معلم تجريبي", completedClasses: [], sentWithGapsClasses: [], incompleteClasses: ["6A"], completed: 0, total: 1, percent: 0, status: "لم يكتمل" },
           ],
           supervisors: [{ id: "preview-4", name: "محمود حلمي", approved: 4, total: 5, percent: 80, lastApproval: "٢٨/٩/٢٠٢٦، ٧:٤٥ م" }],
         });
@@ -837,9 +837,22 @@ export default function SuperAdminPage() {
     });
     const coverageByClass = new Map(weeklyClassCoverage.map((coverage) => [coverage.classId, coverage]));
     const isCompleted = (row: PlanTrackingRow) => Boolean(coverageByClass.get(row.classId)?.completedTeachers.some((teacher) => teacher.userId === row.teacher.userId));
+    const hasSentAllClassSubjects = (row: PlanTrackingRow) => {
+      const planId = coverageByClass.get(row.classId)?.plan?.id;
+      if (!planId || !row.teacher.userId) return false;
+      const holidayDays = new Set(schoolHolidays.filter((holiday) => holiday.week_id === selectedPlanWeekId).map((holiday) => holiday.day_of_week));
+      const subjectIds = new Set(effectiveTimetableRequirements
+        .filter((requirement) => requirement.classId === row.classId && requirement.teacherId === row.teacher.userId && !holidayDays.has(requirement.dayOfWeek))
+        .map((requirement) => requirement.subjectId));
+      return subjectIds.size > 0 && [...subjectIds].every((subjectId) => planSubmissions.some((submission) =>
+        submission.weeklyPlanId === planId && submission.teacherId === row.teacher.userId && submission.subjectId === subjectId
+        && (submission.status === "submitted" || submission.status === "approved")));
+    };
     const teachers = Array.from(rowsByTeacher.entries()).map(([id, rows]) => {
       const completed = rows.filter(isCompleted).length;
       const total = rows.length;
+      const sentWithGapsRows = rows.filter((row) => !isCompleted(row) && hasSentAllClassSubjects(row));
+      const sentWithGapsKeys = new Set(sentWithGapsRows.map((row) => row.key));
       const lessonProgress = rows.reduce((progress, row) => {
         const holidayDays = new Set(schoolHolidays.filter((holiday) => holiday.week_id === selectedPlanWeekId).map((holiday) => holiday.day_of_week));
         const requirements = effectiveTimetableRequirements.filter((requirement) => requirement.classId === row.classId && requirement.teacherId === row.teacher.userId && !holidayDays.has(requirement.dayOfWeek));
@@ -851,9 +864,10 @@ export default function SuperAdminPage() {
       return {
         id, name: rows[0].teacher.name,
         completedClasses: rows.filter(isCompleted).map((row) => `${row.grade}${row.section}`),
-        incompleteClasses: rows.filter((row) => !isCompleted(row)).map((row) => `${row.grade}${row.section}`),
+        sentWithGapsClasses: sentWithGapsRows.map((row) => `${row.grade}${row.section}`),
+        incompleteClasses: rows.filter((row) => !isCompleted(row) && !sentWithGapsKeys.has(row.key)).map((row) => `${row.grade}${row.section}`),
         completed, total, percent,
-        status: percent === 100 ? "مكتمل" : percent > 0 ? "مكتمل جزئيًا" : "لم يكتمل",
+        status: percent === 100 ? "مكتمل" : percent > 0 || sentWithGapsRows.length > 0 ? "مكتمل جزئيًا" : "لم يكتمل",
       };
     }).sort((a, b) => a.name.localeCompare(b.name, "ar"));
     const planIdByClass = new Map(weeklyClassCoverage.flatMap((coverage) => coverage.plan ? [[coverage.classId, coverage.plan.id] as const] : []));
@@ -1373,17 +1387,18 @@ export default function SuperAdminPage() {
               <div className="super-report-meta"><span>وقت استخراج التقرير: {achievementReport.generatedAt}</span><span>حالة البيانات لحظة الضغط على «عرض التقرير»</span></div>
               <section>
                 <h3>أولًا: إنجاز المعلمين</h3>
-                <p>تُحسب النسبة من حصص المعلم المجدولة في جميع فصوله بعد إرسال الخطة؛ تكفي كتابة عمل الحصة، والواجب وملاحظات كلاسيرا اختياريان. يكتمل الفصل عند كتابة عمل الحصة لكل حصصه.</p>
+                <p>تُحسب النسبة من حصص المعلم المجدولة في جميع فصوله بعد إرسال الخطة؛ تكفي كتابة عمل الحصة، والواجب وملاحظات كلاسيرا اختياريان. الفصل المُرسل مع حصص فارغة يظهر منفصلًا، وتظل نسبته وحالته جزئيتين حتى تُستكمل الحصص.</p>
                 <table className="super-report-teacher-table"><thead><tr><th>المعلم</th><th>فصول المعلم</th><th>المنجز</th><th>النسبة</th><th>الحالة</th></tr></thead><tbody>
                   {achievementReport.teachers.map((teacher) => <tr key={teacher.id}>
                     <td className="super-report-person">{teacher.name}</td>
                     <td><div className="super-report-class-lines">
                       <div className="super-report-class-line done"><strong>المكتملة</strong><div>{teacher.completedClasses.length ? teacher.completedClasses.map((className) => <span key={className} dir="ltr">{className}</span>) : <em>لا يوجد</em>}</div></div>
+                      {teacher.sentWithGapsClasses.length > 0 && <div className="super-report-class-line sent-with-gaps"><strong>بها حصص فارغة</strong><div>{teacher.sentWithGapsClasses.map((className) => <span key={className} dir="ltr">{className}</span>)}</div></div>}
                       <div className="super-report-class-line pending"><strong>غير المكتملة</strong><div>{teacher.incompleteClasses.length ? teacher.incompleteClasses.map((className) => <span key={className} dir="ltr">{className}</span>) : <em>لا يوجد</em>}</div></div>
                     </div></td>
                     <td className="super-report-count"><span dir="ltr">{teacher.completed} / {teacher.total}</span></td>
-                    <td className="super-report-percent"><b className={teacher.percent === 100 ? "complete" : teacher.percent > 0 ? "partial" : "missing"}>{teacher.percent}%</b></td>
-                    <td><span className={`super-report-status ${teacher.percent === 100 ? "complete" : teacher.percent > 0 ? "partial" : "missing"}`}>{teacher.status}</span></td>
+                    <td className="super-report-percent"><b className={teacher.percent === 100 ? "complete" : teacher.status === "مكتمل جزئيًا" ? "partial" : "missing"}>{teacher.percent}%</b></td>
+                    <td><span className={`super-report-status ${teacher.percent === 100 ? "complete" : teacher.status === "مكتمل جزئيًا" ? "partial" : "missing"}`}>{teacher.status}</span></td>
                   </tr>)}
                   {achievementReport.teachers.length === 0 && <tr><td colSpan={5}>لا توجد تكليفات معلّم مرتبطة بالجدول لهذا الأسبوع.</td></tr>}
                 </tbody></table>

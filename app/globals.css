@@ -1598,11 +1598,13 @@ body.arabic-ui .super-week-visibility-list label b { text-align: left; }
 .super-report-class-lines { display: grid; gap: 7px; }
 .super-report-class-line { min-height: 35px; display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; gap: 9px; padding: 6px 8px; border-radius: 9px; }
 .super-report-class-line.done { background: #e0f5eb; color: #086b53; }
+.super-report-class-line.sent-with-gaps { background: #e9e7fa; color: #58409b; }
 .super-report-class-line.pending { background: #fff0de; color: #9b5a17; }
 .super-report-class-line > strong { font-size: 11px; font-weight: 800; white-space: nowrap; }
 .super-report-class-line > div { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
 .super-report-class-line > div span { min-width: 35px; padding: 5px 7px; border-radius: 6px; background: #bcebd4; color: #075d48; font-size: 12px; font-weight: 800; text-align: center; }
 .super-report-class-line.pending > div span { background: #fbd9ad; color: #8d4d0e; }
+.super-report-class-line.sent-with-gaps > div span { background: #cbc5f2; color: #3e2c80; }
 .super-report-class-line em { opacity: .7; font-size: 11px; font-style: normal; }
 .super-report-paper td.super-report-count { background: #edf7fa; color: #0d5a75; font-size: 14px; font-weight: 800; text-align: center; }
 .super-report-paper td.super-report-count.pending { background: #fff5e9; color: #995810; }
