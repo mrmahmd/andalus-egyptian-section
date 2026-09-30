@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 import { formatAcademicWeekRange } from "../../lib/format-academic-week";
+import { supervisorReportProgress } from "../../lib/supervisor-report-progress";
 
 type AccountRole = "Teacher" | "Admin";
 type AccountStatus = "Not Registered" | "Pending" | "Active" | "Suspended" | "Rejected";
@@ -133,7 +134,7 @@ type AchievementReport = {
   weekRange: string;
   generatedAt: string;
   teachers: { id: string; name: string; completedClasses: string[]; incompleteClasses: string[]; completed: number; total: number; percent: number; status: string }[];
-  supervisors: { id: string; name: string; approved: number; total: number; percent: number; lastApproval: string }[];
+  supervisors: { id: string; name: string; approved: number; total: number; percent: number | null; lastApproval: string }[];
 };
 
 type AcademicWeekOption = { id: string; week_number: number; label: string; starts_on: string; ends_on: string; is_current: boolean; teacher_entry_enabled: boolean; parent_portal_visible: boolean };
@@ -835,12 +836,6 @@ export default function SuperAdminPage() {
     });
     const coverageByClass = new Map(weeklyClassCoverage.map((coverage) => [coverage.classId, coverage]));
     const isCompleted = (row: PlanTrackingRow) => Boolean(coverageByClass.get(row.classId)?.completedTeachers.some((teacher) => teacher.userId === row.teacher.userId));
-    const isApproved = (row: PlanTrackingRow) => {
-      const planId = coverageByClass.get(row.classId)?.plan?.id;
-      if (!planId) return false;
-      const meaningfulSubjects = new Set(planEntrySummaries.filter((entry) => entry.weeklyPlanId === planId && entry.teacherId === row.teacher.userId && entry.hasContent).map((entry) => entry.subjectId));
-      return planSubmissions.some((submission) => submission.weeklyPlanId === planId && submission.teacherId === row.teacher.userId && submission.status === "approved" && meaningfulSubjects.has(submission.subjectId));
-    };
     const teachers = Array.from(rowsByTeacher.entries()).map(([id, rows]) => {
       const completed = rows.filter(isCompleted).length;
       const total = rows.length;
@@ -860,19 +855,27 @@ export default function SuperAdminPage() {
         status: percent === 100 ? "مكتمل" : percent > 0 ? "مكتمل جزئيًا" : "لم يكتمل",
       };
     }).sort((a, b) => a.name.localeCompare(b.name, "ar"));
+    const planIdByClass = new Map(weeklyClassCoverage.flatMap((coverage) => coverage.plan ? [[coverage.classId, coverage.plan.id] as const] : []));
+    const subjectIdsByTeacherClass = new Map<string, Set<string>>();
+    effectiveTimetableRequirements.forEach((requirement) => {
+      const key = `${requirement.classId}:${requirement.teacherId}`;
+      const subjectIds = subjectIdsByTeacherClass.get(key) ?? new Set<string>();
+      subjectIds.add(requirement.subjectId);
+      subjectIdsByTeacherClass.set(key, subjectIds);
+    });
     const supervisorIds = new Set(supervisorLinks.map((link) => link.supervisorStaffId));
     const supervisors = accounts.filter((account) => supervisorIds.has(account.staffId)).map((supervisor) => {
       const linkedTeacherIds = new Set(supervisorLinks.filter((link) => link.supervisorStaffId === supervisor.staffId).map((link) => link.teacherStaffId));
       const linkedRows = planTrackingRows.filter((row) => linkedTeacherIds.has(row.teacher.staffId));
-      const approved = linkedRows.filter(isApproved).length;
-      const total = linkedRows.length;
-      const linkedPlanIds = new Set(linkedRows.map((row) => coverageByClass.get(row.classId)?.plan?.id).filter((value): value is string => Boolean(value)));
-      const approvedAt = planSubmissions.filter((submission) => linkedPlanIds.has(submission.weeklyPlanId) && linkedRows.some((row) => row.teacher.userId === submission.teacherId) && submission.status === "approved" && submission.reviewedAt)
-        .map((submission) => submission.reviewedAt as string).sort().at(-1);
+      const progress = supervisorReportProgress(linkedRows.flatMap((row) => row.teacher.userId ? [{
+        classId: row.classId,
+        teacherId: row.teacher.userId,
+        subjectIds: [...(subjectIdsByTeacherClass.get(row.key) ?? [])],
+      }] : []), planIdByClass, planSubmissions);
       return {
         id: supervisor.staffId, name: supervisor.name,
-        approved, total, percent: total ? Math.round(approved / total * 100) : 0,
-        lastApproval: approvedAt ? new Intl.DateTimeFormat("ar-SA", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Riyadh" }).format(new Date(approvedAt)) : "—",
+        approved: progress.approved, total: progress.total, percent: progress.percent,
+        lastApproval: progress.lastApproval ? new Intl.DateTimeFormat("ar-SA", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Riyadh" }).format(new Date(progress.lastApproval)) : "—",
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
     const timer = window.setTimeout(() => {
@@ -1371,13 +1374,13 @@ export default function SuperAdminPage() {
               </section>
               <section>
                 <h3>ثانيًا: اعتماد المشرفين</h3>
-                <p>النسبة مبنية على خطط فصول المعلمين المرتبطين بكل مشرف، وفق حالة الاعتماد المسجلة وقت استخراج التقرير.</p>
-                <table className="super-report-supervisor-table"><thead><tr><th>المشرف</th><th>خطط الفصول المعتمدة</th><th>المتبقي</th><th>نسبة الاعتماد</th><th>آخر اعتماد</th></tr></thead><tbody>
+                <p>تُحسب نسبة المشرف من خطط فصول معلميه التي أُرسلت للمراجعة فقط؛ الخطط التي لم تُرسل والمسودات لا تُنقص نسبته. وإذا أُرسلت عدة مواد للفصل، تُعتمد كلها لاكتمال هذا الفصل.</p>
+                <table className="super-report-supervisor-table"><thead><tr><th>المشرف</th><th>المعتمدة من المرسلة</th><th>غير المعتمدة</th><th>نسبة الاعتماد</th><th>آخر اعتماد</th></tr></thead><tbody>
                   {achievementReport.supervisors.map((supervisor) => <tr key={supervisor.id}>
                     <td className="super-report-person">{supervisor.name}</td>
                     <td className="super-report-count"><span dir="ltr">{supervisor.approved} / {supervisor.total}</span></td>
                     <td className="super-report-count pending">{supervisor.total - supervisor.approved}</td>
-                    <td className="super-report-percent"><b className={supervisor.percent === 100 && supervisor.total > 0 ? "complete" : supervisor.percent > 0 ? "partial" : "missing"}>{supervisor.percent}%</b></td>
+                    <td className="super-report-percent"><b className={supervisor.percent === 100 ? "complete" : supervisor.percent !== null && supervisor.percent > 0 ? "partial" : "missing"}>{supervisor.percent === null ? "لا توجد خطط مرسلة" : `${supervisor.percent}%`}</b></td>
                     <td className="super-report-date">{supervisor.lastApproval}</td>
                   </tr>)}
                   {achievementReport.supervisors.length === 0 && <tr><td colSpan={5}>لا يوجد ربط إشراف مفعّل في البيانات الحالية.</td></tr>}

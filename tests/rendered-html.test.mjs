@@ -263,6 +263,38 @@ test("keeps the achievement report readable with separate completed and incomple
   assert.match(css, /\.super-report-class-line\.pending \{ background:/);
 });
 
+test("counts supervisor achievement from received teacher-class plans only", async () => {
+  const { supervisorReportProgress } = await import("../lib/supervisor-report-progress.ts");
+  const plans = new Map([["5A", "week5-5A"], ["5B", "week5-5B"], ["6A", "week5-6A"]]);
+  const rows = [
+    { classId: "5A", teacherId: "teacher-1", subjectIds: ["Arabic", "Religion"] },
+    { classId: "5B", teacherId: "teacher-1", subjectIds: ["Arabic"] },
+    { classId: "6A", teacherId: "teacher-2", subjectIds: ["English"] },
+  ];
+  const submissions = [
+    { weeklyPlanId: "week5-5A", teacherId: "teacher-1", subjectId: "Arabic", status: "approved", reviewedAt: "2026-09-29T10:00:00Z" },
+    { weeklyPlanId: "week5-5A", teacherId: "teacher-1", subjectId: "Religion", status: "approved", reviewedAt: "2026-09-29T11:00:00Z" },
+    { weeklyPlanId: "week5-5B", teacherId: "teacher-1", subjectId: "Arabic", status: "draft", reviewedAt: null },
+  ];
+
+  assert.deepEqual(supervisorReportProgress(rows, plans, submissions), {
+    approved: 1, total: 1, percent: 100, lastApproval: "2026-09-29T11:00:00Z",
+  });
+  assert.deepEqual(supervisorReportProgress(rows, plans, submissions.slice(2)), {
+    approved: 0, total: 0, percent: null, lastApproval: null,
+  });
+
+  const partlyReviewed = [submissions[0], { ...submissions[1], status: "changes_requested", reviewedAt: null }, submissions[2]];
+  assert.deepEqual(supervisorReportProgress(rows, plans, partlyReviewed), {
+    approved: 0, total: 1, percent: 0, lastApproval: "2026-09-29T10:00:00Z",
+  });
+
+  const pending = [...submissions.slice(0, 2), { ...submissions[2], status: "submitted" }];
+  assert.deepEqual(supervisorReportProgress(rows, plans, pending), {
+    approved: 1, total: 2, percent: 50, lastApproval: "2026-09-29T11:00:00Z",
+  });
+});
+
 test("loads every plan-content page and separates supervisor approval from full-week completion", async () => {
   const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
   const language = await readFile(new URL("../app/language-switcher.tsx", import.meta.url), "utf8");
