@@ -251,6 +251,23 @@ test("opens Super Admin on the weekly overview with account navigation", async (
   assert.match(source, /className="super-overview-visibility-line"/);
 });
 
+test("offers two selected-week switches on the Super Admin overview instead of the account stat", async () => {
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  const overview = source.match(/activeSection === "overview" && <div className="super-overview"[\s\S]*?<\/div>\}/)?.[0] ?? "";
+
+  assert.match(overview, /className="super-overview-week-control"/);
+  assert.doesNotMatch(overview, /"طلبات حسابات" : "Account requests"/);
+  assert.match(overview, /selectedPlanWeek\?\.teacher_entry_enabled/);
+  assert.match(overview, /selectedPlanWeek\?\.parent_portal_visible/);
+  assert.match(overview, /updateAcademicWeekVisibility\(selectedPlanWeek\.id, "teacher_entry_enabled", next\)/);
+  assert.match(overview, /updateAcademicWeekVisibility\(selectedPlanWeek\.id, "parent_portal_visible", next\)/);
+  assert.match(source, /role="switch"[\s\S]*aria-checked=\{checked\}/);
+  assert.match(source, /const next = event\.clientX < startX/);
+  assert.match(styles, /\.super-week-toggle\.is-off \.super-week-toggle-track i/);
+  assert.match(styles, /\.super-overview-stats article\.super-overview-week-control \{ grid-column: 1 \/ -1/);
+});
+
 test("offers a current-session sign-out button in Super Admin settings", async () => {
   const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
   assert.match(source, /activeSection === "settings"[\s\S]*?super-signout-card/);

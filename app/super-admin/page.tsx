@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 import { formatAcademicWeekRange } from "../../lib/format-academic-week";
@@ -210,6 +210,39 @@ function lessonCompletionPercent(completed: number, total: number) {
   if (total <= 0 || completed <= 0) return 0;
   if (completed >= total) return 100;
   return Math.max(1, Math.min(99, Math.floor((completed / total) * 100)));
+}
+
+function WeekAccessSwitch({ checked, disabled, label, onChange, arabic }: {
+  checked: boolean;
+  disabled: boolean;
+  label: string;
+  onChange: (next: boolean) => void;
+  arabic: boolean;
+}) {
+  const dragStartX = useRef<number | null>(null);
+  const dragged = useRef(false);
+  return <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    aria-label={label}
+    disabled={disabled}
+    className={`super-week-toggle ${checked ? "is-on" : "is-off"}`}
+    onPointerDown={(event) => { dragStartX.current = event.clientX; dragged.current = false; }}
+    onPointerUp={(event) => {
+      const startX = dragStartX.current;
+      dragStartX.current = null;
+      if (startX === null || Math.abs(event.clientX - startX) < 14) return;
+      dragged.current = true;
+      const next = event.clientX < startX;
+      if (next !== checked) onChange(next);
+    }}
+    onPointerCancel={() => { dragStartX.current = null; }}
+    onClick={() => {
+      if (dragged.current) { dragged.current = false; return; }
+      onChange(!checked);
+    }}
+  ><span className="super-week-toggle-track" aria-hidden="true"><i /></span><strong>{arabic ? checked ? "مفتوح" : "مغلق" : checked ? "On" : "Off"}</strong></button>;
 }
 
 export default function SuperAdminPage() {
@@ -1245,7 +1278,7 @@ export default function SuperAdminPage() {
               <article><span>{dashboardArabic ? "إنجاز المعلمين" : "Teacher completion"}</span><strong>{schoolWeeklyCompletionPercent}%</strong><p>{completedLessonTotal} / {requiredLessonCount} {dashboardArabic ? "حصة مكتملة في الفصول المكلفين بها" : "assigned lessons with Classwork"}</p><i style={{ width: `${schoolWeeklyCompletionPercent}%` }} />{schoolWeeklyCompletionPercent < 100 && <button type="button" className="super-overview-gap-button" onClick={() => setOverviewGapView(overviewGapView === "teachers" ? null : "teachers")}>{dashboardArabic ? "عرض نواقص المعلمين" : "View teacher gaps"}</button>}</article>
               <article><span>{dashboardArabic ? "بانتظار المشرف" : "Waiting for supervisor"}</span><strong>{trackingStatusCounts.submitted}</strong><p>{dashboardArabic ? "خطة مرسلة تحتاج مراجعة" : "submitted plans need review"}</p>{overviewSupervisorGaps.length > 0 && <button type="button" className="super-overview-gap-button" onClick={() => setOverviewGapView(overviewGapView === "supervisors" ? null : "supervisors")}>{dashboardArabic ? "عرض الاعتمادات الناقصة" : "View pending approvals"}</button>}</article>
               <article><span>{dashboardArabic ? "خطط الفصول المنشورة" : "Published class plans"}</span><strong>{publishedClassPlanCount}<small> / {weeklyClassCoverage.length}</small></strong><p>{dashboardArabic ? "منشورة في قاعدة البيانات، حتى لو الأسبوع مخفي" : "Published in the database, even if the week is hidden"}</p><div className="super-overview-visibility-line"><span>{dashboardArabic ? "ظاهرة لأولياء الأمور" : "Visible to families"}</span><b>{parentVisibleClassPlanCount}</b></div></article>
-              <article><span>{dashboardArabic ? "طلبات حسابات" : "Account requests"}</span><strong>{pendingCount}</strong><p>{dashboardArabic ? "تنتظر قرار الموافقة" : "awaiting your approval"}</p></article>
+              <article className="super-overview-week-control"><span>{dashboardArabic ? "التحكم في الأسبوع" : "Week access"}</span><h3>{dashboardArabic ? `الأسبوع ${selectedPlanWeek?.week_number ?? "—"}` : `Week ${selectedPlanWeek?.week_number ?? "—"}`}</h3><div className="super-overview-week-control-row"><div><b>{dashboardArabic ? "إدخال المعلمين" : "Teacher entry"}</b><small>{dashboardArabic ? "كتابة الخطة وإرسالها" : "Write and submit plans"}</small></div><WeekAccessSwitch checked={selectedPlanWeek?.teacher_entry_enabled ?? false} disabled={busy || loading || !selectedPlanWeek} label={dashboardArabic ? "فتح أو غلق إدخال المعلمين لهذا الأسبوع" : "Toggle teacher entry for this week"} onChange={(next) => { if (selectedPlanWeek) void updateAcademicWeekVisibility(selectedPlanWeek.id, "teacher_entry_enabled", next); }} arabic={dashboardArabic} /></div><div className="super-overview-week-control-row"><div><b>{dashboardArabic ? "منصة ولي الأمر" : "Parent portal"}</b><small>{dashboardArabic ? "إظهار الأسبوع المنشور" : "Show published week"}</small></div><WeekAccessSwitch checked={selectedPlanWeek?.parent_portal_visible ?? false} disabled={busy || loading || !selectedPlanWeek} label={dashboardArabic ? "إظهار أو إخفاء الأسبوع لولي الأمر" : "Toggle parent visibility for this week"} onChange={(next) => { if (selectedPlanWeek) void updateAcademicWeekVisibility(selectedPlanWeek.id, "parent_portal_visible", next); }} arabic={dashboardArabic} /></div></article>
             </section>
             {overviewGapView && <section className="teacher-card super-overview-gaps" aria-live="polite"><div className="super-overview-gaps-heading"><h2>{overviewGapView === "teachers" ? dashboardArabic ? "نواقص عمل الحصة لدى المعلمين" : "Missing teacher Classwork" : dashboardArabic ? "خطط تنتظر قرار المشرف" : "Plans awaiting supervisor decisions"}</h2><button type="button" onClick={() => setOverviewGapView(null)} aria-label={dashboardArabic ? "إغلاق التفاصيل" : "Close details"}>×</button></div><p>{dashboardArabic ? `الأسبوع ${selectedPlanWeek?.week_number ?? "—"} · الحالة الحالية` : `Week ${selectedPlanWeek?.week_number ?? "—"} · current status`}</p><div className="super-overview-gap-list">{overviewGapView === "teachers" ? overviewTeacherGaps.map(({ row, completed, total, missing }) => <article key={row.key}><strong>{row.teacher.name} · {dashboardArabic ? "الصف" : "Grade"} {row.grade}{row.section}</strong><span>{completed}/{total} · {row.status === "not_started" || row.status === "draft" ? dashboardArabic ? "لم تُرسل الخطة" : "Plan not sent" : dashboardArabic ? "حصص بلا عمل حصة" : "Lessons without Classwork"}</span><div>{missing.map((requirement) => <small key={`${requirement.dayOfWeek}:${requirement.periodNumber}`} dir="auto">{dashboardArabic ? arabicDayNames[requirement.dayOfWeek] : holidayDays[requirement.dayOfWeek]} · {dashboardArabic ? "حصة" : "Period"} {requirement.periodNumber}</small>)}</div></article>) : overviewSupervisorGaps.map((row) => <article key={row.key}><strong>{row.supervisorName}</strong><span>{row.teacher.name} · {dashboardArabic ? "الصف" : "Grade"} {row.grade}{row.section}</span><div><small>{row.status === "changes_requested" ? dashboardArabic ? "مطلوب تعديل من المعلم" : "Changes requested" : dashboardArabic ? "بانتظار مراجعة المشرف" : "Awaiting supervisor review"}</small></div></article>)}</div></section>}
             <section className="super-overview-lower"><article className="teacher-card super-overview-actions"><div><span>{dashboardArabic ? "إجراءات سريعة" : "Quick actions"}</span><h2>{dashboardArabic ? "ابدأ من هنا" : "Start here"}</h2></div><button type="button" onClick={() => openSection("plans")}>{dashboardArabic ? "عرض مسار الخطط" : "Track weekly plans"}<b>↗</b></button><button type="button" onClick={() => openSection("approvals")}>{dashboardArabic ? `مراجعة طلبات الحسابات (${pendingCount})` : `Review accounts (${pendingCount})`}<b>↗</b></button><button type="button" onClick={() => openSection("weeks")}>{dashboardArabic ? "التحكم في إظهار الأسابيع" : "Control week visibility"}<b>↗</b></button></article>
