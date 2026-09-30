@@ -248,6 +248,15 @@ test("opens Super Admin on the weekly overview with account navigation", async (
   assert.match(source, /setReportPending\(true\);\s*const loaded = await loadDashboard\(\)/);
 });
 
+test("offers a current-session sign-out button in Super Admin settings", async () => {
+  const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+  assert.match(source, /activeSection === "settings"[\s\S]*?super-signout-card/);
+  assert.match(source, /auth\.signOut\(\{ scope: "local" \}\)/);
+  assert.match(source, /window\.location\.replace\(`\$\{basePath\}\/teachers\/login\/`\)/);
+  assert.match(source, /if \(error\) throw error/);
+  assert.match(source, /dashboardArabic \? "تسجيل الخروج" : "Sign out"/);
+});
+
 test("keeps the achievement report readable with separate completed and incomplete class rows", async () => {
   const source = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");

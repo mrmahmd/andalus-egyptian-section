@@ -1696,6 +1696,11 @@ body.arabic-ui .super-plan-tracking-heading > div > span, body.arabic-ui .super-
 .super-system-card p { min-height: 48px; margin: 0 0 18px; color: #67778e; font-size: 13px; line-height: 1.65; }
 .super-system-card strong { color: #183e69; font-size: 13px; }
 .super-system-card.connected > span { background: #e5f8ef; color: #24775b; }
+.super-signout-card > span { background: #fff1f2; color: #b32d53; font-size: 24px; }
+.super-signout-button { min-height: 44px; border-color: #eab6c5; background: #fff3f6; color: #9e244b; font-size: 13px; }
+.super-signout-button:hover { border-color: #d4819b; background: #ffe7ef; }
+.super-signout-button:disabled { cursor: wait; opacity: .7; }
+body.arabic-ui .super-signout-card { text-align: right; font-family: var(--font-alexandria), var(--font-cairo), sans-serif; }
 .super-admin-structure-layout { margin-top: 20px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 16px; }
 .super-structure-card { padding: 24px; }
 .super-structure-card > div:first-child h2, .super-activity-card > div:first-child h2 { margin: 0 0 5px; color: #172841; font-size: 20px; }

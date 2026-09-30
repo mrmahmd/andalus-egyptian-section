@@ -239,6 +239,7 @@ export default function SuperAdminPage() {
   const [currentAdminName, setCurrentAdminName] = useState("Mohamed Farid");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [search, setSearch] = useState("");
@@ -1149,6 +1150,20 @@ export default function SuperAdminPage() {
     finally { setBusy(false); }
   };
 
+  const signOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    setErrorMessage("");
+    try {
+      const { error } = await getSupabaseBrowserClient().auth.signOut({ scope: "local" });
+      if (error) throw error;
+      window.location.replace(`${basePath}/teachers/login/`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : dashboardArabic ? "تعذر تسجيل الخروج. حاول مرة أخرى." : "Could not sign out. Please try again.");
+      setSigningOut(false);
+    }
+  };
+
   const selectedClass = classes.find((item) => item.id === assignmentDraft.classId);
   const compatibleSubjects = subjects.filter((subject) => !selectedClass || (selectedClass.grade >= subject.minimum_grade && selectedClass.grade <= subject.maximum_grade));
 
@@ -1338,6 +1353,7 @@ export default function SuperAdminPage() {
 
           {activeSection === "settings" && <section className="super-admin-section-grid">
             <StaffLanguagePreference />
+            <article className="teacher-card super-system-card super-signout-card"><span>↪</span><h2>{dashboardArabic ? "تسجيل الخروج" : "Sign out"}</h2><p>{dashboardArabic ? "إنهاء جلسة السوبر أدمن الحالية والعودة إلى صفحة تسجيل الدخول، دون التأثير على أجهزتك الأخرى." : "End this Super Admin session and return to sign-in without affecting your other devices."}</p><button type="button" className="teacher-secondary-button super-signout-button" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? dashboardArabic ? "جارٍ تسجيل الخروج…" : "Signing out…" : dashboardArabic ? "تسجيل الخروج" : "Sign out"}</button></article>
             <article className="teacher-card super-system-card super-own-password-card"><span>PW</span><h2>Change my password</h2><p>Confirm your current password, then choose a new password for this Super Admin account.</p><div className="super-own-password-fields"><label>Current password<input type="password" value={ownPassword.current} onChange={(event) => setOwnPassword({ ...ownPassword, current: event.target.value })} autoComplete="current-password" /></label><label>New password<input type="password" value={ownPassword.next} onChange={(event) => setOwnPassword({ ...ownPassword, next: event.target.value })} minLength={8} autoComplete="new-password" /></label><label>Confirm new password<input type="password" value={ownPassword.confirm} onChange={(event) => setOwnPassword({ ...ownPassword, confirm: event.target.value })} minLength={8} autoComplete="new-password" /></label></div><button type="button" disabled={busy || !ownPassword.current || ownPassword.next.length < 8 || ownPassword.next !== ownPassword.confirm} className="teacher-primary-button" onClick={() => void changeOwnPassword()}>{busy ? "Updating…" : "Change my password"}</button>{ownPasswordMessage && <div className={`super-password-reset-message ${ownPasswordTone}`} role={ownPasswordTone === "error" ? "alert" : "status"}>{ownPasswordMessage}</div>}</article>
             <article className="teacher-card super-system-card super-access-control-card"><span>WP</span><h2>Weekly-plan creation access</h2><p>Open or close plan creation for all teachers, then set individual exceptions.</p><strong>{weeklyPlanCreationOpen ? "Open for teachers" : "Closed for teachers"}</strong><button type="button" disabled={busy} className="teacher-primary-button" onClick={() => void updateWeeklyPlanAccess(!weeklyPlanCreationOpen)}>{weeklyPlanCreationOpen ? "Close creation" : "Open creation"}</button><div className="super-teacher-access-list">{accounts.filter((account) => account.role === "Teacher" && account.userId).map((account) => { const isOpen = teacherPlanAccess[account.userId as string] ?? weeklyPlanCreationOpen; return <label key={account.userId}><span>{account.name}<small>@{account.username}</small></span><input type="checkbox" checked={isOpen} disabled={busy} onChange={(event) => void updateTeacherPlanAccess(account.userId as string, event.target.checked)} /><b>{isOpen ? "Open" : "Closed"}</b></label>; })}</div></article>
             <article className="teacher-card super-system-card connected"><span>DB</span><h2>Database</h2><p>Supabase is connected and the protected school directory is available.</p><strong>Connected</strong></article>
