@@ -86,17 +86,43 @@ type TimetableSlot = {
 
 type PersonalTimetableSlot = TimetableSlot & { className: string; subject: string };
 
+function assignedPlanSlotsForWeek(slots: TimetableSlot[], teacherAssignments: Assignment[], teacherId: string, classId: string, week: AcademicWeek | undefined, holidays: SchoolHoliday[]) {
+  const classAssignments = teacherAssignments.filter((assignment) => assignment.classId === classId);
+  const schoolClass = classAssignments[0];
+  const classSlots = slots.filter((slot) => slot.class_id === classId);
+  const sundayPeriodSix = classSlots.find((slot) => slot.day_of_week === 0 && slot.period_number === 6);
+  const tuesdayPeriodOne = classSlots.find((slot) => slot.day_of_week === 2 && slot.period_number === 1);
+  const preservePreWeekFive5B = schoolClass?.grade === 5 && schoolClass.section === "B" && (week?.week_number ?? 5) < 5 && sundayPeriodSix && tuesdayPeriodOne;
+  return classSlots
+    .map((slot) => {
+      if (!preservePreWeekFive5B) return slot;
+      if (slot.id === sundayPeriodSix.id) return { ...slot, subject_id: tuesdayPeriodOne.subject_id };
+      if (slot.id === tuesdayPeriodOne.id) return { ...slot, subject_id: sundayPeriodSix.subject_id };
+      return slot;
+    })
+    .filter((slot) => {
+      const assignedSubject = classAssignments.some((assignment) => assignment.subjectId === slot.subject_id);
+      const historicalSwapSlot = Boolean(preservePreWeekFive5B && (slot.id === sundayPeriodSix.id || slot.id === tuesdayPeriodOne.id));
+      const assignedTeacher = historicalSwapSlot ? assignedSubject : String(slot.teacher_id) === teacherId && assignedSubject;
+      return assignedTeacher && !holidays.some((holiday) => holiday.week_id === week?.id && holiday.day_of_week === slot.day_of_week);
+    })
+    .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
+}
+
 type ParentPreviewSlot = Omit<TimetableSlot, "teacher_id"> & {
   subject: string;
 };
 
 type TeacherEntry = {
   id: string;
+  timetableSlotId: string | null;
   weeklyPlanId: string;
   classId: string;
   weekId: string;
   subjectId: string;
   day: string;
+  dayOfWeek: number;
+  periodNumber: number;
   className: string;
   subject: string;
   week: string;
@@ -104,6 +130,7 @@ type TeacherEntry = {
   publicationStatus: string;
   updated: string;
   hasMeaningfulContent: boolean;
+  hasClasswork: boolean;
 };
 
 type MySubmission = {
@@ -123,6 +150,7 @@ type ReviewItem = {
   id: string;
   weeklyPlanId: string;
   teacherId: string;
+  subjectId: string;
   weekId: string;
   classId: string;
   teacherName: string;
@@ -406,7 +434,7 @@ export default function TeachersDashboardPage() {
         supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en, include_in_weekly_plan)").eq("teacher_id", userData.user.id),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current, teacher_entry_enabled, parent_portal_visible").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, teacher_id, day_of_week, period_number, requires_weekly_plan_submission").eq("requires_weekly_plan_submission", true).order("day_of_week").order("period_number"),
-        supabase.from("plan_entries").select("id, weekly_plan_id, subject_id, day_of_week, classwork, homework, classera_notes, updated_at, subjects(name_en), weekly_plans(class_id, week_id, status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
+        supabase.from("plan_entries").select("id, weekly_plan_id, timetable_slot_id, subject_id, day_of_week, period_number, classwork, homework, classera_notes, updated_at, subjects(name_en), weekly_plans(class_id, week_id, status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         supabase.from("plan_submissions").select("id, weekly_plan_id, subject_id, status, review_note, weekly_plans(class_id, week_id, school_classes(grade, section), academic_weeks(label)), subjects(name_en)").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
         Promise.resolve({ data: [], error: null }),
         departmentTeachersPromise,
@@ -450,8 +478,9 @@ export default function TeachersDashboardPage() {
         const schoolClass = one(weeklyPlan?.school_classes);
         const week = one(weeklyPlan?.academic_weeks);
         return {
-          id: String(entry.id), weeklyPlanId: String(entry.weekly_plan_id), classId: String(weeklyPlan?.class_id ?? ""), weekId: String(weeklyPlan?.week_id ?? ""), subjectId: String(entry.subject_id),
+          id: String(entry.id), timetableSlotId: entry.timetable_slot_id ? String(entry.timetable_slot_id) : null, weeklyPlanId: String(entry.weekly_plan_id), classId: String(weeklyPlan?.class_id ?? ""), weekId: String(weeklyPlan?.week_id ?? ""), subjectId: String(entry.subject_id),
           day: dayNames[Number(entry.day_of_week)] ?? "School day",
+          dayOfWeek: Number(entry.day_of_week), periodNumber: Number(entry.period_number),
           className: `Grade ${schoolClass?.grade ?? "—"} · ${schoolClass?.section ?? ""}`,
           subject: subject?.name_en ?? "Subject",
           week: week?.label ?? "Academic week",
@@ -459,6 +488,7 @@ export default function TeachersDashboardPage() {
           publicationStatus: weeklyPlan?.status ?? "draft",
           updated: formatDate(String(entry.updated_at)),
           hasMeaningfulContent: hasMeaningfulPlanContent(entry),
+          hasClasswork: Boolean(String(entry.classwork ?? "").trim()),
         };
       });
 
@@ -485,7 +515,7 @@ export default function TeachersDashboardPage() {
         const matchingEntries = ((item.entries ?? []) as { day_of_week: number; period_number: number; teacher_id: string; subject_id: string; classwork: string; homework: string; classera_notes: string }[])
           .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
         return {
-          id: String(item.id), weeklyPlanId: String(item.weekly_plan_id ?? ""), teacherId: String(item.teacher_id), weekId: String(item.week_id ?? ""), classId: String(item.class_id ?? ""), teacherName: String(item.teacher_name ?? "Teacher"), subject: String(item.subject_name ?? "Subject"),
+          id: String(item.id), weeklyPlanId: String(item.weekly_plan_id ?? ""), teacherId: String(item.teacher_id), subjectId: String(item.subject_id ?? ""), weekId: String(item.week_id ?? ""), classId: String(item.class_id ?? ""), teacherName: String(item.teacher_name ?? "Teacher"), subject: String(item.subject_name ?? "Subject"),
           className: `Grade ${item.grade ?? ""} · ${item.section ?? ""}`, week: String(item.week_label ?? "Academic week"),
           status: String(item.status), note: String(item.review_note ?? ""), submittedAt: item.submitted_at ? formatDate(String(item.submitted_at)) : "Not submitted",
           entries: matchingEntries.map((entry) => ({ day: dayNames[entry.day_of_week] ?? "School day", period: entry.period_number, subject: String(item.subject_name ?? "Subject"), classwork: entry.classwork, homework: entry.homework, notes: entry.classera_notes })),
@@ -601,26 +631,7 @@ export default function TeachersDashboardPage() {
   const holidayForDay = (dayOfWeek: number) => schoolHolidays.find((holiday) => holiday.week_id === selectedWeekId && holiday.day_of_week === dayOfWeek) ?? null;
   const selectedClassAssignments = useMemo(() => assignments.filter((assignment) => assignment.classId === selectedClassId), [assignments, selectedClassId]);
   const selectedClass = selectedClassAssignments[0];
-  const selectedClassSlots = useMemo(() => {
-    const classSlots = timetableSlots.filter((slot) => slot.class_id === selectedClassId);
-    const sundayPeriodSix = classSlots.find((slot) => slot.day_of_week === 0 && slot.period_number === 6);
-    const tuesdayPeriodOne = classSlots.find((slot) => slot.day_of_week === 2 && slot.period_number === 1);
-    const preservePreWeekFive5B = selectedClass?.grade === 5 && selectedClass.section === "B" && (selectedWeek?.week_number ?? 5) < 5 && sundayPeriodSix && tuesdayPeriodOne;
-    return classSlots
-      .map((slot) => {
-        if (!preservePreWeekFive5B) return slot;
-        if (slot.id === sundayPeriodSix.id) return { ...slot, subject_id: tuesdayPeriodOne.subject_id };
-        if (slot.id === tuesdayPeriodOne.id) return { ...slot, subject_id: sundayPeriodSix.subject_id };
-        return slot;
-      })
-      .filter((slot) => {
-        const assignedSubject = selectedClassAssignments.some((assignment) => assignment.subjectId === slot.subject_id);
-        const historicalSwapSlot = Boolean(preservePreWeekFive5B && (slot.id === sundayPeriodSix.id || slot.id === tuesdayPeriodOne.id));
-        const assignedTeacher = historicalSwapSlot ? assignedSubject : String(slot.teacher_id) === profileId && assignedSubject;
-        return assignedTeacher && !schoolHolidays.some((holiday) => holiday.week_id === selectedWeekId && holiday.day_of_week === slot.day_of_week);
-      })
-      .sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
-  }, [timetableSlots, selectedClassAssignments, selectedClassId, selectedWeekId, selectedWeek?.week_number, selectedClass?.grade, selectedClass?.section, profileId, schoolHolidays]);
+  const selectedClassSlots = useMemo(() => assignedPlanSlotsForWeek(timetableSlots, assignments, profileId, selectedClassId, selectedWeek, schoolHolidays), [timetableSlots, assignments, profileId, selectedClassId, selectedWeek, schoolHolidays]);
   const editableClassSlots = useMemo(() => selectedClassSlots.filter((slot) => !holidayForDay(slot.day_of_week)), [selectedClassSlots, selectedWeekId, schoolHolidays]);
   const activeDayIndexes = dayNames.map((_, index) => index).filter((index) => selectedClassSlots.some((slot) => slot.day_of_week === index) || Boolean(holidayForDay(index)));
   const visibleBuilderDayIndexes = compactWeeklyBuilder
@@ -1529,6 +1540,27 @@ export default function TeachersDashboardPage() {
   const dashboardWeeks = academicWeeks.filter((week) => week.teacher_entry_enabled || entries.some((entry) => entry.weekId === week.id) || isSupervisor && reviewItems.some((review) => review.weekId === week.id));
   const dashboardWeek = academicWeeks.find((week) => week.id === dashboardWeekId);
   const dashboardPlans = weeklyPlanRows.filter((plan) => plan.weekId === dashboardWeekId);
+  const incompleteOwnPlans = dashboardPlans.map((plan) => {
+    const week = academicWeeks.find((item) => item.id === plan.weekId);
+    const requiredSlots = assignedPlanSlotsForWeek(timetableSlots, assignments, profileId, plan.classId, week, schoolHolidays);
+    const missingSlots = requiredSlots.filter((slot) => !entries.some((entry) => entry.weeklyPlanId === plan.planId && entry.subjectId === slot.subject_id && entry.hasClasswork
+      && (entry.timetableSlotId ? entry.timetableSlotId === slot.id : entry.dayOfWeek === slot.day_of_week && entry.periodNumber === slot.period_number)));
+    return { plan, missingSlots };
+  }).filter((item) => item.missingSlots.length > 0);
+  const incompleteSupervisedPlanMap = new Map<string, { teacherId: string; teacherName: string; classId: string; className: string; missingSlots: TimetableSlot[] }>();
+  if (isSupervisor && dashboardWeek) reviewItems.filter((review) => review.weekId === dashboardWeekId).forEach((review) => {
+    const teacher = departmentTeachers.find((item) => item.userId === review.teacherId);
+    if (!teacher) return;
+    const requiredSlots = assignedPlanSlotsForWeek(timetableSlots, teacher.assignments, teacher.userId, review.classId, dashboardWeek, schoolHolidays)
+      .filter((slot) => slot.subject_id === review.subjectId);
+    const missingSlots = requiredSlots.filter((slot) => !review.entries.some((entry) => entry.day === dayNames[slot.day_of_week] && entry.period === slot.period_number && entry.classwork.trim()));
+    if (!missingSlots.length) return;
+    const key = `${review.teacherId}:${review.classId}`;
+    const existing = incompleteSupervisedPlanMap.get(key) ?? { teacherId: review.teacherId, teacherName: review.teacherName, classId: review.classId, className: review.className, missingSlots: [] };
+    missingSlots.forEach((slot) => { if (!existing.missingSlots.some((item) => item.id === slot.id)) existing.missingSlots.push(slot); });
+    incompleteSupervisedPlanMap.set(key, existing);
+  });
+  const incompleteSupervisedPlans = Array.from(incompleteSupervisedPlanMap.values());
   const actionablePlans = dashboardPlans.filter((plan) => plan.status === "draft" || plan.status === "changes_requested");
   const submittedPlans = dashboardPlans.filter((plan) => plan.status === "submitted");
   const approvedPlans = dashboardPlans.filter((plan) => plan.status === "approved");
@@ -1583,7 +1615,7 @@ export default function TeachersDashboardPage() {
   }, new Map<string, SupervisorPlanReview>()).values()).map((plan) => ({ ...plan, entries: plan.entries.sort((a, b) => dayNames.indexOf(a.day) - dayNames.indexOf(b.day) || a.period - b.period), quizzes: Array.from(new Map(plan.quizzes.map((quiz) => [`${quiz.subject}-${quiz.date}-${quiz.details}`, quiz])).values()), weeklyNotes: Array.from(new Set(plan.weeklyNotes)) })), [selectedClassReviewRawItems]);
   const selectedClassReviewItems = useMemo(() => selectedClassTeacherPlans
     .map((plan) => ({
-      id: plan.key, weeklyPlanId: plan.weeklyPlanId, teacherId: plan.teacherId, weekId: plan.weekId, classId: plan.classId,
+      id: plan.key, weeklyPlanId: plan.weeklyPlanId, teacherId: plan.teacherId, subjectId: plan.reviews[0]?.subjectId ?? "", weekId: plan.weekId, classId: plan.classId,
       teacherName: plan.teacherName, className: plan.className, week: plan.week,
       subject: plan.reviews.map((item) => item.subject).join(" + "), status: plan.status, note: plan.note, submittedAt: plan.submittedAt, entries: plan.entries, quizzes: plan.quizzes, weeklyNotes: plan.weeklyNotes,
     })).sort((a, b) => Number(b.status === "submitted") - Number(a.status === "submitted") || a.className.localeCompare(b.className) || a.teacherName.localeCompare(b.teacherName)), [selectedClassTeacherPlans]);
@@ -1605,6 +1637,29 @@ export default function TeachersDashboardPage() {
   const openDashboardPlanList = (filter: typeof planViewFilter) => {
     setPlanViewFilter(filter);
     openWorkspaceSection("Weekly Plans");
+  };
+  const incompleteOwnPlanAction = (plan: WeeklyPlanRow): "edit_approved" | "complete" | "preview" => {
+    const weekOpen = Boolean(weeklyPlanCreationOpen && academicWeeks.find((week) => week.id === plan.weekId)?.teacher_entry_enabled);
+    if (plan.status === "approved" && weeklyPlanCreationOpen) {
+      const classSubjectIds = assignments.filter((assignment) => assignment.classId === plan.classId).map((assignment) => assignment.subjectId);
+      const allSubjectsApproved = classSubjectIds.length > 0 && classSubjectIds.every((subjectId) => mySubmissions.some((submission) => submission.classId === plan.classId && submission.weekId === plan.weekId && submission.subjectId === subjectId && submission.status === "approved"));
+      if (allSubjectsApproved) return "edit_approved";
+      if (weekOpen) return "complete";
+    }
+    if ((plan.status === "draft" || plan.status === "changes_requested") && weekOpen) return "complete";
+    return "preview";
+  };
+  const openIncompleteOwnPlan = (plan: WeeklyPlanRow) => {
+    const action = incompleteOwnPlanAction(plan);
+    if (action === "edit_approved") void openPublishedEdit(plan);
+    else if (action === "complete" && plan.status === "approved") void openWeeklyBuilder(plan.weekId, plan.classId);
+    else void openWeeklyPlan(plan);
+  };
+  const openIncompleteSupervisedPlan = (classId: string) => {
+    setSelectedReviewWeekId(dashboardWeekId);
+    setSelectedReviewClassId(classId);
+    openWorkspaceSection("Teacher Reviews");
+    window.setTimeout(() => document.getElementById("supervisor-review-results")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
   const openFirstWaitingReview = () => {
     const firstWaitingReview = waitingReviews[0];
@@ -1669,6 +1724,11 @@ export default function TeachersDashboardPage() {
               <button type="button" className="staff-metric approved" onClick={() => openDashboardPlanList("approved")}><span>{dashboardArabic ? isSupervisor ? "خططي المعتمدة تلقائيًا" : "خطط معتمدة" : isSupervisor ? "My auto-approved plans" : "Approved plans"}</span><strong>{approvedPlans.length}</strong><small>{dashboardArabic ? "عرض الخطط المعتمدة" : "View approved plans"}</small></button>
               {isSupervisor && <button type="button" className="staff-metric missing" onClick={() => document.getElementById("staff-missing-teachers")?.scrollIntoView({ behavior: "smooth", block: "start" })}><span>{dashboardArabic ? "معلمون لهم فصول بلا خطة مرسلة" : "Teachers with classes not sent"}</span><strong>{pendingTeacherCount}</strong><small>{dashboardArabic ? "عرض الأسماء والفصول" : "See names and classes"}</small></button>}
             </div>
+            {(incompleteOwnPlans.length > 0 || incompleteSupervisedPlans.length > 0) && <section className="teacher-card staff-attention-panel" aria-label={dashboardArabic ? "خطط بها حصص ناقصة" : "Plans with missing lessons"}>
+              <header><div><span className="staff-attention-kicker">{dashboardArabic ? "يرجى الانتباه" : "Needs attention"}</span><h3>{dashboardArabic ? "حصص لم يُكتب لها عمل الحصة" : "Lessons missing Classwork"}</h3><p>{dashboardArabic ? "الحصص التالية من جدول الأسبوع المختار. لا تُحسب الواجبات أو ملاحظات كلاسيرا بديلًا عن عمل الحصة." : "These lessons belong to the selected week's timetable. Homework and Classera notes do not replace Classwork."}</p></div><b>{incompleteOwnPlans.length + incompleteSupervisedPlans.length}</b></header>
+              {incompleteOwnPlans.length > 0 && <div className="staff-attention-group"><h4>{dashboardArabic ? isSupervisor ? "خططي أنا" : "خططي" : "My plans"}</h4><div className="staff-attention-list">{incompleteOwnPlans.map(({ plan, missingSlots }) => <article key={plan.planId}><div className="staff-attention-row-heading"><strong>{plan.className}</strong><small>{dashboardArabic ? `${missingSlots.length} حصص ناقصة` : `${missingSlots.length} missing lessons`}</small></div><div className="staff-attention-lessons">{missingSlots.map((slot) => <span key={slot.id}>{dashboardArabic ? arabicDayNames[dayNames[slot.day_of_week]] : dayNames[slot.day_of_week]} · {dashboardArabic ? "الحصة" : "Period"} {slot.period_number} · {schoolSubjects.find((subject) => subject.id === slot.subject_id)?.name_en ?? (dashboardArabic ? "المادة" : "Subject")}</span>)}</div><button type="button" disabled={saving} onClick={() => openIncompleteOwnPlan(plan)}>{incompleteOwnPlanAction(plan) === "edit_approved" ? dashboardArabic ? "تعديل الخطة" : "Edit plan" : incompleteOwnPlanAction(plan) === "complete" ? dashboardArabic ? "استكمال الخطة" : "Complete plan" : dashboardArabic ? "معاينة الخطة" : "Preview plan"} ←</button></article>)}</div></div>}
+              {isSupervisor && incompleteSupervisedPlans.length > 0 && <div className="staff-attention-group"><h4>{dashboardArabic ? "خطط معلمي القسم" : "Department teachers' plans"}</h4><div className="staff-attention-list">{incompleteSupervisedPlans.map((item) => <article key={`${item.teacherId}:${item.classId}`}><div className="staff-attention-row-heading"><strong>{item.teacherName} · {item.className}</strong><small>{dashboardArabic ? `${item.missingSlots.length} حصص ناقصة` : `${item.missingSlots.length} missing lessons`}</small></div><div className="staff-attention-lessons">{item.missingSlots.map((slot) => <span key={slot.id}>{dashboardArabic ? arabicDayNames[dayNames[slot.day_of_week]] : dayNames[slot.day_of_week]} · {dashboardArabic ? "الحصة" : "Period"} {slot.period_number} · {schoolSubjects.find((subject) => subject.id === slot.subject_id)?.name_en ?? (dashboardArabic ? "المادة" : "Subject")}</span>)}</div><button type="button" onClick={() => openIncompleteSupervisedPlan(item.classId)}>{dashboardArabic ? "عرض خطة المعلم" : "View teacher plan"} ←</button></article>)}</div></div>}
+            </section>}
             <div className="staff-dashboard-panels">
               <section className="teacher-card staff-dashboard-panel"><header><div><span>{dashboardArabic ? "خطوتك التالية" : "Your next step"}</span><h3>{dashboardArabic ? "خططي لهذا الأسبوع" : "My plans this week"}</h3></div><button type="button" onClick={() => openDashboardPlanList("all")}>{dashboardArabic ? "عرض كل الخطط" : "View all plans"} ←</button></header><div className="staff-task-list">
                 {actionablePlans.slice(0, 4).map((plan) => <button type="button" key={plan.planId} onClick={() => void openWeeklyPlan(plan)}><span className="staff-task-icon">✎</span><span><strong>{plan.className}</strong><small>{dashboardArabic ? plan.status === "changes_requested" ? "أُعيدت للتعديل" : "مسودة تحتاج استكمالًا" : plan.status === "changes_requested" ? "Changes requested" : "Draft to complete"}</small></span><em>←</em></button>)}

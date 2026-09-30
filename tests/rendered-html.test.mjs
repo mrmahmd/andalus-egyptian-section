@@ -665,6 +665,23 @@ test("organizes teacher and supervisor home around the selected week and persona
   assert.match(styles, /\.staff-supervisor-followup/);
 });
 
+test("shows missing Classwork alerts separately for teachers and supervisors without changing plan status", async () => {
+  const source = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(source, /assignedPlanSlotsForWeek\(timetableSlots, assignments, profileId, plan\.classId, week, schoolHolidays\)/);
+  assert.match(source, /!holidays\.some\(\(holiday\) => holiday\.week_id === week\?\.id/);
+  assert.match(source, /entry\.hasClasswork/);
+  assert.match(source, /const incompleteSupervisedPlanMap = new Map/);
+  assert.match(source, /slot\.subject_id === review\.subjectId/);
+  assert.match(source, /incompleteOwnPlans\.length > 0 \|\| incompleteSupervisedPlans\.length > 0/);
+  assert.match(source, /openIncompleteOwnPlan\(plan\)/);
+  assert.match(source, /if \(allSubjectsApproved\) return "edit_approved"/);
+  assert.match(source, /action === "complete" && plan\.status === "approved"\) void openWeeklyBuilder\(plan\.weekId, plan\.classId\)/);
+  assert.match(source, /openIncompleteSupervisedPlan\(item\.classId\)/);
+  assert.match(styles, /\.staff-attention-panel/);
+});
+
 test("keeps staff sessions and dashboard history intact when using browser back", async () => {
   const dashboard = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const login = await readFile(new URL("../app/teachers/login/page.tsx", import.meta.url), "utf8");
