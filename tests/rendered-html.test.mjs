@@ -246,6 +246,9 @@ test("opens Super Admin on the weekly overview with account navigation", async (
   assert.doesNotMatch(source, /savedSection && allowedSections/);
   assert.match(source, /تقرير إنجاز المعلمين والمشرفين للأسبوع رقم/);
   assert.match(source, /setReportPending\(true\);\s*const loaded = await loadDashboard\(\)/);
+  assert.match(source, /publishedClassPlanCount = weeklyClassCoverage\.filter\(\(coverage\) => coverage\.plan\?\.status === "published"\)\.length/);
+  assert.match(source, /parentVisibleClassPlanCount = selectedPlanWeek\?\.parent_portal_visible \? publishedClassPlanCount : 0/);
+  assert.match(source, /className="super-overview-visibility-line"/);
 });
 
 test("offers a current-session sign-out button in Super Admin settings", async () => {
