@@ -791,6 +791,14 @@ test("removes dictation from approved plans without rewriting unchanged lessons"
   assert.match(source, /"message" in error && typeof error\.message === "string"/);
 });
 
+test("guards closed-week note edits without reading lesson-only record fields", async () => {
+  const migration = await readFile(new URL("../supabase/migrations/20261001120000_fix_closed_week_note_trigger.sql", import.meta.url), "utf8");
+  assert.match(migration, /if tg_table_name = 'plan_entries' then[\s\S]*?old\.timetable_slot_id[\s\S]*?elsif tg_table_name = 'plan_notes' then/);
+  assert.doesNotMatch(migration, /if tg_table_name = 'plan_entries' and tg_op = 'UPDATE'/);
+  assert.match(migration, /submission\.status = 'approved'/);
+  assert.match(migration, /raise exception 'This academic week is closed for teacher entry\.'/);
+});
+
 test("warns before sending missing Classwork and keeps the report design while recalculating percentages", async () => {
   const teacher = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const admin = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
