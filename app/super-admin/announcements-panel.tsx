@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 
@@ -27,6 +27,8 @@ export default function AnnouncementsPanel({ weeks, classes, adminId, weekId, on
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editorRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!classes.some((item) => item.id === classId)) setClassId(classes[0]?.id ?? "");
@@ -51,10 +53,23 @@ export default function AnnouncementsPanel({ weeks, classes, adminId, weekId, on
   useEffect(() => { void loadItems(); }, [loadItems]);
 
   useEffect(() => {
+    if (editingId) return;
     const current = items.find((item) => item.class_id === classId && item.day_of_week === day);
     setTitle(current?.title ?? "");
     setBody(current?.body ?? "");
-  }, [classId, day, items]);
+  }, [classId, day, items, editingId]);
+
+  useEffect(() => { setEditingId(null); }, [weekId]);
+
+  const edit = (item: Announcement) => {
+    setEditingId(item.id);
+    setClassId(item.class_id);
+    setDay(item.day_of_week);
+    setTitle(item.title);
+    setBody(item.body);
+    setFeedback(arabic ? "أنت تعدّل إعلانًا منشورًا. احفظ التغييرات لتظهر لولي الأمر." : "You are editing a published announcement. Save changes to update the family plan.");
+    editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const save = async () => {
     if (!weekId || !classId || !adminId || !title.trim() || !body.trim()) {
@@ -63,13 +78,27 @@ export default function AnnouncementsPanel({ weeks, classes, adminId, weekId, on
     }
     setBusy(true); setFeedback("");
     try {
-      const { error } = await getSupabaseBrowserClient().from("weekly_plan_announcements").upsert({
-        week_id: weekId, class_id: classId, day_of_week: day, created_by: adminId,
-        title: title.trim(), body: body.trim(), updated_at: new Date().toISOString(),
-      }, { onConflict: "week_id,class_id,day_of_week" });
-      if (error) throw error;
+      const client = getSupabaseBrowserClient();
+      if (editingId) {
+        if (items.some((item) => item.id !== editingId && item.class_id === classId && item.day_of_week === day)) {
+          throw new Error(arabic ? "يوجد إعلان آخر لهذا الفصل في اليوم المختار. اختر يومًا آخر." : "This class already has another announcement on the selected day. Choose a different day.");
+        }
+        const { data, error } = await client.from("weekly_plan_announcements")
+          .update({ class_id: classId, day_of_week: day, title: title.trim(), body: body.trim(), updated_at: new Date().toISOString() })
+          .eq("id", editingId).eq("created_by", adminId).eq("week_id", weekId).select("id").single();
+        if (error) throw error;
+        if (!data) throw new Error(arabic ? "لم يتم العثور على الإعلان المطلوب تعديله." : "The announcement to edit was not found.");
+      } else {
+        const { error } = await client.from("weekly_plan_announcements").upsert({
+          week_id: weekId, class_id: classId, day_of_week: day, created_by: adminId,
+          title: title.trim(), body: body.trim(), updated_at: new Date().toISOString(),
+        }, { onConflict: "week_id,class_id,day_of_week" });
+        if (error) throw error;
+      }
+      const wasEditing = Boolean(editingId);
+      setEditingId(null);
       await loadItems();
-      setFeedback(arabic ? "تم حفظ إعلان اليوم لهذا الفصل. سيظهر عند نشر الخطة وإظهار الأسبوع لولي الأمر." : "Announcement saved for this day and class. Families will see it when the plan and week are visible.");
+      setFeedback(wasEditing ? arabic ? "تم تحديث الإعلان المنشور بنجاح." : "Published announcement updated successfully." : arabic ? "تم حفظ إعلان اليوم لهذا الفصل. سيظهر عند نشر الخطة وإظهار الأسبوع لولي الأمر." : "Announcement saved for this day and class. Families will see it when the plan and week are visible.");
     } catch (error) { setFeedback(errorText(error)); }
     finally { setBusy(false); }
   };
@@ -90,7 +119,7 @@ export default function AnnouncementsPanel({ weeks, classes, adminId, weekId, on
 
   const classLabel = (item: SchoolClass) => arabic ? `الصف ${item.grade} · الشعبة ${item.section}` : `Grade ${item.grade} · Class ${item.section}`;
 
-  return <section className="teacher-card farid-admin-announcements" dir={arabic ? "rtl" : "ltr"}>
+  return <section ref={editorRef} className="teacher-card farid-admin-announcements" dir={arabic ? "rtl" : "ltr"}>
     <div className="farid-feature-head"><span className="farid-feature-icon">✦</span><div><small>{arabic ? "مساحة إعلانات خاصة" : "PRIVATE ANNOUNCEMENT CONTROL"}</small><h2>{arabic ? "إعلانات الخطة الأسبوعية" : "Weekly plan announcements"}</h2><p>{arabic ? "اختر الأسبوع والفصل واليوم، ثم اكتب الإعلان الذي سيظهر فوق خطة ولي الأمر." : "Choose a week, class and day. Announcements appear above the family weekly plan."}</p></div></div>
     <div className="farid-feature-grid">
       <label>{arabic ? "الأسبوع" : "Week"}<select value={weekId} onChange={(event) => onWeekChange(event.target.value)}>{weeks.map((week) => <option key={week.id} value={week.id}>{arabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {formatAcademicWeekRange(week, arabic ? "ar-EG" : "en-GB")}</option>)}</select></label>
@@ -99,8 +128,8 @@ export default function AnnouncementsPanel({ weeks, classes, adminId, weekId, on
       <label>{arabic ? "عنوان الإعلان" : "Announcement title"}<input maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Important announcement" /></label>
       <label className="farid-feature-wide">{arabic ? "نص الإعلان" : "Announcement text"}<textarea rows={4} maxLength={2500} value={body} onChange={(event) => setBody(event.target.value)} placeholder={arabic ? "اكتب الإعلان الذي سيظهر لأولياء أمور الفصل المختار" : "Write the announcement for this class"} /></label>
     </div>
-    <div className="farid-feature-actions"><button type="button" className="teacher-primary-button" onClick={() => void save()} disabled={busy || loading}>{busy ? arabic ? "جارٍ الحفظ…" : "Saving…" : arabic ? "حفظ إعلان اليوم" : "Save day's announcement"}</button>{items.some((item) => item.class_id === classId && item.day_of_week === day) && <button type="button" className="farid-feature-remove" onClick={() => void remove()} disabled={busy}>{arabic ? "حذف إعلان اليوم" : "Delete day's announcement"}</button>}</div>
+    <div className="farid-feature-actions"><button type="button" className="teacher-primary-button" onClick={() => void save()} disabled={busy || loading}>{busy ? arabic ? "جارٍ الحفظ…" : "Saving…" : editingId ? arabic ? "حفظ تعديل الإعلان" : "Save announcement changes" : arabic ? "حفظ إعلان اليوم" : "Save day's announcement"}</button>{editingId && <button type="button" className="farid-feature-cancel" onClick={() => setEditingId(null)} disabled={busy}>{arabic ? "إلغاء التعديل" : "Cancel editing"}</button>}{!editingId && items.some((item) => item.class_id === classId && item.day_of_week === day) && <button type="button" className="farid-feature-remove" onClick={() => void remove()} disabled={busy}>{arabic ? "حذف إعلان اليوم" : "Delete day's announcement"}</button>}</div>
     {feedback && <p className="farid-feature-feedback" role="status">{feedback}</p>}
-    <div className="farid-feature-list"><h3>{arabic ? "إعلانات الأسبوع المختار" : "Announcements for this week"}</h3>{items.length ? items.map((item) => <article key={item.id}><strong>{classLabel(classes.find((entry) => entry.id === item.class_id) ?? { id: item.class_id, grade: 0, section: "?" })} · {arabic ? arabicDays[item.day_of_week] : dayNames[item.day_of_week]}</strong><b>{item.title}</b><p>{item.body}</p></article>) : <p>{loading ? arabic ? "جارٍ تحميل الإعلانات…" : "Loading announcements…" : arabic ? "لا توجد إعلانات لهذا الأسبوع." : "No announcements for this week."}</p>}</div>
+    <div className="farid-feature-list"><h3>{arabic ? "إعلانات الأسبوع المختار" : "Announcements for this week"}</h3>{items.length ? items.map((item) => <article key={item.id}><strong>{classLabel(classes.find((entry) => entry.id === item.class_id) ?? { id: item.class_id, grade: 0, section: "?" })} · {arabic ? arabicDays[item.day_of_week] : dayNames[item.day_of_week]}</strong><b>{item.title}</b><p>{item.body}</p><button type="button" className="farid-feature-edit" onClick={() => edit(item)} disabled={busy || loading}>{arabic ? "تعديل الإعلان" : "Edit announcement"}</button></article>) : <p>{loading ? arabic ? "جارٍ تحميل الإعلانات…" : "Loading announcements…" : arabic ? "لا توجد إعلانات لهذا الأسبوع." : "No announcements for this week."}</p>}</div>
   </section>;
 }

@@ -846,7 +846,12 @@ test("allows a separate announcement for each school day in a compact parent tab
   assert.match(parent, /<h3>Announcement<\/h3><table><thead><tr><th>Day<\/th><th>Details<\/th>/);
   assert.match(migration, /unique index if not exists weekly_plan_announcements_week_class_day_key/);
   assert.match(migration, /check \(day_of_week between 0 and 4\)/);
-  assert.match(styles, /\.parent-announcement-block h3 \{[^}]*text-align: left/);
+  assert.match(styles, /\.plan-paper \.parent-announcement-block h3 \{[^}]*font-size: 21px;[^}]*text-align: center/);
+  assert.match(styles, /\.plan-paper \.parent-announcement-block th \{[^}]*text-align: center/);
+  assert.match(parent, /compactAnnouncementText\(announcement\.body\)/);
+  assert.match(admin, /className="farid-feature-edit" onClick=\{\(\) => edit\(item\)\}/);
+  assert.match(admin, /\.update\(\{ class_id: classId, day_of_week: day, title: title\.trim\(\), body: body\.trim\(\)/);
+  assert.match(admin, /\.eq\("id", editingId\)\.eq\("created_by", adminId\)\.eq\("week_id", weekId\)\.select\("id"\)\.single\(\)/);
 });
 
 test("places Mohamed Farid's quizzes inside the selected weekly editor", async () => {

@@ -7,6 +7,10 @@ type Announcement = { id: string; day_of_week: number; title: string; body: stri
 type Quiz = { id: string; day_of_week: number; programme: string; content: string };
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
 
+function compactAnnouncementText(value: string) {
+  return value.replace(/\r\n?/g, "\n").replace(/\n[\t ]*\n+/g, "\n").trim();
+}
+
 export default function ParentSpecialExtras({ weekId, classId, refreshVersion }: { weekId: string; classId: string; refreshVersion: number }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -34,7 +38,7 @@ export default function ParentSpecialExtras({ weekId, classId, refreshVersion }:
 
   return <div className="parent-special-extras">
     {error && <p className="parent-special-error" role="alert">School announcements and quizzes could not be refreshed. Please try again.</p>}
-    {announcements.length > 0 && <section className="parent-announcement-block" aria-label="School announcements"><h3>Announcement</h3><table><thead><tr><th>Day</th><th>Details</th></tr></thead><tbody>{announcements.map((announcement) => <tr key={announcement.id}><td>{days[announcement.day_of_week] ?? "School day"}</td><td><strong>{announcement.title}</strong><span>{announcement.body}</span></td></tr>)}</tbody></table></section>}
+    {announcements.length > 0 && <section className="parent-announcement-block" aria-label="School announcements"><h3>Announcement</h3><table><thead><tr><th>Day</th><th>Details</th></tr></thead><tbody>{announcements.map((announcement) => <tr key={announcement.id}><td>{days[announcement.day_of_week] ?? "School day"}</td><td><strong>{announcement.title}</strong><span>{compactAnnouncementText(announcement.body)}</span></td></tr>)}</tbody></table></section>}
     {quizzes.length > 0 && <section className="parent-special-quizzes" aria-label="Quizzes"><div className="parent-special-label"><span>Q</span> QUIZZES THIS WEEK</div><table><thead><tr><th>Day</th><th>Subject</th><th>Quiz content</th></tr></thead><tbody>{quizzes.map((quiz) => <tr key={quiz.id}><td>{days[quiz.day_of_week] ?? "School day"}</td><td>{quiz.programme}</td><td>{quiz.content}</td></tr>)}</tbody></table></section>}
   </div>;
 }
