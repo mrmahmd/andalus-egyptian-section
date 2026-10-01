@@ -848,3 +848,15 @@ test("allows a separate announcement for each school day in a compact parent tab
   assert.match(migration, /check \(day_of_week between 0 and 4\)/);
   assert.match(styles, /\.parent-announcement-block h3 \{[^}]*text-align: left/);
 });
+
+test("places Mohamed Farid's quizzes inside the selected weekly editor", async () => {
+  const teacher = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const quizzes = await readFile(new URL("../app/teachers/farid-quizzes-panel.tsx", import.meta.url), "utf8");
+
+  assert.match(teacher, /isFaridTeacher && <FaridQuizzesPanel[^>]*contextWeekId=\{selectedWeekId\} contextClassId=\{selectedClassId\} embedded readOnly=\{weeklyBuilderReadOnly\}/);
+  assert.match(quizzes, /const selectedWeekId = contextWeekId \?\? weekId/);
+  assert.match(quizzes, /const selectedClassId = contextClassId \?\? classId/);
+  assert.match(quizzes, /!embedded && <label>\{arabic \? "الأسبوع"/);
+  assert.match(quizzes, /if \(readOnly\) return/);
+  assert.match(quizzes, /Save quiz/);
+});

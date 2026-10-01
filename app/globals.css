@@ -2620,6 +2620,9 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 /* Mohamed Farid's scoped announcement and quiz workspaces. */
 .farid-admin-announcements, .farid-teacher-quizzes { margin-top: 20px; padding: 25px; font-family: "Alexandria", "Cairo", sans-serif; color: #12345b; }
 .farid-feature-head { display: flex; align-items: center; gap: 15px; margin-bottom: 22px; }
+.farid-teacher-quizzes.is-embedded { margin: 20px 0 0; border: 1px solid #b9dce8; background: linear-gradient(135deg, #f5fbfe, #fff8fc); box-shadow: none; }
+.farid-teacher-quizzes.is-embedded .farid-feature-head { margin-bottom: 16px; }
+.farid-feature-context { grid-column: 1 / -1; padding: 10px 13px; border-radius: 10px; background: #e5f4f8; color: #0e5874; font-size: 13px; font-weight: 800; }
 .farid-feature-icon { width: 54px; height: 54px; flex: 0 0 54px; display: grid; place-items: center; border-radius: 16px; background: linear-gradient(145deg, #184d8e, #0ca2b5); color: #fff; font-size: 26px; font-weight: 900; box-shadow: 0 10px 20px #13638230; }
 .farid-feature-head small { display: block; color: #a22a79; font-size: 12px; font-weight: 800; }
 .farid-feature-head h2 { margin: 5px 0; color: #0d2f5b; font-size: clamp(20px, 2.1vw, 29px); font-weight: 900; }
