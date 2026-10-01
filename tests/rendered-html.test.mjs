@@ -782,6 +782,15 @@ test("offers explicit owner-only approved corrections without reopening normal d
   assert.doesNotMatch(approvedMigration, /update public\.plan_submissions/);
 });
 
+test("removes dictation from approved plans without rewriting unchanged lessons", async () => {
+  const source = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  assert.match(source, /approvedLessonSnapshot\.current\[slot\.id\]/);
+  assert.match(source, /if \(lessonsUnchanged && dictationNote === ""\)/);
+  assert.match(source, /\.delete\(\)\.in\("id", dictationIds\)\.eq\("weekly_plan_id", publishedEditPlanId\)\.eq\("teacher_id", profileId\)\.select\("id"\)/);
+  assert.match(source, /deletedNotes\?\.length !== dictationIds\.length/);
+  assert.match(source, /"message" in error && typeof error\.message === "string"/);
+});
+
 test("warns before sending missing Classwork and keeps the report design while recalculating percentages", async () => {
   const teacher = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const admin = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");

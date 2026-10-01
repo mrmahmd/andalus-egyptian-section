@@ -184,6 +184,7 @@ type SupervisorPlanReview = {
 };
 
 type SlotDraft = { classwork: string; homework: string; classeraNotes: string; englishProgramme: string; scienceComponent: string };
+type ApprovedLessonSnapshot = { classwork: string; homework: string; classera_notes: string };
 type SchoolClass = { id: string; grade: number; section: string };
 type SchoolSubject = { id: string; name_en: string };
 type DepartmentTeacher = { userId: string; name: string; assignments: Assignment[] };
@@ -299,6 +300,7 @@ export default function TeachersDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const editorSaveInProgress = useRef(false);
+  const approvedLessonSnapshot = useRef<Record<string, ApprovedLessonSnapshot>>({});
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"success" | "error" | "info">("info");
   const [selectedWeekId, setSelectedWeekId] = useState("");
@@ -690,6 +692,7 @@ export default function TeachersDashboardPage() {
   const loadPlanIntoBuilder = useCallback(async () => {
     if (!weeklyBuilderOpen || !profileId || !selectedClassId || !selectedWeekId) return;
     setBuilderHydrated(false);
+    approvedLessonSnapshot.current = {};
     try {
       const supabase = getSupabaseBrowserClient();
       const { data: plan, error: planError } = await supabase.from("weekly_plans")
@@ -706,6 +709,7 @@ export default function TeachersDashboardPage() {
         const row = rows.find((entry) => entry.teacher_id === profileId && entry.subject_id === slot.subject_id && entry.timetable_slot_id === slot.id)
           ?? rows.find((entry) => entry.teacher_id === profileId && entry.subject_id === slot.subject_id && entry.day_of_week === slot.day_of_week && entry.period_number === slot.period_number);
         if (!row) return;
+        approvedLessonSnapshot.current[slot.id] = { classwork: row.classwork ?? "", homework: row.homework ?? "", classera_notes: row.classera_notes ?? "" };
         const assignment = assignmentForSlot(slot);
         let classwork = row.classwork ?? "";
         let englishProgramme = "";
@@ -1055,13 +1059,45 @@ export default function TeachersDashboardPage() {
           classera_notes: draft.classeraNotes.trim(),
         };
       });
-      const { data, error } = await getSupabaseBrowserClient().rpc("update_my_published_plan", {
-        target_plan_id: publishedEditPlanId,
-        lesson_changes: lessonChanges,
-        dictation_note: departmentName === "English Department" ? parseDictationWords(dictationWords).length ? encodeEnglishDictation(dictationDay, dictationWords) : "" : null,
+      const supabase = getSupabaseBrowserClient();
+      const dictationNote = departmentName === "English Department" ? parseDictationWords(dictationWords).length ? encodeEnglishDictation(dictationDay, dictationWords) : "" : null;
+      const lessonsUnchanged = lessonChanges.length > 0 && lessonChanges.every((lesson) => {
+        const original = approvedLessonSnapshot.current[lesson.slot_id];
+        return original && original.classwork === lesson.classwork && original.homework === lesson.homework && original.classera_notes === lesson.classera_notes;
       });
-      if (error) throw error;
-      if (Number(data) !== lessonChanges.length) throw new Error("The database did not confirm every approved lesson update.");
+      if (lessonsUnchanged && dictationNote === "") {
+        // A dictation-only removal must not re-save every approved lesson: the
+        // timetable may have changed since approval, and no lesson was edited.
+        const { data: currentPlan, error: currentPlanError } = await supabase.from("weekly_plans")
+          .select("id, status").eq("id", publishedEditPlanId).single();
+        if (currentPlanError) throw currentPlanError;
+        if (!currentPlan || !["draft", "published"].includes(currentPlan.status)) throw new Error("This approved plan is no longer available for correction.");
+        const { data: approvals, error: approvalsError } = await supabase.from("plan_submissions")
+          .select("subject_id, status").eq("weekly_plan_id", publishedEditPlanId).eq("teacher_id", profileId);
+        if (approvalsError) throw approvalsError;
+        const ownSubjects = new Set(selectedClassAssignments.map((assignment) => assignment.subjectId));
+        if (!ownSubjects.size || !Array.from(ownSubjects).every((subjectId) => approvals?.some((item) => item.subject_id === subjectId && item.status === "approved"))) {
+          throw new Error("Your subject approval changed. Refresh the page before editing dictation.");
+        }
+        const { data: currentNotes, error: notesError } = await supabase.from("plan_notes")
+          .select("id, note_text").eq("weekly_plan_id", publishedEditPlanId).eq("teacher_id", profileId);
+        if (notesError) throw notesError;
+        const dictationIds = (currentNotes ?? []).filter((note) => note.note_text.startsWith(dictationNotePrefix)).map((note) => note.id);
+        if (dictationIds.length) {
+          const { data: deletedNotes, error: deleteError } = await supabase.from("plan_notes")
+            .delete().in("id", dictationIds).eq("weekly_plan_id", publishedEditPlanId).eq("teacher_id", profileId).select("id");
+          if (deleteError) throw deleteError;
+          if (deletedNotes?.length !== dictationIds.length) throw new Error("The database did not confirm removal of every dictation note.");
+        }
+      } else {
+        const { data, error } = await supabase.rpc("update_my_published_plan", {
+          target_plan_id: publishedEditPlanId,
+          lesson_changes: lessonChanges,
+          dictation_note: dictationNote,
+        });
+        if (error) throw error;
+        if (Number(data) !== lessonChanges.length) throw new Error("The database did not confirm every approved lesson update.");
+      }
       await loadTeacherDashboard();
       setMessage(approvedEditPublished ? arabic ? "تم حفظ التعديل على الخطة المنشورة دون إعادة إرساله للمشرف." : "Published changes were saved without another supervisor review." : arabic ? "تم حفظ تعديل الخطة المعتمدة دون إعادة إرسالها للمشرف. ستظهر لولي الأمر عند استيفاء شروط النشر." : "Approved changes were saved without another review. Families will see them when publication conditions are met.");
       setMessageTone("success");
@@ -1070,7 +1106,9 @@ export default function TeachersDashboardPage() {
       closeWeeklyEditor(true);
       setSubmissionSuccessOpen(true);
     } catch (error) {
-      const text = error instanceof Error ? error.message : "The approved plan could not be updated.";
+      const text = error && typeof error === "object" && "message" in error && typeof error.message === "string"
+        ? error.message
+        : "The approved plan could not be updated.";
       setBuilderFeedback({ tone: "error", text: arabic ? `تعذر حفظ التعديل، ولم تُغلق نافذة التحرير. ${text}` : text });
     } finally {
       setSaving(false);
