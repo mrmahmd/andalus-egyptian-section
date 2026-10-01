@@ -833,3 +833,18 @@ test("scopes Mohamed Farid announcements and quizzes and puts public extras abov
   assert.match(migration, /profile\.username = 'mohamed\.farid'/);
   assert.match(migration, /profile\.username = 'mrmahmd'/);
 });
+
+test("allows a separate announcement for each school day in a compact parent table", async () => {
+  const admin = await readFile(new URL("../app/super-admin/announcements-panel.tsx", import.meta.url), "utf8");
+  const parent = await readFile(new URL("../app/weekly-plan/parent-special-extras.tsx", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../supabase/migrations/20261001180000_announcement_days.sql", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(admin, /onConflict: "week_id,class_id,day_of_week"/);
+  assert.match(admin, /item\.day_of_week === day/);
+  assert.match(parent, /\.order\("day_of_week"\)/);
+  assert.match(parent, /<h3>Announcement<\/h3><table><thead><tr><th>Day<\/th><th>Details<\/th>/);
+  assert.match(migration, /unique index if not exists weekly_plan_announcements_week_class_day_key/);
+  assert.match(migration, /check \(day_of_week between 0 and 4\)/);
+  assert.match(styles, /\.parent-announcement-block h3 \{[^}]*text-align: left/);
+});
