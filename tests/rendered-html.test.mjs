@@ -848,6 +848,9 @@ test("allows a separate announcement for each school day in a compact parent tab
   assert.match(migration, /check \(day_of_week between 0 and 4\)/);
   assert.match(styles, /\.plan-paper \.parent-announcement-block h3 \{[^}]*font-size: 21px;[^}]*text-align: center/);
   assert.match(styles, /\.plan-paper \.parent-announcement-block th \{[^}]*text-align: center/);
+  assert.match(styles, /\.plan-paper \.parent-announcement-block td:first-child \{[^}]*text-align: center; vertical-align: middle/);
+  assert.match(styles, /\.plan-paper \.parent-announcement-block td strong \{[^}]*text-align: center/);
+  assert.match(styles, /\.plan-paper \.parent-announcement-block td span \{[^}]*text-align: left/);
   assert.match(parent, /compactAnnouncementText\(announcement\.body\)/);
   assert.match(admin, /className="farid-feature-edit" onClick=\{\(\) => edit\(item\)\}/);
   assert.match(admin, /\.update\(\{ class_id: classId, day_of_week: day, title: title\.trim\(\), body: body\.trim\(\)/);

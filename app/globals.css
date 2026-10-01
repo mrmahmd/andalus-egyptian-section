@@ -2662,8 +2662,11 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 .parent-announcement-block tbody tr:nth-child(even) td { background: #fff9fc; }
 .parent-announcement-block th:first-child, .parent-announcement-block td:first-child { width: 22%; color: #7d2b66; font-weight: 900; }
 .parent-announcement-block th:first-child { color: white; }
+.plan-paper .parent-announcement-block td:first-child { text-align: center; vertical-align: middle; }
 .parent-announcement-block td strong { display: block; margin-bottom: 2px; color: #123c67; font-size: 13px; }
 .parent-announcement-block td span { display: block; white-space: pre-line; line-height: 1.3; }
+.plan-paper .parent-announcement-block td strong { text-align: center; }
+.plan-paper .parent-announcement-block td span { text-align: left; }
 .parent-special-quizzes table { width: 100%; margin-top: 11px; border-collapse: collapse; table-layout: fixed; }
 .parent-special-quizzes th { padding: 8px; background: #117c9c; color: white; font-size: 12px; font-weight: 900; text-align: center; }
 .parent-special-quizzes td { padding: 9px; border: 1px solid #b9d8e4; background: #fff; color: #183c61; font-size: 13px; font-weight: 750; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; }
