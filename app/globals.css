@@ -2616,3 +2616,44 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 .teacher-portal:not(.super-admin-portal) .department-teacher-list small {
   color: #3d5b76;
 }
+
+/* Mohamed Farid's scoped announcement and quiz workspaces. */
+.farid-admin-announcements, .farid-teacher-quizzes { margin-top: 20px; padding: 25px; font-family: "Alexandria", "Cairo", sans-serif; color: #12345b; }
+.farid-feature-head { display: flex; align-items: center; gap: 15px; margin-bottom: 22px; }
+.farid-feature-icon { width: 54px; height: 54px; flex: 0 0 54px; display: grid; place-items: center; border-radius: 16px; background: linear-gradient(145deg, #184d8e, #0ca2b5); color: #fff; font-size: 26px; font-weight: 900; box-shadow: 0 10px 20px #13638230; }
+.farid-feature-head small { display: block; color: #a22a79; font-size: 12px; font-weight: 800; }
+.farid-feature-head h2 { margin: 5px 0; color: #0d2f5b; font-size: clamp(20px, 2.1vw, 29px); font-weight: 900; }
+.farid-feature-head p { margin: 0; color: #47637d; font-size: 14px; font-weight: 650; line-height: 1.7; }
+.farid-feature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+.farid-feature-grid label { display: grid; gap: 8px; color: #153e66; font-size: 14px; font-weight: 800; }
+.farid-feature-grid .farid-feature-wide { grid-column: 1 / -1; }
+.farid-feature-grid select, .farid-feature-grid input, .farid-feature-grid textarea { width: 100%; min-width: 0; border: 1px solid #bcd3e4; border-radius: 12px; padding: 12px 13px; background: #f7fbfe; color: #0e315a; font: inherit; font-size: 14px; line-height: 1.6; }
+.farid-feature-grid textarea { resize: vertical; white-space: pre-wrap; }
+.farid-feature-grid :is(select, input, textarea):focus { outline: 3px solid #40b9cd55; border-color: #158fa5; }
+.farid-feature-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 19px; }
+.farid-feature-remove { border: 1px solid #eab7c4; border-radius: 11px; padding: 11px 17px; background: #fff2f5; color: #a32452; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.farid-feature-feedback { margin: 14px 0 0; padding: 12px 15px; border-radius: 11px; background: #ecf8f3; color: #0a7255; font-size: 13px; font-weight: 750; }
+.farid-feature-list { display: grid; gap: 10px; margin-top: 25px; padding-top: 20px; border-top: 1px solid #dce8f0; }
+.farid-feature-list h3 { margin: 0 0 3px; color: #123c68; font-size: 18px; }
+.farid-feature-list > p { color: #526a7f; font-size: 14px; }
+.farid-feature-list article { display: grid; grid-template-columns: minmax(130px, 180px) minmax(140px, 210px) minmax(0, 1fr); align-items: start; gap: 10px; padding: 14px; border: 1px solid #d4e4ee; border-radius: 13px; background: linear-gradient(110deg, #eaf8f7, #f5f5fd); }
+.farid-feature-list article strong { color: #086f85; }.farid-feature-list article b { color: #7e3688; }.farid-feature-list article p { margin: 0; white-space: pre-wrap; line-height: 1.6; overflow-wrap: anywhere; }
+
+/* The public paper stays English/LTR; the colourful extras sit above its timetable. */
+.parent-special-extras:empty { display: none; }
+.parent-announcement-block, .parent-special-quizzes { margin: 14px 0 0; padding: 15px 18px; border-radius: 13px; break-inside: avoid; page-break-inside: avoid; }
+.parent-announcement-block { border: 1px solid #f3c5d9; background: linear-gradient(115deg, #fff1f7, #fffaf0); }
+.parent-special-quizzes { border: 1px solid #b7d9e9; background: linear-gradient(115deg, #eef9fb, #f5f2ff); }
+.parent-special-label { display: flex; align-items: center; gap: 8px; color: #0a5e84; font-size: 11px; font-weight: 900; letter-spacing: .06em; }
+.parent-announcement-block .parent-special-label { color: #a31c66; }
+.parent-special-label span { width: 23px; height: 23px; display: grid; place-items: center; border-radius: 7px; background: #117fa3; color: white; font-size: 13px; }
+.parent-announcement-block .parent-special-label span { background: #bd3480; }
+.parent-announcement-block h3 { margin: 8px 0 5px; color: #133961; font-size: 17px; font-weight: 900; }
+.parent-announcement-block p { margin: 0; color: #263e59; font-size: 14px; font-weight: 700; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.parent-special-quizzes table { width: 100%; margin-top: 11px; border-collapse: collapse; table-layout: fixed; }
+.parent-special-quizzes th { padding: 8px; background: #117c9c; color: white; font-size: 12px; font-weight: 900; text-align: center; }
+.parent-special-quizzes td { padding: 9px; border: 1px solid #b9d8e4; background: #fff; color: #183c61; font-size: 13px; font-weight: 750; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; }
+.parent-special-quizzes td:first-child { width: 20%; color: #075d78; }.parent-special-quizzes td:nth-child(2) { width: 25%; color: #83337f; }
+.parent-special-error { margin: 10px 0; color: #9d3150; font-size: 12px; }
+@media (max-width: 700px) { .farid-admin-announcements, .farid-teacher-quizzes { padding: 17px; }.farid-feature-grid { grid-template-columns: 1fr; }.farid-feature-list article { grid-template-columns: 1fr; }.parent-special-quizzes th, .parent-special-quizzes td { padding: 6px 3px; font-size: 11px; } }
+@media print { .parent-announcement-block, .parent-special-quizzes { padding: 8px 10px; margin-top: 8px; }.parent-announcement-block h3 { margin: 5px 0 3px; font-size: 14px; }.parent-announcement-block p { font-size: 11px; line-height: 1.35; }.parent-special-quizzes th, .parent-special-quizzes td { padding: 5px 6px; font-size: 10px; }.parent-special-label { font-size: 9px; } }

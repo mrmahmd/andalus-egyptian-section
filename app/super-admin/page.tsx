@@ -6,10 +6,11 @@ import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 import { supervisorReportProgress } from "../../lib/supervisor-report-progress";
+import AnnouncementsPanel from "./announcements-panel";
 
 type AccountRole = "Teacher" | "Admin";
 type AccountStatus = "Not Registered" | "Pending" | "Active" | "Suspended" | "Rejected";
-type DashboardSection = "overview" | "approvals" | "accounts" | "roles" | "plans" | "weeks" | "holidays" | "classes" | "activity" | "settings";
+type DashboardSection = "overview" | "approvals" | "accounts" | "roles" | "plans" | "weeks" | "announcements" | "holidays" | "classes" | "activity" | "settings";
 
 type AssignmentItem = {
   id?: string;
@@ -270,6 +271,7 @@ export default function SuperAdminPage() {
   const [editorLoading, setEditorLoading] = useState(false);
   const [currentAdminId, setCurrentAdminId] = useState("");
   const [currentAdminName, setCurrentAdminName] = useState("Mohamed Farid");
+  const [isFaridSuperAdmin, setIsFaridSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -309,7 +311,7 @@ export default function SuperAdminPage() {
 
       const { data: ownerProfile, error: ownerError } = await supabase
         .from("profiles")
-        .select("user_id, display_name, role, status")
+        .select("user_id, username, display_name, role, status")
         .eq("user_id", userData.user.id)
         .maybeSingle();
 
@@ -321,6 +323,8 @@ export default function SuperAdminPage() {
 
       setCurrentAdminId(userData.user.id);
       setCurrentAdminName(ownerProfile.display_name || "Mohamed Farid");
+      setIsFaridSuperAdmin(ownerProfile.username === "mohamed.farid");
+      if (ownerProfile.username !== "mohamed.farid") setActiveSection((current) => current === "announcements" ? "overview" : current);
 
       // A school term contains more rows than the Data API's single-response limit.
       // Read every page before deriving route and report states from plan content.
@@ -544,7 +548,7 @@ export default function SuperAdminPage() {
       return;
     }
     const requestedSection = new URLSearchParams(window.location.search).get("section") as DashboardSection | null;
-    const allowedSections: DashboardSection[] = ["overview", "approvals", "accounts", "roles", "plans", "weeks", "holidays", "classes", "activity", "settings"];
+    const allowedSections: DashboardSection[] = ["overview", "approvals", "accounts", "roles", "plans", "weeks", "announcements", "holidays", "classes", "activity", "settings"];
     if (requestedSection && allowedSections.includes(requestedSection)) queueMicrotask(() => setActiveSection(requestedSection));
     const timer = window.setTimeout(() => { void loadDashboard(); }, 0);
     return () => window.clearTimeout(timer);
@@ -670,6 +674,7 @@ export default function SuperAdminPage() {
     roles: { kicker: "Access control", title: "Roles & Permissions", description: "See exactly what each school role is allowed to manage." },
     plans: { kicker: "Weekly-plan control", title: "Manage Public Plans", description: "Review and control the real weekly plans stored in the school database." },
     weeks: { kicker: "Academic-week access", title: "Week Visibility Control", description: "Choose which weeks teachers can edit and which published weeks families can see." },
+    announcements: { kicker: "Class communication", title: "Weekly plan announcements", description: "Write a class-specific announcement above the family weekly plan." },
     holidays: { kicker: "School calendar", title: "School-wide Holidays", description: "Mark a day as an official holiday for every class in one school week." },
     classes: { kicker: "School structure", title: "Classes & Subjects", description: "Live classes and weekly-plan subjects available for teacher assignments." },
     activity: { kicker: "Account history", title: "Activity Log", description: "Recent account registration, approval and access activity." },
@@ -1229,6 +1234,7 @@ export default function SuperAdminPage() {
           <button className={activeSection === "roles" ? "active" : ""} onClick={() => openSection("roles")}><span className="teacher-nav-icon">RL</span>Roles & Permissions</button>
           <button className={activeSection === "plans" ? "active" : ""} onClick={() => openSection("plans")}><span className="teacher-nav-icon">WP</span>Manage Public Plans</button>
           <button className={activeSection === "weeks" ? "active" : ""} onClick={() => openSection("weeks")}><span className="teacher-nav-icon">WK</span>{dashboardArabic ? "إظهار الأسابيع" : "Week Visibility"}</button>
+          {isFaridSuperAdmin && <button className={activeSection === "announcements" ? "active" : ""} onClick={() => openSection("announcements")}><span className="teacher-nav-icon">AN</span>{dashboardArabic ? "الإعلانات" : "Announcements"}</button>}
           <button className={activeSection === "holidays" ? "active" : ""} onClick={() => openSection("holidays")}><span className="teacher-nav-icon">HD</span>School Holidays</button>
           <p>School System</p>
           <button className={activeSection === "classes" ? "active" : ""} onClick={() => openSection("classes")}><span className="teacher-nav-icon">CL</span>Classes & Subjects</button>
@@ -1251,6 +1257,7 @@ export default function SuperAdminPage() {
             <button className={activeSection === "roles" ? "active" : ""} onClick={() => openSection("roles")}><span className="teacher-nav-icon">RL</span>Roles & Permissions</button>
             <button className={activeSection === "plans" ? "active" : ""} onClick={() => openSection("plans")}><span className="teacher-nav-icon">WP</span>Manage Public Plans</button>
             <button className={activeSection === "weeks" ? "active" : ""} onClick={() => openSection("weeks")}><span className="teacher-nav-icon">WK</span>{dashboardArabic ? "إظهار الأسابيع" : "Week Visibility"}</button>
+            {isFaridSuperAdmin && <button className={activeSection === "announcements" ? "active" : ""} onClick={() => openSection("announcements")}><span className="teacher-nav-icon">AN</span>{dashboardArabic ? "الإعلانات" : "Announcements"}</button>}
             <button className={activeSection === "holidays" ? "active" : ""} onClick={() => openSection("holidays")}><span className="teacher-nav-icon">HD</span>School Holidays</button>
             <p>School System</p>
             <button className={activeSection === "classes" ? "active" : ""} onClick={() => openSection("classes")}><span className="teacher-nav-icon">CL</span>Classes & Subjects</button>
@@ -1394,6 +1401,8 @@ export default function SuperAdminPage() {
           </section>}
 
           {activeSection === "activity" && <section className="teacher-card super-activity-card"><div><h2>Recent Account Activity</h2><p>Registration and approval activity from the live directory.</p></div><ul>{accounts.filter((account) => account.status !== "Not Registered").map((account) => <li key={account.id}><span>{initials(account.name)}</span><div><strong>{account.name}</strong><small>{account.lastAction}</small></div><time>{account.requested}</time></li>)}</ul>{accounts.every((account) => account.status === "Not Registered") && <div className="super-section-empty"><span>LG</span><strong>No staff account activity yet</strong><p>New registration requests and your approval actions will appear here.</p></div>}</section>}
+
+          {activeSection === "announcements" && isFaridSuperAdmin && <AnnouncementsPanel weeks={academicWeeks} classes={classes} adminId={currentAdminId} weekId={selectedPlanWeekId} onWeekChange={setSelectedPlanWeekId} arabic={dashboardArabic} />}
 
           {activeSection === "weeks" && <section className="teacher-card super-week-visibility-card">
             <div className="super-week-visibility-heading"><div><span>WK</span><div><h2>{dashboardArabic ? "التحكم في الأسابيع الدراسية" : "Academic-week visibility"}</h2><p>{dashboardArabic ? "فتح الأسبوع للمعلمين وإظهاره لأولياء الأمور إعدادان مستقلان. إغلاق أي منهما لا يحذف الخطط أو الاعتمادات أو المحتوى المنشور." : "Teacher entry and parent visibility are independent. Closing either switch never deletes plans, submissions, approvals, or published content."}</p></div></div><div><strong>{academicWeeks.filter((week) => week.teacher_entry_enabled).length}</strong><small>{dashboardArabic ? "أسابيع مفتوحة للمعلمين" : "open for teachers"}</small><strong>{academicWeeks.filter((week) => week.parent_portal_visible).length}</strong><small>{dashboardArabic ? "أسابيع ظاهرة لأولياء الأمور" : "visible to parents"}</small></div></div>

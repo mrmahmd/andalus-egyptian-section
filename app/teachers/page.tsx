@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 import { formatAcademicWeekRange } from "../../lib/format-academic-week";
+import FaridQuizzesPanel from "./farid-quizzes-panel";
 
 const navigation = [
   ["Overview", "OV"],
@@ -14,6 +15,7 @@ const navigation = [
   ["My Subjects", "SB"],
   ["Calendar", "CA"],
 ] as const;
+const faridNavigation = [...navigation, ["Quizzes", "QZ"] as const] as const;
 
 const supervisorNavigation = [
   ["Overview", "OV"],
@@ -273,6 +275,7 @@ export default function TeachersDashboardPage() {
   const [compactWeeklyBuilder, setCompactWeeklyBuilder] = useState(false);
   const [selectedBuilderDay, setSelectedBuilderDay] = useState(0);
   const [profileId, setProfileId] = useState("");
+  const [isFaridTeacher, setIsFaridTeacher] = useState(false);
   const [teacherName, setTeacherName] = useState("Teacher");
   const [departmentName, setDepartmentName] = useState("Teacher Department");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -382,7 +385,7 @@ export default function TeachersDashboardPage() {
         return;
       }
       const availableSections = new Set<string>([
-        ...(isSupervisor ? supervisorNavigation : navigation).map(([label]) => label),
+        ...(isSupervisor ? supervisorNavigation : isFaridTeacher ? faridNavigation : navigation).map(([label]) => label),
         "Profile & assignments", "Settings",
       ]);
       const requestedSection = url.searchParams.get("section");
@@ -403,7 +406,7 @@ export default function TeachersDashboardPage() {
     queueMicrotask(restoreLocation);
     window.addEventListener("popstate", restoreLocation);
     return () => { active = false; window.removeEventListener("popstate", restoreLocation); };
-  }, [profileId, isSupervisor]);
+  }, [profileId, isSupervisor, isFaridTeacher]);
 
   const loadTeacherDashboard = useCallback(async () => {
     setLoading(true);
@@ -419,7 +422,7 @@ export default function TeachersDashboardPage() {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("user_id, display_name, role, status, department_id, departments(name_en), staff_directory(administrative_role)")
+        .select("user_id, username, display_name, role, status, department_id, departments(name_en), staff_directory(administrative_role)")
         .eq("user_id", userData.user.id)
         .maybeSingle();
       if (profileError) throw profileError;
@@ -430,6 +433,7 @@ export default function TeachersDashboardPage() {
         window.location.replace(`${basePath}${destination}`);
         return;
       }
+      setIsFaridTeacher(profile.role === "teacher" && profile.username === "mrmahmd");
 
       const departmentTeachersPromise = supervisorAccount ? supabase.rpc("get_my_department_teachers") : Promise.resolve({ data: [], error: null });
       const [assignmentsResult, weeksResult, slotsResult, entriesResult, mySubmissionsResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult, holidaysResult, personalTimetableResult] = await Promise.all([
@@ -1660,8 +1664,8 @@ export default function TeachersDashboardPage() {
   const selectedWeekWaitingReviews = reviewItems.filter((item) => item.weekId === selectedReviewWeekId && item.status === "submitted");
   const selectedWeekPendingCount = selectedWeekWaitingReviews.length;
   const selectedDepartmentTeacher = departmentTeachers.find((teacher) => teacher.userId === selectedDepartmentTeacherId);
-  const workspaceNavigation = isSupervisor ? supervisorNavigation : navigation;
-  const navLabel = (label: string) => dashboardArabic ? ({ Overview: "الرئيسية", "Weekly Plans": "خططي الأسبوعية", "My Timetable": "جدول حصصي", "My Classes": "فصولي", "My Subjects": "موادي", Calendar: "الأسابيع الدراسية", "Teacher Reviews": "مراجعة الخطط", "Department Teachers": "معلمو القسم", "Profile & assignments": "ملفي وتكليفاتي", Settings: "الإعدادات" } as Record<string, string>)[label] ?? label : label;
+  const workspaceNavigation = isSupervisor ? supervisorNavigation : isFaridTeacher ? faridNavigation : navigation;
+  const navLabel = (label: string) => dashboardArabic ? ({ Overview: "الرئيسية", "Weekly Plans": "خططي الأسبوعية", "Quizzes": "الاختبارات", "My Timetable": "جدول حصصي", "My Classes": "فصولي", "My Subjects": "موادي", Calendar: "الأسابيع الدراسية", "Teacher Reviews": "مراجعة الخطط", "Department Teachers": "معلمو القسم", "Profile & assignments": "ملفي وتكليفاتي", Settings: "الإعدادات" } as Record<string, string>)[label] ?? label : label;
   const openWorkspaceSection = (label: string) => {
     if (activeNav !== label) {
       const url = new URL(window.location.href);
@@ -1752,6 +1756,8 @@ export default function TeachersDashboardPage() {
           <div className="teacher-page-heading"><div><p className="teacher-kicker">{dashboardWeek ? dashboardArabic ? `الأسبوع ${dashboardWeek.week_number} · ${academicWeekRange(dashboardWeek, true)}` : `Week ${dashboardWeek.week_number} · ${academicWeekRange(dashboardWeek)}` : dashboardArabic ? "مساحة العمل" : "Staff workspace"}</p><h1>{activeNav === "Overview" ? dashboardArabic ? `أهلًا، ${teacherName}` : `Welcome, ${teacherName}.` : navLabel(activeNav)}</h1><span>{activeNav === "Overview" ? dashboardArabic ? isSupervisor ? "خطط معلميك، خطتك، وحصصك أمامك في صفحة واحدة." : "تابع خططك وحصصك وما يحتاج منك إجراء هذا الأسبوع." : isSupervisor ? "Review your teachers' plans, write your own, and follow your lessons in one place." : "See the plans and lessons needing your attention this week." : dashboardArabic ? "اختر الإجراء المناسب وتابع حالته بوضوح." : "Choose the next action and follow its status clearly."}</span></div><div className="teacher-heading-actions"><button type="button" className="teacher-primary-button" disabled={saving || !weeklyPlanCreationOpen || !dashboardWeek?.teacher_entry_enabled} aria-busy={loading} onClick={() => void openWeeklyBuilder(dashboardWeekId)}><span>＋</span> {loading ? dashboardArabic ? "جارٍ تحميل البيانات…" : "Loading teacher data…" : weeklyPlanCreationOpen && dashboardWeek?.teacher_entry_enabled ? dashboardArabic ? isSupervisor ? "إعداد خطتي التعليمية" : "إعداد خطة الأسبوع" : isSupervisor ? "Write my teaching plan" : "Create weekly plan" : dashboardArabic ? "الأسبوع مغلق للتحرير" : "Week closed for editing"}</button></div></div>
 
           {message && <p className={`super-admin-live-message ${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
+
+          {activeNav === "Quizzes" && isFaridTeacher && <FaridQuizzesPanel weeks={academicWeeks} assignments={assignments} teacherId={profileId} initialWeekId={dashboardWeekId} arabic={dashboardArabic} />}
 
           {activeNav === "Overview" && <section className="staff-dashboard" aria-label={dashboardArabic ? "ملخص الأسبوع" : "Weekly overview"}>
             <div className="staff-dashboard-hero"><div><span className="staff-dashboard-eyebrow">{dashboardArabic ? isSupervisor ? "لوحة متابعة المشرف" : "لوحة متابعة المعلم" : isSupervisor ? "Supervisor dashboard" : "Teacher dashboard"}</span><h2>{dashboardArabic ? "ابدأ بما يحتاج اهتمامك" : "Start with what needs your attention"}</h2><p>{dashboardArabic ? "الأرقام والإجراءات التالية تخص الأسبوع المختار فقط، وحصصك مأخوذة من جدول المدرسة." : "The figures and actions below belong to the selected week. Your lessons come from the school timetable."}</p></div><label>{dashboardArabic ? "الأسبوع الدراسي" : "School week"}<select value={dashboardWeekId} onChange={(event) => { setDashboardWeekId(event.target.value); setPlanViewFilter("all"); }} aria-label={dashboardArabic ? "اختر الأسبوع الدراسي" : "Choose school week"}>{dashboardWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select><small>{dashboardWeek ? dashboardWeek.teacher_entry_enabled ? dashboardArabic ? "مفتوح لكتابة الخطط" : "Open for plan writing" : dashboardArabic ? "مغلق للتحرير · المعاينة متاحة" : "Editing closed · preview available" : dashboardArabic ? "لا يوجد أسبوع متاح حاليًا" : "No available week right now"}</small></label></div>

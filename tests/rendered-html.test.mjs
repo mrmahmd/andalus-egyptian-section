@@ -813,3 +813,23 @@ test("warns before sending missing Classwork and keeps the report design while r
   assert.match(admin, /super-report-class-line done/);
   assert.match(admin, /super-report-class-line pending/);
 });
+
+test("scopes Mohamed Farid announcements and quizzes and puts public extras above the timetable", async () => {
+  const admin = await readFile(new URL("../app/super-admin/page.tsx", import.meta.url), "utf8");
+  const teacher = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
+  const parent = await readFile(new URL("../app/weekly-plan/page.tsx", import.meta.url), "utf8");
+  const quizzes = await readFile(new URL("../app/teachers/farid-quizzes-panel.tsx", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../supabase/migrations/20261001150000_farid_announcements_and_quizzes.sql", import.meta.url), "utf8");
+
+  assert.match(admin, /ownerProfile\.username === "mohamed\.farid"/);
+  assert.match(admin, /activeSection === "announcements" && isFaridSuperAdmin/);
+  assert.match(teacher, /profile\.role === "teacher" && profile\.username === "mrmahmd"/);
+  assert.match(teacher, /activeNav === "Quizzes" && isFaridTeacher/);
+  assert.match(quizzes, /programme === "English OL" \? "English OL" : "English AL"/);
+  assert.match(parent, /<ParentSpecialExtras[^>]+\/>\{liveDictations\.map/);
+  assert.match(migration, /alter table public\.weekly_plan_announcements enable row level security/);
+  assert.match(migration, /alter table public\.farid_weekly_quizzes enable row level security/);
+  assert.match(migration, /private\.parent_can_read_approved_plan_content/);
+  assert.match(migration, /profile\.username = 'mohamed\.farid'/);
+  assert.match(migration, /profile\.username = 'mrmahmd'/);
+});
