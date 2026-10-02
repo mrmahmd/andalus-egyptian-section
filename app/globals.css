@@ -437,6 +437,8 @@ button, select, input { font: inherit; }
 .paper-header h2 { margin: 8px 0 0; color: #8a2877; font-size: 25px; line-height: 1.2; font-weight: 800; letter-spacing: .065em; }
 .paper-meta { display: grid; grid-template-columns: 1fr 1.25fr .65fr 1.2fr; border: 1px solid #cad9eb; border-top: none; background: linear-gradient(90deg, #f5fbff, #fff8fc); }
 .paper-meta > span { display: grid; gap: 4px; padding: 14px 16px; border-right: 1px solid #cad9eb; text-align: center; box-shadow: inset 0 3px #0f7795; }
+.plan-paper .paper-meta > span { align-content: center; justify-items: center; text-align: center; }
+.plan-paper .paper-meta :is(small, strong) { text-align: center; }
 .paper-meta > span:nth-child(2) { background: #fbf9fe; box-shadow: inset 0 3px #7253a6; }
 .paper-meta > span:nth-child(3) { background: #fff9fc; box-shadow: inset 0 3px #b13b7a; }
 .paper-meta > span:nth-child(4) { background: #fffaf7; box-shadow: inset 0 3px #d16942; }
