@@ -495,7 +495,7 @@ test("queues supervisor submission behind autosave and auto-approves supervisors
   assert.match(migration, /plan\.id = plan_submissions\.weekly_plan_id/);
 });
 
-test("confirms teacher submission and copies each written subject as an independent draft", async () => {
+test("confirms teacher submission and copies all written subjects as one atomic draft", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const globalCss = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
@@ -507,17 +507,20 @@ test("confirms teacher submission and copies each written subject as an independ
   assert.match(teacherSource, /const canCopy = \["draft", "changes_requested", "submitted", "approved"\]\.includes\(plan\.status\)/);
   assert.match(teacherSource, /canCopy && <button[\s\S]*openCopyPlanDialog\(plan\)[\s\S]*Copy plan/);
   assert.match(teacherSource, /entry\.weeklyPlanId === copySourcePlan\.planId && entry\.hasMeaningfulContent/);
-  assert.match(teacherSource, /const meaningfulSourceRows = [\s\S]*\.filter\(hasMeaningfulPlanContent\)/);
-  assert.match(teacherSource, /if \(hasMeaningfulDraft\) \{[\s\S]*setCopyConflict/);
-  assert.match(teacherSource, /Open existing draft/);
+  assert.match(teacherSource, /rpc\("copy_my_weekly_plan"/);
+  assert.match(teacherSource, /data\?\.status === "conflict"[\s\S]*setCopyConflict/);
+  assert.match(teacherSource, /Preview existing plan/);
   assert.doesNotMatch(teacherSource, /Replace my draft/);
-  assert.match(teacherSource, /targetStatuses\.has\("submitted"\)/);
-  assert.match(teacherSource, /targetStatuses\.has\("approved"\)/);
-  assert.match(teacherSource, /status: "draft", submitted_at: null/);
-  assert.match(teacherSource, /const englishCopyKey = "__english_plan__"/);
-  assert.match(teacherSource, /mapCopyRowsToTargetSlots\(meaningfulSourceRows, targetSlots, isEnglishCopy\)/);
-  assert.match(teacherSource, /subject_id: slot\.subject_id/);
-  assert.match(teacherSource, /isEnglishCopy \? isEnglishSubject\(assignment\.subject\)/);
+  assert.doesNotMatch(teacherSource, /Subject to copy|copySubjectId/);
+  assert.match(teacherSource, /All your written subjects/);
+  assert.match(teacherSource, /COPY_INSUFFICIENT_SLOTS/);
+  assert.match(teacherSource, /COPY_SUBJECT_UNAVAILABLE/);
+  const migration = await readFile(new URL("../supabase/migrations/20261002161652_copy_teacher_weekly_plan.sql", import.meta.url), "utf8");
+  assert.match(migration, /security invoker set search_path = ''/);
+  assert.match(migration, /e\.teacher_id = actor_id/);
+  assert.match(migration, /s\.status <> 'draft'/);
+  assert.match(migration, /then '__english__' else e\.subject_id::text/);
+  assert.match(migration, /where plan_submissions\.status = 'draft'/);
   assert.match(globalCss, /teacher-plan-actions \.teacher-secondary-button\.continue[\s\S]*linear-gradient/);
   assert.match(globalCss, /teacher-plan-actions \.teacher-secondary-button\.copy[\s\S]*linear-gradient/);
   assert.match(teacherSource, /setSelectedClassId\(copiedClassId\)[\s\S]*setSelectedWeekId\(copiedWeekId\)[\s\S]*openWeeklyEditor\(\)/);
