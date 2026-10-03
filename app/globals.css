@@ -2570,6 +2570,21 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 .staff-task-list { display: grid; gap: 9px; padding-top: 15px; }
 .staff-task-list > button { width: 100%; min-height: 64px; padding: 9px 11px; border: 1px solid #e0eaf0; border-radius: 12px; display: flex; align-items: center; gap: 12px; background: #fbfdff; color: #16385a; text-align: start; font: inherit; cursor: pointer; }
 .staff-task-list > button:hover:not(:disabled) { background: #f0fafc; border-color: #9bcfda; }.staff-task-list > button:disabled { opacity: .55; cursor: not-allowed; }
+.staff-task-list > button.staff-task-plan-card { min-height: 74px; padding: 12px 14px; border-radius: 15px; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.staff-task-list > button.staff-task-plan-card:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 9px 20px rgba(30,70,105,.11); }
+.staff-task-plan-card.draft { border-color: #b9dce9; background: linear-gradient(115deg, #effaff, #f9fcff 72%); }
+.staff-task-plan-card.needs-changes { border-color: #f0d2a5; background: linear-gradient(115deg, #fff7e9, #fffdf8 72%); }
+.staff-task-plan-card.not-started { border-color: #d1c8ed; background: linear-gradient(115deg, #f5f1ff, #fcfaff 72%); }
+.staff-task-plan-card.draft .staff-task-icon { background: #d8f0f7; color: #08728f; }
+.staff-task-plan-card.needs-changes .staff-task-icon { background: #ffebc9; color: #a75d09; }
+.staff-task-plan-card.not-started .staff-task-icon { background: #e7ddff; color: #6944a4; }
+.staff-task-list > button.staff-task-plan-card > span:nth-child(2) { gap: 5px; }
+.staff-task-plan-card strong { color: #14395d; font-size: 15px; font-weight: 850; line-height: 1.4; }
+.staff-task-plan-card small { color: #48647f; font-size: 12px; font-weight: 750; line-height: 1.45; }
+.staff-task-plan-card em { font-size: 19px; font-weight: 800; }
+.staff-task-plan-card.draft em { color: #08728f; }
+.staff-task-plan-card.needs-changes em { color: #a75d09; }
+.staff-task-plan-card.not-started em { color: #6944a4; }
 .staff-task-icon { width: 35px; height: 35px; flex: 0 0 35px; border-radius: 10px; display: grid; place-items: center; background: #e8f4f7; color: #0b7190; font-size: 19px; font-weight: 800; }
 .staff-task-list > button > span:nth-child(2) { min-width: 0; flex: 1; display: grid; gap: 2px; }.staff-task-list strong { font-size: 13px; }.staff-task-list small { color: #647993; font-size: 11px; }.staff-task-list em { color: #0e7795; font-size: 17px; font-style: normal; }
 .staff-dashboard-empty { margin: 8px 0; padding: 17px; border: 1px dashed #d8e6ed; border-radius: 11px; background: #f8fbfd; color: #5d7189; font-size: 12px; line-height: 1.7; }
