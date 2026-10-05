@@ -11,6 +11,10 @@ function compactAnnouncementText(value: string) {
   return value.replace(/\r\n?/g, "\n").replace(/\n[\t ]*\n+/g, "\n").trim();
 }
 
+function quizProgrammeLabel(value: string) {
+  return /^(?:Connect Plus|كونكت بلس)$/i.test(value.trim()) ? "Connect Plus" : value;
+}
+
 export default function ParentSpecialExtras({ weekId, classId, refreshVersion }: { weekId: string; classId: string; refreshVersion: number }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -39,6 +43,6 @@ export default function ParentSpecialExtras({ weekId, classId, refreshVersion }:
   return <div className="parent-special-extras">
     {error && <p className="parent-special-error" role="alert">School announcements and quizzes could not be refreshed. Please try again.</p>}
     {announcements.length > 0 && <section className="parent-announcement-block" aria-label="School announcements"><h3>Announcement</h3><table><thead><tr><th>Day</th><th>Details</th></tr></thead><tbody>{announcements.map((announcement) => <tr key={announcement.id}><td>{days[announcement.day_of_week] ?? "School day"}</td><td><strong>{announcement.title}</strong><span>{compactAnnouncementText(announcement.body)}</span></td></tr>)}</tbody></table></section>}
-    {quizzes.length > 0 && <section className="parent-special-quizzes" aria-label="Quizzes"><div className="parent-special-label"><span>Q</span> QUIZZES THIS WEEK</div><table><thead><tr><th>Day</th><th>Subject</th><th>Quiz content</th></tr></thead><tbody>{quizzes.map((quiz) => <tr key={quiz.id}><td>{days[quiz.day_of_week] ?? "School day"}</td><td>{quiz.programme}</td><td>{quiz.content}</td></tr>)}</tbody></table></section>}
+    {quizzes.length > 0 && <section className="parent-special-quizzes" aria-label="Quizzes"><h3 className="parent-special-quiz-title"><span aria-hidden="true">Q</span> QUIZZES THIS WEEK</h3><table><thead><tr><th>Day</th><th>Subject</th><th>Quiz content</th></tr></thead><tbody>{quizzes.map((quiz) => <tr key={quiz.id}><td>{days[quiz.day_of_week] ?? "School day"}</td><td lang="en" dir="ltr">{quizProgrammeLabel(quiz.programme)}</td><td>{quiz.content}</td></tr>)}</tbody></table></section>}
   </div>;
 }

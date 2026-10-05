@@ -702,7 +702,7 @@ function translatePage(root: HTMLElement) {
   while (walker.nextNode()) nodes.push(walker.currentNode as Text);
   nodes.forEach((node) => {
     // The timetable is intentionally English-only, including on the Arabic platform.
-    if (node.parentElement?.closest(".plan-paper, .parent-preview-paper, .timetable-grid")) return;
+    if (node.parentElement?.closest('.plan-paper, .parent-preview-paper, .timetable-grid, [translate="no"]')) return;
     const original = node.nodeValue ?? "";
     const value = original.trim();
     const translated = value.startsWith("Welcome, ")
