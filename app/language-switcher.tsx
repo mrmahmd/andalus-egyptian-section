@@ -203,7 +203,7 @@ Object.assign(staffAr, {
   "Your live assignments and weekly-plan progress are shown below.": "\u062a\u0638\u0647\u0631 \u0647\u0646\u0627 \u062a\u0643\u0644\u064a\u0641\u0627\u062a\u0643 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u0629 \u0648\u062a\u0642\u062f\u0645 \u062e\u0637\u0637\u0643 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629.",
   "This section is connected to your approved school profile.": "\u0647\u0630\u0627 \u0627\u0644\u0642\u0633\u0645 \u0645\u0631\u062a\u0628\u0637 \u0628\u0645\u0644\u0641\u0643 \u0627\u0644\u0645\u062f\u0631\u0633\u064a \u0627\u0644\u0645\u0639\u062a\u0645\u062f.",
   "Supabase connected": "\u0645\u062a\u0635\u0644 \u0628\u0640 Supabase", "Teacher": "\u0645\u0639\u0644\u0645", "Search plans, classes or subjects": "\u0627\u0628\u062d\u062b \u0639\u0646 \u0627\u0644\u062e\u0637\u0637 \u0623\u0648 \u0627\u0644\u0641\u0635\u0648\u0644 \u0623\u0648 \u0627\u0644\u0645\u0648\u0627\u062f",
-  "Approved by Super Admin": "\u0645\u0639\u062a\u0645\u062f \u0645\u0646 \u0627\u0644\u0645\u0634\u0631\u0641 \u0627\u0644\u0639\u0627\u0645", "Visible after plan publication": "\u0638\u0627\u0647\u0631 \u0628\u0639\u062f \u0646\u0634\u0631 \u0627\u0644\u062e\u0637\u0629", "Saved in Supabase": "\u0645\u062d\u0641\u0648\u0638 \u0641\u064a Supabase", "Controls plan placement": "\u064a\u062d\u062f\u062f \u0645\u0648\u0636\u0639 \u0627\u0644\u062e\u0637\u0629",
+  "Approved by General Supervisor": "\u0645\u0639\u062a\u0645\u062f \u0645\u0646 \u0627\u0644\u0645\u0634\u0631\u0641 \u0627\u0644\u0639\u0627\u0645", "Visible after plan publication": "\u0638\u0627\u0647\u0631 \u0628\u0639\u062f \u0646\u0634\u0631 \u0627\u0644\u062e\u0637\u0629", "Saved in Supabase": "\u0645\u062d\u0641\u0648\u0638 \u0641\u064a Supabase", "Controls plan placement": "\u064a\u062d\u062f\u062f \u0645\u0648\u0636\u0639 \u0627\u0644\u062e\u0637\u0629",
   "Available weekly-plan periods from Supabase.": "\u0627\u0644\u0641\u062a\u0631\u0627\u062a \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629 \u0645\u062a\u0627\u062d\u0629 \u0645\u0646 Supabase.", "Your account is authenticated and connected to Supabase.": "\u062d\u0633\u0627\u0628\u0643 \u0645\u0648\u062b\u0642 \u0648\u0645\u062a\u0635\u0644 \u0628\u0640 Supabase.",
   "Need help?": "\u0647\u0644 \u062a\u062d\u062a\u0627\u062c \u0645\u0633\u0627\u0639\u062f\u0629\u061f", "Contact the academic coordinator for account or assignment changes.": "\u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u0645\u0646\u0633\u0642 \u0627\u0644\u0623\u0643\u0627\u062f\u064a\u0645\u064a \u0644\u062a\u0639\u062f\u064a\u0644 \u0627\u0644\u062d\u0633\u0627\u0628 \u0623\u0648 \u0627\u0644\u062a\u0643\u0644\u064a\u0641\u0627\u062a.", "Open support": "\u0641\u062a\u062d \u0627\u0644\u062f\u0639\u0645 \u0627\u0644\u0641\u0646\u064a"
 });
@@ -252,7 +252,7 @@ Object.assign(staffAr, {
   "Open workspace menu": "فتح قائمة لوحة التحكم",
   "Supervisor workspace navigation": "التنقل في لوحة تحكم المشرف",
   "Weekly plan summary": "ملخص الخطط الأسبوعية",
-  "Only the Super Admin can change these assignments.": "يمكن للمشرف العام فقط تعديل هذه التكليفات.",
+  "Only the General Supervisor can change these assignments.": "يمكن للمشرف العام فقط تعديل هذه التكليفات.",
   "Weekly plan review": "مراجعة الخطط الأسبوعية",
   "Choose the week, then the class. Every linked teacher and all subjects they submitted for that class appear together.": "اختر الأسبوع ثم الفصل والشعبة؛ سيظهر كل معلم مرتبط بك وجميع المواد التي أرسلها لهذا الفصل معًا.",
   "Choose a school week, teacher, then class. All subjects the teacher wrote for that class are reviewed together as one weekly plan.": "اختر الأسبوع الدراسي ثم المعلم ثم الفصل. تُراجع جميع المواد التي كتبها المعلم لهذا الفصل معًا كخطة أسبوعية واحدة.",
@@ -349,13 +349,13 @@ Object.assign(staffAr, {
   "Thursday": "الخميس"
 });
 
-// Super Admin vocabulary. The Super Admin used to be intentionally English
+// General Supervisor vocabulary. The General Supervisor used to be intentionally English
 // only; it now follows the same saved dashboard-language preference as the
 // teacher and administrator workspaces.
 Object.assign(staffAr, {
-  "Super Admin Control Center": "مركز تحكم المشرف العام",
-  "Super administrator navigation": "التنقل في لوحة المشرف العام",
-  "Super Administration": "الإشراف العام",
+  "General Supervisor Control Center": "مركز تحكم المشرف العام",
+  "General supervisor navigation": "التنقل في لوحة المشرف العام",
+  "General Supervision": "الإشراف العام",
   "Account Approvals": "اعتماد الحسابات",
   "Review new teacher and administrator account requests.": "راجع طلبات حسابات المعلمين والإداريين الجديدة.",
   "Live school directory": "دليل المدرسة المباشر",
@@ -417,20 +417,20 @@ Object.assign(staffAr, {
   "Waiting for registration": "بانتظار إنشاء الحساب",
   "No account requests need your review right now.": "لا توجد طلبات حسابات تحتاج مراجعتك الآن.",
   "No real staff accounts match the selected filters.": "لا توجد حسابات موظفين تطابق عوامل التصفية المحددة.",
-  "Super Admin": "المشرف العام",
+  "General Supervisor": "المشرف العام",
   "Full school access: approves accounts, assigns classes and subjects, suspends users, manages every plan and controls platform settings.": "صلاحية شاملة: اعتماد الحسابات، وتعيين الفصول والمواد، وإيقاف المستخدمين، وإدارة الخطط وإعدادات المنصة.",
   "Vice Principal": "وكيل المدرسة",
   "School-wide administrative review access after account approval. Weekly-plan editing remains limited by the assigned admin scope.": "صلاحية مراجعة إدارية شاملة بعد اعتماد الحساب، مع الالتزام بنطاق التعديل المخصص.",
   "Department Supervisor": "مشرف الشعبة",
   "Reviews only the teachers in the supervisor’s own department: English, Arabic & Social Studies, or Math & Science.": "يراجع معلمي شعبته فقط: الإنجليزية، أو العربية والدراسات، أو الرياضيات والعلوم.",
-  "Creates weekly-plan content only for the classes and subjects assigned by the Super Admin.": "يكتب الخطة الأسبوعية للفصول والمواد التي يعيّنها له المشرف العام فقط.",
+  "Creates weekly-plan content only for the classes and subjects assigned by the General Supervisor.": "يكتب الخطة الأسبوعية للفصول والمواد التي يعيّنها له المشرف العام فقط.",
   "School week": "الأسبوع الدراسي",
   "Real weekly-plan directory": "دليل الخطط الأسبوعية الحقيقي",
   "Open family plan page": "فتح صفحة خطط أولياء الأمور",
   "Class Teacher": "رائد الفصل",
   "Entries": "الإدخالات",
   "Updated": "آخر تحديث",
-  "Super Admin override": "نشر استثنائي من المشرف العام",
+  "General Supervisor override": "نشر استثنائي من المشرف العام",
   "Opening…": "جارٍ الفتح…",
   "Edit plan": "تعديل الخطة",
   "Remove override": "إلغاء النشر الاستثنائي",
@@ -464,10 +464,10 @@ Object.assign(staffAr, {
   "Security": "الأمان",
   "Role-based access and Row Level Security protect staff-only database operations.": "تحمي صلاحيات الأدوار وسياسات أمان الصفوف عمليات قاعدة البيانات الخاصة بالموظفين.",
   "Access control active": "نظام الصلاحيات مفعّل",
-  "Super Admin editor": "محرر المشرف العام",
+  "General Supervisor editor": "محرر المشرف العام",
   "Changes are saved directly to the approved paper layout. Publication still follows the required supervisor approval workflow.": "تُحفظ التعديلات مباشرة في القالب المعتمد، ويظل النشر خاضعًا لمسار موافقات المشرفين.",
   "Classera notes": "ملاحظات كلاسيرا",
-  "Super Admin approval": "اعتماد المشرف العام",
+  "General Supervisor approval": "اعتماد المشرف العام",
   "Live account management": "إدارة الحساب الفعلي",
   "Review account request": "مراجعة طلب الحساب",
   "Manage real staff account": "إدارة حساب الموظف الفعلي",
@@ -558,14 +558,14 @@ Object.assign(staffAr, {
   "No required weekly-plan teachers": "لا يوجد معلمون مطلوب منهم خطة أسبوعية",
   "View teacher status": "عرض حالة المعلمين",
   "No assigned teachers": "لا يوجد معلمون مكلفون",
-  "Super Admin override": "نشر استثنائي من السوبر أدمن",
+  "General Supervisor override": "نشر استثنائي من المشرف العام",
   "Opening…": "جارٍ الفتح…",
   "Remove override": "إلغاء النشر الاستثنائي",
   "Force publish": "نشر استثنائي",
   "Waiting for teachers": "بانتظار المعلمين",
   "No classes match the selected filters.": "لا توجد فصول مطابقة للفلاتر المحددة.",
   "Approve and publish the whole school week?": "اعتماد ونشر خطط المدرسة للأسبوع بالكامل؟",
-  "This Super Admin override will publish every non-empty class plan in": "سيقوم هذا الإجراء الاستثنائي من السوبر أدمن بنشر كل خطة فصل تحتوي على حصص محفوظة في",
+  "This General Supervisor override will publish every non-empty class plan in": "سيقوم هذا الإجراء الاستثنائي من المشرف العام بنشر كل خطة فصل تحتوي على حصص محفوظة في",
   ". Empty or unstarted classes remain unpublished, and the teacher-completion report remains unchanged so missing teachers stay visible.": ". ستظل الفصول الفارغة أو التي لم تبدأ غير منشورة، وسيبقى تقرير اكتمال المعلمين كما هو حتى يظل المعلمون المتأخرون ظاهرين.",
   "plans ready to force publish": "خطط جاهزة للنشر الاستثنائي",
   "classes currently not published": "فصول غير منشورة حاليًا",
@@ -574,7 +574,7 @@ Object.assign(staffAr, {
   "Cancel": "إلغاء",
   "Yes, approve and publish": "نعم، اعتماد ونشر",
   "Change my password": "تغيير كلمة المرور",
-  "Confirm your current password, then choose a new password for this Super Admin account.": "أدخل كلمة المرور الحالية، ثم اختر كلمة مرور جديدة لحساب السوبر أدمن.",
+  "Confirm your current password, then choose a new password for this General Supervisor account.": "أدخل كلمة المرور الحالية، ثم اختر كلمة مرور جديدة لحساب المشرف العام.",
   "Current password": "كلمة المرور الحالية",
   "New password": "كلمة المرور الجديدة",
   "Confirm new password": "تأكيد كلمة المرور الجديدة",
@@ -689,7 +689,7 @@ function translateDynamicStaffText(value: string) {
   if (match) return `تم حفظ ${match[1]} فورًا.`;
   match = value.match(/^(.+) removed immediately\.$/);
   if (match) return `تمت إزالة ${match[1]} فورًا.`;
-  match = value.match(/^(.+) was published by Super Admin override\.$/);
+  match = value.match(/^(.+) was published by General Supervisor override\.$/);
   if (match) return `${match[1]} تم نشرها باستثناء من المشرف العام.`;
   match = value.match(/^(.+) returned to the normal supervisor approval workflow\.$/);
   if (match) return `${match[1]} عادت لمسار اعتماد المشرفين المعتاد.`;

@@ -171,7 +171,7 @@ export default function TeacherLoginPage() {
         await supabase.auth.signOut();
         setPassword("");
         setMode("signin");
-        showMessage("Your account request was created successfully. You can sign in after the Super Admin approves it.", "success");
+        showMessage("Your account request was created successfully. You can sign in after the General Supervisor approves it.", "success");
         return;
       }
 
@@ -198,7 +198,7 @@ export default function TeacherLoginPage() {
         if (request?.status === "rejected") {
           showMessage(request.review_note || "This account request was not approved. Please contact the school administration.", "error");
         } else {
-          showMessage("Your account is still waiting for Super Admin approval.", "info");
+          showMessage("Your account is still waiting for General Supervisor approval.", "info");
         }
         return;
       }
@@ -312,7 +312,7 @@ export default function TeacherLoginPage() {
             </button>
           </form>
 
-          <p className="teacher-auth-notice"><span>i</span>{mode === "signin" ? "Use your approved school account to access the workspace." : "New accounts remain pending until the Super Admin activates them and assigns classes and subjects."}</p>
+          <p className="teacher-auth-notice"><span>i</span>{mode === "signin" ? "Use your approved school account to access the workspace." : "New accounts remain pending until the General Supervisor activates them and assigns classes and subjects."}</p>
           <div className="teacher-auth-switch-copy">
             {mode === "signin" ? "First time here?" : "Already have an account?"}
             <button type="button" onClick={() => { setMode(mode === "signin" ? "create" : "signin"); setMessage(""); }}>{mode === "signin" ? "Create New Account" : "Sign In"}</button>

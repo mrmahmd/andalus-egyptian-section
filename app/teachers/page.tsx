@@ -726,7 +726,7 @@ export default function TeachersDashboardPage() {
       return;
     }
     if (assignments.length === 0) {
-      setMessage("No classes or subjects are assigned yet. Ask the Super Admin to complete your assignments.");
+      setMessage("No classes or subjects are assigned yet. Ask the General Supervisor to complete your assignments.");
       setMessageTone("info");
       return;
     }
@@ -811,7 +811,7 @@ export default function TeachersDashboardPage() {
       return;
     }
     if (selectedClassSlots.length === 0) {
-      const text = dashboardArabic ? "لا توجد حصص مرتبطة بهذا الفصل حتى الآن. اطلب من مسؤول المنصة مراجعة ربط الجدول." : "No timetable lessons are linked to this class yet. Ask the Super Admin to review the timetable connection.";
+      const text = dashboardArabic ? "لا توجد حصص مرتبطة بهذا الفصل حتى الآن. اطلب من مسؤول المنصة مراجعة ربط الجدول." : "No timetable lessons are linked to this class yet. Ask the General Supervisor to review the timetable connection.";
       setMessage(text);
       setMessageTone("error");
       setBuilderFeedback({ tone: "error", text });
@@ -873,7 +873,7 @@ export default function TeachersDashboardPage() {
         const arabic = window.localStorage.getItem("andalus-language") === "ar";
         throw new Error(arabic
           ? `تعذر حفظ حصة ${arabicDayNames[dayNames[conflictingSlot.day_of_week]]} رقم ${conflictingSlot.period_number}: توجد خطة سابقة لمعلم أو مادة أخرى في موضعها بعد تعديل الجدول. أخبر مسؤول المنصة؛ لن تُستبدل خطة المعلم الآخر.`
-          : `Cannot save ${dayNames[conflictingSlot.day_of_week]} period ${conflictingSlot.period_number}: another teacher's or subject's saved lesson occupies this timetable position. Contact the Super Admin; the other plan was not overwritten.`);
+          : `Cannot save ${dayNames[conflictingSlot.day_of_week]} period ${conflictingSlot.period_number}: another teacher's or subject's saved lesson occupies this timetable position. Contact the General Supervisor; the other plan was not overwritten.`);
       }
 
       const entryRows = writableSlots.map((slot) => {
