@@ -60,12 +60,21 @@ begin
   select class_id into target_class_id from public.weekly_plans
   where id = target_plan_id for update;
   if not found then raise exception 'Weekly plan not found.'; end if;
+  if exists (
+    select 1 from public.plan_entries entry
+    left join public.plan_submissions submission on submission.weekly_plan_id = entry.weekly_plan_id
+      and submission.teacher_id = entry.teacher_id and submission.subject_id = entry.subject_id
+    where entry.weekly_plan_id = target_plan_id and entry.teacher_id = target_teacher_id
+      and (btrim(coalesce(entry.classwork,'')) <> '' or btrim(coalesce(entry.homework,'')) <> '' or btrim(coalesce(entry.classera_notes,'')) <> '')
+      and (submission.status is null or submission.status not in ('submitted','approved'))
+  ) then raise exception 'Only plans sent to the supervisor can be published exceptionally. Drafts and returned plans must be submitted first.'; end if;
   if not exists (
     select 1 from public.plan_entries entry
     join public.profiles teacher on teacher.user_id = entry.teacher_id
     join public.plan_submissions submission on submission.weekly_plan_id = entry.weekly_plan_id
       and submission.teacher_id = entry.teacher_id and submission.subject_id = entry.subject_id
     where entry.weekly_plan_id = target_plan_id and entry.teacher_id = target_teacher_id
+      and submission.status in ('submitted','approved')
       and teacher.status = 'active' and teacher.role in ('teacher','admin')
       and (btrim(coalesce(entry.classwork,'')) <> '' or btrim(coalesce(entry.homework,'')) <> '' or btrim(coalesce(entry.classera_notes,'')) <> '')
       and exists (select 1 from public.timetable_slots slot
@@ -104,7 +113,7 @@ begin
     from jsonb_to_recordset(targets) as pair(plan_id uuid,teacher_id uuid)
     where exists (select 1 from public.plan_submissions submission
       where submission.weekly_plan_id = pair.plan_id and submission.teacher_id = pair.teacher_id
-        and submission.status <> 'approved')
+        and submission.status = 'submitted')
     order by pair.plan_id,pair.teacher_id
   loop
     if public.publish_teacher_plan_exceptionally(target.plan_id,target.teacher_id) then
@@ -130,8 +139,8 @@ returns boolean language sql stable security definer set search_path = '' as $$
       and week_record.parent_portal_visible
       and (submission.status = 'approved'
         or (plan_record.manual_publication_override and submission.status = 'submitted')
-        or exists (select 1 from public.teacher_plan_publication_overrides exception_record
-          where exception_record.weekly_plan_id = target_plan_id and exception_record.teacher_id = target_teacher_id))
+        or (submission.status in ('submitted','approved') and exists (select 1 from public.teacher_plan_publication_overrides exception_record
+          where exception_record.weekly_plan_id = target_plan_id and exception_record.teacher_id = target_teacher_id)))
   );
 $$;
 revoke all on function private.parent_can_read_approved_plan_content(uuid,uuid,uuid) from public, anon, authenticated, service_role;

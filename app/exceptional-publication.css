@@ -8,10 +8,10 @@
 .closed-week-alert[dir=rtl] { font-family:Alexandria,Cairo,sans-serif; }
 .teacher-exception-confirmation { width:min(860px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); overflow:auto; }
 .teacher-exception-targets { overflow:auto; max-height:40vh; border:1px solid #dce2ec; border-radius:12px; margin:20px 0; }
-.teacher-exception-targets table { width:100%; border-collapse:collapse; font-size:14px; text-align:left; }
+.teacher-exception-targets table { width:100%; border-collapse:collapse; font-size:14px; text-align:start; }
 .teacher-exception-targets th,.teacher-exception-targets td { padding:12px; border-bottom:1px solid #e5e9ef; }
 .teacher-exception-targets th { background:#eef2fa; position:sticky; top:0; }
-.super-teacher-exception-action { margin-top:12px; border:0; border-radius:10px; padding:9px 12px; font:inherit; font-weight:700; color:#fff; background:#8a3ca8; cursor:pointer; }
-.super-teacher-exception-action:disabled { background:#e9e3ee; color:#867c8b; cursor:default; }
+.super-admin-portal .super-plan-tracking-table .super-teacher-exception-action { display:inline-flex; align-items:center; justify-content:center; width:fit-content; max-width:100%; min-height:32px; margin-top:6px; border:1px solid #dbc6e6; border-radius:7px; padding:5px 10px; font:inherit; font-size:12px; line-height:1.5; font-weight:700; white-space:nowrap; color:#783593; background:#f7effb; cursor:pointer; }
+.super-admin-portal .super-plan-tracking-table .super-teacher-exception-action:disabled { background:#e9e3ee; color:#867c8b; cursor:default; }
 .super-teacher-exception-note { display:block; color:#80379b; font-weight:700; margin-top:8px; }
 .super-teacher-exception-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:14px; padding:14px 0; }
