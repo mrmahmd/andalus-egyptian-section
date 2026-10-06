@@ -1,0 +1,17 @@
+.closed-week-alert-backdrop { position:fixed; inset:0; z-index:180; display:grid; place-items:center; padding:20px; background:rgba(54,18,27,.55); backdrop-filter:blur(5px); }
+.closed-week-alert { width:min(100%,500px); border:2px solid #ef9a9a; border-radius:28px; padding:36px 28px; background:linear-gradient(150deg,#fff,#fff0f0); text-align:center; box-shadow:0 24px 70px #4c0e2538; font-family:inherit; }
+.closed-week-alert-icon { display:grid; place-items:center; width:76px; height:76px; margin:0 auto 20px; border-radius:50%; background:#ffe1e1; color:#bc202b; font-size:48px; font-weight:900; border:2px solid #e78c92; }
+.closed-week-alert h2 { margin:0 0 14px; font-size:clamp(28px,5vw,38px); line-height:1.5; font-weight:900; color:#b91c2b; }
+.closed-week-alert p { margin:0 0 26px; font-size:clamp(23px,4vw,30px); line-height:1.7; color:#9e2631; font-weight:800; }
+.closed-week-alert button { min-width:150px; padding:12px 30px; border:0; border-radius:14px; color:white; background:#b91c2b; font:inherit; font-size:20px; font-weight:800; cursor:pointer; }
+.closed-week-alert button:focus-visible { outline:3px solid #eab308; outline-offset:4px; }
+.closed-week-alert[dir=rtl] { font-family:Alexandria,Cairo,sans-serif; }
+.teacher-exception-confirmation { width:min(860px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); overflow:auto; }
+.teacher-exception-targets { overflow:auto; max-height:40vh; border:1px solid #dce2ec; border-radius:12px; margin:20px 0; }
+.teacher-exception-targets table { width:100%; border-collapse:collapse; font-size:14px; text-align:left; }
+.teacher-exception-targets th,.teacher-exception-targets td { padding:12px; border-bottom:1px solid #e5e9ef; }
+.teacher-exception-targets th { background:#eef2fa; position:sticky; top:0; }
+.super-teacher-exception-action { margin-top:12px; border:0; border-radius:10px; padding:9px 12px; font:inherit; font-weight:700; color:#fff; background:#8a3ca8; cursor:pointer; }
+.super-teacher-exception-action:disabled { background:#e9e3ee; color:#867c8b; cursor:default; }
+.super-teacher-exception-note { display:block; color:#80379b; font-weight:700; margin-top:8px; }
+.super-teacher-exception-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:14px; padding:14px 0; }

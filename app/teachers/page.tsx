@@ -6,6 +6,8 @@ import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 import FaridQuizzesPanel from "./farid-quizzes-panel";
+import ClosedWeekAlert from "./closed-week-alert";
+import "../exceptional-publication.css";
 
 const navigation = [
   ["Overview", "OV"],
@@ -1374,6 +1376,7 @@ export default function TeachersDashboardPage() {
 
   const reviewErrorMessage = (error: unknown, arabic: boolean, fallback: string) => {
     const detail = error && typeof error === "object" && "message" in error ? String(error.message) : "";
+    if (detail.includes("This week is closed. Contact administration.")) setAcademicWeeks((current) => current.map((week) => week.id === selectedReviewWeekId ? { ...week, teacher_entry_enabled: false } : week));
     return detail.includes("This week is closed. Contact administration.")
       ? closedReviewWeekMessage(arabic) : arabic ? fallback : detail || fallback;
   };
@@ -1801,6 +1804,7 @@ export default function TeachersDashboardPage() {
         </div>
       </section>
 
+      {isSupervisor && activeNav === "Teacher Reviews" && selectedReviewWeek && !selectedReviewWeekOpen && <ClosedWeekAlert key={selectedReviewWeekId} arabic={dashboardArabic} />}
       {bulkApprovalConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setBulkApprovalConfirmationOpen(false)}><section className="weekly-send-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="bulk-approval-title" dir={bulkApprovalArabic ? "rtl" : "ltr"}><span aria-hidden="true">✓</span><h3 id="bulk-approval-title">{bulkApprovalArabic ? "اعتماد كل خطط الأسبوع" : "Approve every plan this week"}</h3><p>{bulkApprovalArabic ? `سيتم اعتماد ${selectedWeekPendingCount} خطة مادة مرسلة لكل معلميك في جميع الفصول والشعب خلال الأسبوع المحدد، وضمن نطاق إشرافك فقط. ستُنشر خطة الفصل عندما لا تبقى أي خطة مرسلة قيد المراجعة، وتظهر حصص غير المرسلين بعبارة Plan not published.` : `${selectedWeekPendingCount} submitted subject plan${selectedWeekPendingCount === 1 ? "" : "s"} from all your linked teachers across every class and section in the selected week will be approved. Each class plan publishes when no submitted plan remains under review; missing teachers show Plan not published.`}</p><div><button type="button" className="teacher-secondary-button" onClick={() => setBulkApprovalConfirmationOpen(false)}>{bulkApprovalArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={saving || !selectedReviewWeekOpen} onClick={() => void approveAllSelectedWeekPlans()}>{bulkApprovalArabic ? "نعم، اعتماد الجميع" : "Yes, approve all"}</button></div></section></div>}
 
       {weeklyBuilderOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && closeWeeklyEditor()}><section className={`teacher-editor-modal weekly-builder-modal ${weeklyBuilderReadOnly ? "is-read-only" : ""}`} role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
