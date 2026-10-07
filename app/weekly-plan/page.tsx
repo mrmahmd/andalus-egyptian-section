@@ -137,6 +137,23 @@ export default function WeeklyPlanPage() {
 
   const plansForClass = useMemo(() => publishedPlans.filter((plan) => plan.grade === Number(grade.replace("Grade ", "")) && plan.section === classType.replace("Class ", "")), [classType, grade, publishedPlans]);
   const selectedPlan = plansForClass.find((plan) => plan.weekNumber === selectedWeek) ?? null;
+  const selectedPlanId = selectedPlan?.id;
+
+  useEffect(() => {
+    if (!selectedPlanId) return;
+    let cancelled = false;
+    let frame = 0;
+    void document.fonts.ready.then(() => {
+      if (cancelled) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = window.requestAnimationFrame(() => {
+          document.getElementById("selected-plan")?.scrollIntoView({ behavior: "instant", block: "start" });
+        });
+      });
+    });
+    return () => { cancelled = true; window.cancelAnimationFrame(frame); };
+  }, [selectedPlanId]);
+
 
   useEffect(() => {
     if (!selectedPlan) return;
@@ -210,7 +227,7 @@ export default function WeeklyPlanPage() {
   const classLabel = (value: string) => isArabic ? `الشعبة ${value === "A" ? "أ" : "ب"}` : `Class ${value}`;
   const openPlan = (weekNumber: number) => {
     setSelectedWeek(weekNumber);
-    window.setTimeout(() => document.getElementById("selected-plan")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+    if (weekNumber === selectedWeek) document.getElementById("selected-plan")?.scrollIntoView({ behavior: "instant", block: "start" });
   };
 
   return <main className="subpage plan-page">
