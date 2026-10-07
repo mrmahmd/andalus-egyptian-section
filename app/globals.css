@@ -647,6 +647,12 @@ button, select, input { font: inherit; }
 
 /* Teacher workspace prototype */
 .teacher-portal { min-height: 100vh; background: #f4f7fb; color: #15213b; display: flex; font-family: "Plus Jakarta Sans", "Aptos", "Segoe UI Variable", "Segoe UI", sans-serif; font-weight: 500; }
+.staff-delegation-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: linear-gradient(110deg,#fff2dc,#e5f5fa); border-bottom: 2px solid #d4a653; color: #163b60; }
+.staff-delegation-banner strong { display: block; font-size: 16px; font-weight: 850; }
+.staff-delegation-banner small { display: block; margin-top: 6px; font-size: 13px; line-height: 1.7; font-weight: 650; }
+.staff-delegation-banner a { flex-shrink: 0; background: #173c69; color: white; padding: 11px 16px; border-radius: 12px; font-weight: 800; text-decoration: none; }
+.staff-open-workspace { background: #e9f4ff !important; color: #174f7d !important; font-weight: 800; }
+@media(max-width:760px) { .staff-delegation-banner { flex-direction: column; align-items: stretch; padding: 14px; }.staff-delegation-banner a { text-align: center; } }
 .teacher-sidebar { position: fixed; inset: 0 auto 0 0; width: 258px; padding: 24px 18px 18px; background: #0b2048; color: white; display: flex; flex-direction: column; z-index: 30; }
 .teacher-brand { display: flex; align-items: center; gap: 12px; }
 .teacher-brand img { width: 44px; height: 44px; object-fit: contain; border-radius: 11px; background: white; padding: 3px; }
@@ -2701,7 +2707,9 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 .parent-special-quizzes th:nth-child(2) { background: #3175a0; }.parent-special-quizzes th:nth-child(3) { background: #873d88; }
 .parent-special-quizzes td { padding: 11px 10px; border: 1px solid #c7e1ea; background: #fff; color: #183c61; font-size: 14px; font-weight: 750; line-height: 1.45; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; }
 .parent-special-quizzes tbody tr:nth-child(even) td { background: #f9fcfe; }
-.parent-special-quizzes td:first-child { width: 20%; color: #075d78; font-weight: 900; }.parent-special-quizzes td:nth-child(2) { width: 25%; color: #81337d; font-weight: 900; }.parent-special-quizzes td:nth-child(3) { text-align: left; }
+.parent-special-quizzes .special-quiz-day-column { width: 14%; }.parent-special-quizzes .special-quiz-subject-column { width: 18%; }.parent-special-quizzes .special-quiz-content-column { width: 68%; }
+.parent-special-quizzes td:first-child { color: #075d78; font-weight: 900; }.parent-special-quizzes td:nth-child(2) { color: #81337d; font-weight: 900; }.parent-special-quizzes td:nth-child(3) { text-align: left; }
+.parent-special-quizzes .special-quiz-date { display: block; margin-top: 4px; color: #48687e; font-size: .85em; font-weight: 700; line-height: 1.4; }
 .parent-special-error { margin: 10px 0; color: #9d3150; font-size: 12px; }
 @media (max-width: 700px) { .farid-admin-announcements, .farid-teacher-quizzes { padding: 17px; }.farid-feature-grid { grid-template-columns: 1fr; }.farid-feature-list article { grid-template-columns: 1fr; }.parent-announcement-block th, .parent-announcement-block td, .parent-special-quizzes th, .parent-special-quizzes td { padding: 6px 4px; font-size: 11px; } }
 @media (max-width: 700px) { .plan-paper .parent-special-quiz-title { font-size: 18px; }.parent-special-quizzes th { font-size: 11px; }.parent-special-quizzes td { font-size: 12px; line-height: 1.4; } }

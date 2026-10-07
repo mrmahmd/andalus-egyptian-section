@@ -15,7 +15,14 @@ function quizProgrammeLabel(value: string) {
   return /^(?:Connect Plus|كونكت بلس)$/i.test(value.trim()) ? "Connect Plus" : value;
 }
 
-export default function ParentSpecialExtras({ weekId, classId, refreshVersion }: { weekId: string; classId: string; refreshVersion: number }) {
+function quizDayDate(startsOn: string, day: number) {
+  const date = new Date(`${startsOn}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setUTCDate(date.getUTCDate() + day);
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+}
+
+export default function ParentSpecialExtras({ weekId, classId, startsOn, refreshVersion }: { weekId: string; classId: string; startsOn: string; refreshVersion: number }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [error, setError] = useState(false);
@@ -43,6 +50,6 @@ export default function ParentSpecialExtras({ weekId, classId, refreshVersion }:
   return <div className="parent-special-extras">
     {error && <p className="parent-special-error" role="alert">School announcements and quizzes could not be refreshed. Please try again.</p>}
     {announcements.length > 0 && <section className="parent-announcement-block" aria-label="School announcements"><h3>Announcement</h3><table><thead><tr><th>Day</th><th>Details</th></tr></thead><tbody>{announcements.map((announcement) => <tr key={announcement.id}><td>{days[announcement.day_of_week] ?? "School day"}</td><td><strong>{announcement.title}</strong><span>{compactAnnouncementText(announcement.body)}</span></td></tr>)}</tbody></table></section>}
-    {quizzes.length > 0 && <section className="parent-special-quizzes" aria-label="Quizzes"><h3 className="parent-special-quiz-title"><span aria-hidden="true">Q</span> QUIZZES THIS WEEK</h3><table><thead><tr><th>Day</th><th>Subject</th><th>Quiz content</th></tr></thead><tbody>{quizzes.map((quiz) => <tr key={quiz.id}><td>{days[quiz.day_of_week] ?? "School day"}</td><td lang="en" dir="ltr">{quizProgrammeLabel(quiz.programme)}</td><td>{quiz.content}</td></tr>)}</tbody></table></section>}
+    {quizzes.length > 0 && <section className="parent-special-quizzes" aria-label="Quizzes"><h3 className="parent-special-quiz-title"><span aria-hidden="true">Q</span> QUIZZES THIS WEEK</h3><table><colgroup><col className="special-quiz-day-column" /><col className="special-quiz-subject-column" /><col className="special-quiz-content-column" /></colgroup><thead><tr><th>Day / Date</th><th>Subject</th><th>Quiz content</th></tr></thead><tbody>{quizzes.map((quiz) => <tr key={quiz.id}><td>{days[quiz.day_of_week] ?? "School day"}<small className="special-quiz-date">{quizDayDate(startsOn, quiz.day_of_week)}</small></td><td lang="en" dir="ltr">{quizProgrammeLabel(quiz.programme)}</td><td>{quiz.content}</td></tr>)}</tbody></table></section>}
   </div>;
 }

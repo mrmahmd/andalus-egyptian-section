@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
+import { delegatedStaffId, getStaffWorkspaceClient } from "../../lib/supabase/staff-workspace";
 import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 import FaridQuizzesPanel from "./farid-quizzes-panel";
 import ClosedWeekAlert from "./closed-week-alert";
@@ -254,6 +255,7 @@ export default function TeachersDashboardPage() {
   const [compactWeeklyBuilder, setCompactWeeklyBuilder] = useState(false);
   const [selectedBuilderDay, setSelectedBuilderDay] = useState(0);
   const [profileId, setProfileId] = useState("");
+  const [workingOnBehalf, setWorkingOnBehalf] = useState(false);
   const [isFaridTeacher, setIsFaridTeacher] = useState(false);
   const [teacherName, setTeacherName] = useState("Teacher");
   const [departmentName, setDepartmentName] = useState("Teacher Department");
@@ -390,18 +392,24 @@ export default function TeachersDashboardPage() {
     setLoading(true);
     setMessage("");
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const supabase = getStaffWorkspaceClient();
+      const { data: userData, error: userError } = await getSupabaseBrowserClient().auth.getUser();
       if (userError) throw userError;
       if (!userData.user) {
         window.location.replace(`${basePath}/teachers/login/`);
         return;
       }
 
+      const targetUserId = delegatedStaffId() || userData.user.id;
+      if (delegatedStaffId()) {
+        const { error } = await supabase.rpc("open_workspace");
+        if (error) throw new Error(`تعذر فتح لوحة المستخدم بالنيابة. ${error.message}`);
+      }
+      setWorkingOnBehalf(Boolean(delegatedStaffId()));
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("user_id, username, display_name, role, status, department_id, departments(name_en), staff_directory(administrative_role)")
-        .eq("user_id", userData.user.id)
+        .eq("user_id", targetUserId)
         .maybeSingle();
       if (profileError) throw profileError;
       const staffRecord = one(profile?.staff_directory as { administrative_role: string | null } | { administrative_role: string | null }[] | null);
@@ -415,19 +423,19 @@ export default function TeachersDashboardPage() {
 
       const departmentTeachersPromise = supervisorAccount ? supabase.rpc("get_my_department_teachers") : Promise.resolve({ data: [], error: null });
       const [assignmentsResult, weeksResult, slotsResult, entriesResult, mySubmissionsResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult, holidaysResult, personalTimetableResult] = await Promise.all([
-        supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en, include_in_weekly_plan)").eq("teacher_id", userData.user.id),
+        supabase.from("teacher_assignments").select("id, class_id, subject_id, school_classes(grade, section), subjects(name_en, include_in_weekly_plan)").eq("teacher_id", targetUserId),
         supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current, teacher_entry_enabled, parent_portal_visible").order("week_number"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, teacher_id, day_of_week, period_number, requires_weekly_plan_submission").eq("requires_weekly_plan_submission", true).order("day_of_week").order("period_number"),
-        supabase.from("plan_entries").select("id, weekly_plan_id, timetable_slot_id, subject_id, day_of_week, period_number, classwork, homework, classera_notes, updated_at, subjects(name_en), weekly_plans(class_id, week_id, status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
-        supabase.from("plan_submissions").select("id, weekly_plan_id, subject_id, status, review_note, weekly_plans(class_id, week_id, school_classes(grade, section), academic_weeks(label)), subjects(name_en)").eq("teacher_id", userData.user.id).order("updated_at", { ascending: false }),
+        supabase.from("plan_entries").select("id, weekly_plan_id, timetable_slot_id, subject_id, day_of_week, period_number, classwork, homework, classera_notes, updated_at, subjects(name_en), weekly_plans(class_id, week_id, status, school_classes(grade, section), academic_weeks(label))").eq("teacher_id", targetUserId).order("updated_at", { ascending: false }),
+        supabase.from("plan_submissions").select("id, weekly_plan_id, subject_id, status, review_note, weekly_plans(class_id, week_id, school_classes(grade, section), academic_weeks(label)), subjects(name_en)").eq("teacher_id", targetUserId).order("updated_at", { ascending: false }),
         Promise.resolve({ data: [], error: null }),
         departmentTeachersPromise,
         supabase.from("school_classes").select("id, grade, section").eq("is_active", true).order("grade").order("section"),
         supabase.from("subjects").select("id, name_en").eq("is_active", true).eq("include_in_weekly_plan", true).order("name_en"),
         supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
-        supabase.from("weekly_plan_teacher_access").select("is_open").eq("teacher_id", userData.user.id).maybeSingle(),
+        supabase.from("weekly_plan_teacher_access").select("is_open").eq("teacher_id", targetUserId).maybeSingle(),
         supabase.from("weekly_plan_holidays").select("id, week_id, day_of_week, title, note"),
-        supabase.from("timetable_slots").select("id, class_id, subject_id, teacher_id, day_of_week, period_number, requires_weekly_plan_submission, school_classes(grade, section), subjects(name_en)").eq("teacher_id", userData.user.id).order("day_of_week").order("period_number"),
+        supabase.from("timetable_slots").select("id, class_id, subject_id, teacher_id, day_of_week, period_number, requires_weekly_plan_submission, school_classes(grade, section), subjects(name_en)").eq("teacher_id", targetUserId).order("day_of_week").order("period_number"),
       ]);
       const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, mySubmissionsResult.error, reviewsResult.error, classesResult.error, subjectsResult.error, holidaysResult.error].find(Boolean);
       if (firstError) throw firstError;
@@ -445,7 +453,7 @@ export default function TeachersDashboardPage() {
       const realAssignments: Assignment[] = (assignmentsResult.data ?? []).map((assignment) => {
         const schoolClass = one(assignment.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
         const subject = one(assignment.subjects as { name_en: string; include_in_weekly_plan: boolean } | { name_en: string; include_in_weekly_plan: boolean }[] | null);
-        if (!subject?.include_in_weekly_plan || !requiredSlotRows.some((slot) => String(slot.teacher_id) === String(userData.user.id) && String(slot.class_id) === String(assignment.class_id) && String(slot.subject_id) === String(assignment.subject_id))) return null;
+        if (!subject?.include_in_weekly_plan || !requiredSlotRows.some((slot) => String(slot.teacher_id) === String(targetUserId) && String(slot.class_id) === String(assignment.class_id) && String(slot.subject_id) === String(assignment.subject_id))) return null;
         return {
           id: String(assignment.id),
           classId: String(assignment.class_id),
@@ -523,7 +531,7 @@ export default function TeachersDashboardPage() {
       const department = one(profile.departments as { name_en: string } | { name_en: string }[] | null);
       const weeks = (weeksResult.data ?? []) as AcademicWeek[];
       const teacherEntryWeeks = weeks.filter((week) => week.teacher_entry_enabled);
-      setProfileId(userData.user.id);
+      setProfileId(targetUserId);
       setTeacherName(profile.display_name);
       setDepartmentName(department?.name_en ?? "Teacher Department");
       setWeeklyPlanCreationOpen(teacherAccessResult.data?.is_open ?? accessResult.data?.is_open ?? true);
@@ -570,7 +578,7 @@ export default function TeachersDashboardPage() {
   const verifyTeacherWeekAccess = useCallback(async (weekId: string, closeEditorWhenClosed = true) => {
     const arabic = window.localStorage.getItem("andalus-language") === "ar";
     try {
-      const { data: liveWeek, error } = await getSupabaseBrowserClient()
+      const { data: liveWeek, error } = await getStaffWorkspaceClient()
         .from("academic_weeks")
         .select("id, teacher_entry_enabled")
         .eq("id", weekId)
@@ -663,7 +671,7 @@ export default function TeachersDashboardPage() {
     setBuilderHydrated(false);
     approvedLessonSnapshot.current = {};
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = getStaffWorkspaceClient();
       const { data: plan, error: planError } = await supabase.from("weekly_plans")
         .select("id, plan_entries(timetable_slot_id, teacher_id, subject_id, day_of_week, period_number, classwork, homework, classera_notes), plan_quizzes(subject_id, quiz_date, details), plan_notes(note_text, teacher_id)")
         .eq("plan_entries.teacher_id", profileId)
@@ -769,7 +777,7 @@ export default function TeachersDashboardPage() {
     setParentPreviewOpen(true);
     setParentPreviewLoading(true);
     try {
-      const { data, error } = await getSupabaseBrowserClient().from("timetable_slots")
+      const { data, error } = await getStaffWorkspaceClient().from("timetable_slots")
         .select("id, class_id, subject_id, day_of_week, period_number, subjects(parent_plan_name, name_en)")
         .eq("class_id", selectedClassId)
         .eq("requires_weekly_plan_submission", true)
@@ -799,7 +807,7 @@ export default function TeachersDashboardPage() {
   };
 
   const saveWholeWeek = async (submitForReview = false, silent = false) => {
-    if (publishedEditPlanId) return;
+    if (publishedEditPlanId || (silent && delegatedStaffId())) return;
     if (!profileId || !selectedClass || !selectedWeek) return;
     if (submitForReview && autoSaveTimer.current) {
       window.clearTimeout(autoSaveTimer.current);
@@ -845,10 +853,31 @@ export default function TeachersDashboardPage() {
         if (silent) setAutoSaveState("idle");
         return;
       }
-      const supabase = getSupabaseBrowserClient();
+      const supabase = getStaffWorkspaceClient();
+      let weeklyPlanId = "";
+      if (workingOnBehalf) {
+        const date = new Date(`${selectedWeek.starts_on}T12:00:00`);
+        date.setDate(date.getDate() + Number(quizDay));
+        const { data, error } = await supabase.rpc("save_staff_plan", {
+          class_id: selectedClassId, week_id: selectedWeek.id, submit: submitForReview,
+          lessons: editableClassSlots.filter((slot) => !approvedSubjectIds.has(slot.subject_id)).map((slot) => {
+            const draft = slotDraftFor(slot);
+            const assignment = assignmentForSlot(slot);
+            const text = draft.classwork.trim();
+            return { slot_id: slot.id,
+              classwork: isEnglishSubject(assignment?.subject ?? "") ? formatEnglishClasswork(draft.englishProgramme, text) : assignment?.subject === "Integrated Science" && draft.scienceComponent && text ? `${draft.scienceComponent} — ${text}` : text,
+              homework: draft.homework.trim(), classera_notes: draft.classeraNotes.trim() };
+          }),
+          dictation_note: departmentName === "English Department" ? parseDictationWords(dictationWords).length ? encodeEnglishDictation(dictationDay, dictationWords) : "" : null,
+          quiz_subject_id: quizSubjectId || null, quiz_details: quizDetails.trim(), quiz_date: date.toISOString().slice(0, 10),
+        });
+        if (error) throw new Error(error.message);
+        if (typeof data !== "string" || !data) throw new Error("The delegated save was not confirmed.");
+        weeklyPlanId = data;
+      } else {
       const { data: existingPlan, error: planReadError } = await supabase.from("weekly_plans").select("id").eq("class_id", selectedClassId).eq("week_id", selectedWeek.id).maybeSingle();
       if (planReadError) throw planReadError;
-      let weeklyPlanId = existingPlan?.id ? String(existingPlan.id) : "";
+      weeklyPlanId = existingPlan?.id ? String(existingPlan.id) : "";
       if (!weeklyPlanId) {
         const { data: createdPlan, error: createPlanError } = await supabase.from("weekly_plans").insert({
           class_id: selectedClassId,
@@ -957,6 +986,7 @@ export default function TeachersDashboardPage() {
         if (noteError) throw noteError;
       }
 
+      }
       setSavedPlanId(weeklyPlanId);
       autoSavedSignature.current = autosaveSignature;
       if (!silent) {
@@ -1028,13 +1058,16 @@ export default function TeachersDashboardPage() {
           classera_notes: draft.classeraNotes.trim(),
         };
       });
-      const supabase = getSupabaseBrowserClient();
+      const supabase = getStaffWorkspaceClient();
       const dictationNote = departmentName === "English Department" ? parseDictationWords(dictationWords).length ? encodeEnglishDictation(dictationDay, dictationWords) : "" : null;
       const lessonsUnchanged = lessonChanges.length > 0 && lessonChanges.every((lesson) => {
         const original = approvedLessonSnapshot.current[lesson.slot_id];
         return original && original.classwork === lesson.classwork && original.homework === lesson.homework && original.classera_notes === lesson.classera_notes;
       });
-      if (lessonsUnchanged && dictationNote === "") {
+      if (workingOnBehalf && lessonsUnchanged && dictationNote === "") {
+        const { error } = await supabase.rpc("remove_staff_dictation", { plan_id: publishedEditPlanId });
+        if (error) throw new Error(error.message);
+      } else if (lessonsUnchanged && dictationNote === "") {
         // A dictation-only removal must not re-save every approved lesson: the
         // timetable may have changed since approval, and no lesson was edited.
         const { data: currentPlan, error: currentPlanError } = await supabase.from("weekly_plans")
@@ -1121,17 +1154,21 @@ export default function TeachersDashboardPage() {
   const autosaveSignature = useMemo(() => JSON.stringify({ selectedClassId, selectedWeekId, slotDrafts, quizDay, quizDetails, quizSubjectId, dictationDay, dictationWords }), [selectedClassId, selectedWeekId, slotDrafts, quizDay, quizDetails, quizSubjectId, dictationDay, dictationWords]);
   useEffect(() => {
     if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current);
-    if (!weeklyBuilderOpen || weeklyBuilderReadOnly || publishedEditPlanId || !builderHydrated || !hasAutosaveContent || saving || builderStatus === "submitted" || builderStatus === "approved" || autoSavedSignature.current === autosaveSignature) return;
+    if (workingOnBehalf || delegatedStaffId() || !weeklyBuilderOpen || weeklyBuilderReadOnly || publishedEditPlanId || !builderHydrated || !hasAutosaveContent || saving || builderStatus === "submitted" || builderStatus === "approved" || autoSavedSignature.current === autosaveSignature) return;
     setAutoSaveState("idle");
     autoSaveTimer.current = window.setTimeout(() => { autoSavedSignature.current = autosaveSignature; void saveWholeWeek(false, true); }, 1400);
     return () => { if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current); };
-  }, [weeklyBuilderOpen, weeklyBuilderReadOnly, publishedEditPlanId, builderHydrated, hasAutosaveContent, autosaveSignature, saving, builderStatus]);
+  }, [workingOnBehalf, weeklyBuilderOpen, weeklyBuilderReadOnly, publishedEditPlanId, builderHydrated, hasAutosaveContent, autosaveSignature, saving, builderStatus]);
 
   const withdrawSubmissionForEditing = async (submission: MySubmission) => {
     if (submission.status !== "submitted") return;
     setSaving(true);
     try {
-      const { data: withdrawnRows, error } = await getSupabaseBrowserClient()
+      if (workingOnBehalf) {
+        const { error } = await getStaffWorkspaceClient().rpc("withdraw_staff_plan", { plan_id: submission.weeklyPlanId });
+        if (error) throw new Error(error.message);
+      } else {
+      const { data: withdrawnRows, error } = await getStaffWorkspaceClient()
         .from("plan_submissions")
         .update({ status: "draft", submitted_at: null, review_note: null, reviewed_by: null, reviewed_at: null, updated_at: new Date().toISOString() })
         .eq("weekly_plan_id", submission.weeklyPlanId)
@@ -1140,6 +1177,7 @@ export default function TeachersDashboardPage() {
         .select("id, status");
       if (error) throw error;
       if (!(withdrawnRows ?? []).length || (withdrawnRows ?? []).some((row) => row.status !== "draft")) throw new Error("Supabase did not confirm the complete plan withdrawal. Please try again.");
+      }
       setMessage("The plan was withdrawn from review and is ready to edit again.");
       setMessageTone("success");
       await loadTeacherDashboard();
@@ -1181,7 +1219,7 @@ export default function TeachersDashboardPage() {
     if (!window.confirm(`Delete this ${entry.day} ${entry.subject} lesson? This removes only this lesson, not the other subjects or the whole class plan.`)) return;
     setSaving(true);
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = getStaffWorkspaceClient();
       const { data: deletedRows, error } = await supabase.from("plan_entries").delete().eq("id", entry.id).eq("teacher_id", profileId).select("id");
       if (error) throw error;
       if (!deletedRows?.length) throw new Error("This lesson could not be deleted. Please refresh and try again.");
@@ -1219,7 +1257,7 @@ export default function TeachersDashboardPage() {
     if (plan.status !== "approved") return;
     setSaving(true);
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = getStaffWorkspaceClient();
       const [{ data: livePlan, error: planError }, { data: submissions, error: submissionError }] = await Promise.all([
         supabase.from("weekly_plans").select("id, status").eq("id", plan.planId).single(),
         supabase.from("plan_submissions").select("subject_id, status").eq("weekly_plan_id", plan.planId).eq("teacher_id", profileId),
@@ -1279,7 +1317,7 @@ export default function TeachersDashboardPage() {
     if (!window.confirm(`Clear your saved draft for ${plan.className}, ${plan.week}? This removes only your lessons and keeps other teachers' work unchanged.`)) return;
     setSaving(true);
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = getStaffWorkspaceClient();
       const { error: entryError } = await supabase.from("plan_entries").delete().eq("weekly_plan_id", plan.planId).eq("teacher_id", profileId);
       if (entryError) throw entryError;
       const { error: submissionError } = await supabase.from("plan_submissions").update({ status: "draft", submitted_at: null, review_note: null, reviewed_by: null, reviewed_at: null, updated_at: new Date().toISOString() }).eq("weekly_plan_id", plan.planId).eq("teacher_id", profileId).in("status", ["draft", "changes_requested"]);
@@ -1305,7 +1343,7 @@ export default function TeachersDashboardPage() {
     setCopyFeedback("");
     setCopyConflict(null);
     try {
-      const { data, error } = await getSupabaseBrowserClient().rpc("copy_my_weekly_plan", {
+      const { data, error } = await getStaffWorkspaceClient().rpc("copy_my_weekly_plan", {
         source_plan_id: copySourcePlan.planId, target_class_id: target.classId,
       });
       if (error) {
@@ -1361,7 +1399,7 @@ export default function TeachersDashboardPage() {
 
   const verifySupervisorWeekAccess = async (weekId: string) => {
     const arabic = window.localStorage.getItem("andalus-language") === "ar";
-    const { data, error } = await getSupabaseBrowserClient().from("academic_weeks")
+    const { data, error } = await getStaffWorkspaceClient().from("academic_weeks")
       .select("teacher_entry_enabled").eq("id", weekId).single();
     if (error || !data?.teacher_entry_enabled) {
       if (!error) setAcademicWeeks((current) => current.map((week) => week.id === weekId ? { ...week, teacher_entry_enabled: false } : week));
@@ -1392,7 +1430,7 @@ export default function TeachersDashboardPage() {
     setSaving(true);
     try {
       if (!await verifySupervisorWeekAccess(review.weekId)) return;
-      const supabase = getSupabaseBrowserClient();
+      const supabase = getStaffWorkspaceClient();
       const pendingReviewIds = review.reviews.filter((item) => item.status === "submitted").map((item) => item.id);
       const results = await Promise.all(pendingReviewIds.map((submissionId) => supabase.rpc("review_plan_submission", { submission_id: submissionId, decision, note: note || null })));
       const failed = results.find((result) => result.error)?.error;
@@ -1429,7 +1467,7 @@ export default function TeachersDashboardPage() {
     setSaving(true);
     try {
       if (!await verifySupervisorWeekAccess(selectedReviewWeekId)) return;
-      const { data, error } = await getSupabaseBrowserClient().rpc("approve_my_week_submissions", {
+      const { data, error } = await getStaffWorkspaceClient().rpc("approve_my_week_submissions", {
         target_week_id: selectedReviewWeekId,
       });
       if (error) throw error;
@@ -1461,7 +1499,7 @@ export default function TeachersDashboardPage() {
     if (!teacherId || !departmentAssignmentDraft.classId || !departmentAssignmentDraft.subjectId) return;
     setSaving(true);
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = getStaffWorkspaceClient();
       const { error } = await supabase.from("teacher_assignments").insert({ teacher_id: teacherId, class_id: departmentAssignmentDraft.classId, subject_id: departmentAssignmentDraft.subjectId });
       if (error) throw error;
       setDepartmentAssignmentDraft((current) => ({ ...current, subjectId: "" }));
@@ -1474,7 +1512,7 @@ export default function TeachersDashboardPage() {
   const removeDepartmentAssignment = async (assignmentId: string) => {
     setSaving(true);
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = getStaffWorkspaceClient();
       const { error } = await supabase.from("teacher_assignments").delete().eq("id", assignmentId);
       if (error) throw error;
       setMessage("The assignment was removed from the teacher.");
@@ -1484,6 +1522,7 @@ export default function TeachersDashboardPage() {
   };
 
   const signOut = async () => {
+    if (delegatedStaffId()) { window.location.assign(`${basePath}/super-admin/?section=accounts`); return; }
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
     window.location.replace(`${basePath}/teachers/login/`);
@@ -1663,6 +1702,10 @@ export default function TeachersDashboardPage() {
       </aside>
 
       <section className="teacher-main">
+      {workingOnBehalf && <div className="staff-delegation-banner" role="status" dir={dashboardArabic ? "rtl" : "ltr"}>
+        <div><strong>{dashboardArabic ? `المشرف العام يعمل نيابةً عن: ${teacherName}` : `General Supervisor working on behalf of: ${teacherName}`}</strong><small>{dashboardArabic ? "حفظ يدوي فقط. تُسجل إجراءاتك باسمك الإداري، وتظل قواعد الأسبوع والاعتماد مطبقة." : "Manual save only. Actions are recorded under your admin account; week and approval rules still apply."}</small></div>
+        <a href={`${basePath}/super-admin/?section=accounts`}>{dashboardArabic ? "العودة للمشرف العام" : "Return to General Supervisor"}</a>
+      </div>}
         <div className={`teacher-mobile-menu ${mobileNavigationOpen ? "is-open" : ""}`} aria-hidden={!mobileNavigationOpen}>
           <button type="button" className="teacher-mobile-menu-backdrop" aria-label="Close workspace menu" onClick={() => setMobileNavigationOpen(false)} />
           <div className="teacher-mobile-menu-panel" role="dialog" aria-modal="true" aria-label="Teacher workspace menu">
@@ -1685,7 +1728,7 @@ export default function TeachersDashboardPage() {
 
           {message && <p className={`super-admin-live-message ${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
 
-          {activeNav === "Quizzes" && isFaridTeacher && <FaridQuizzesPanel weeks={academicWeeks} assignments={assignments} teacherId={profileId} initialWeekId={dashboardWeekId} arabic={dashboardArabic} />}
+          {activeNav === "Quizzes" && isFaridTeacher && <FaridQuizzesPanel weeks={academicWeeks} assignments={assignments} teacherId={profileId} initialWeekId={dashboardWeekId} readOnly={workingOnBehalf} arabic={dashboardArabic} />}
 
           {activeNav === "Overview" && <section className="staff-dashboard" aria-label={dashboardArabic ? "ملخص الأسبوع" : "Weekly overview"}>
             <div className="staff-dashboard-hero"><div><span className="staff-dashboard-eyebrow">{dashboardArabic ? isSupervisor ? "لوحة متابعة المشرف" : "لوحة متابعة المعلم" : isSupervisor ? "Supervisor dashboard" : "Teacher dashboard"}</span><h2>{dashboardArabic ? "ابدأ بما يحتاج اهتمامك" : "Start with what needs your attention"}</h2><p>{dashboardArabic ? "الأرقام والإجراءات التالية تخص الأسبوع المختار فقط، وحصصك مأخوذة من جدول المدرسة." : "The figures and actions below belong to the selected week. Your lessons come from the school timetable."}</p></div><label>{dashboardArabic ? "الأسبوع الدراسي" : "School week"}<select value={dashboardWeekId} onChange={(event) => { setDashboardWeekId(event.target.value); setPlanViewFilter("all"); }} aria-label={dashboardArabic ? "اختر الأسبوع الدراسي" : "Choose school week"}>{dashboardWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select><small>{dashboardWeek ? dashboardWeek.teacher_entry_enabled ? dashboardArabic ? "مفتوح لكتابة الخطط" : "Open for plan writing" : dashboardArabic ? "مغلق للتحرير · المعاينة متاحة" : "Editing closed · preview available" : dashboardArabic ? "لا يوجد أسبوع متاح حاليًا" : "No available week right now"}</small></label></div>
@@ -1740,7 +1783,7 @@ export default function TeachersDashboardPage() {
                       {plan.status === "approved" && weeklyPlanCreationOpen && <button type="button" className="teacher-secondary-button published-edit" disabled={saving} onClick={() => void openPublishedEdit(plan)}>{dashboardArabic ? plan.publicationStatus === "published" ? "تعديل الخطة المنشورة" : "تعديل الخطة المعتمدة" : plan.publicationStatus === "published" ? "Edit published plan" : "Edit approved plan"}</button>}
                       {canCopy && <button type="button" className="teacher-secondary-button copy" disabled={saving} onClick={() => openCopyPlanDialog(plan)}>{dashboardArabic ? "نسخ الخطة" : "Copy plan"}</button>}
                       {plan.status === "submitted" && weekOpen && <button type="button" className="teacher-secondary-button warning" disabled={saving} onClick={() => { const submission = mySubmissions.find((item) => item.weeklyPlanId === plan.planId && item.status === "submitted"); if (submission) void withdrawSubmissionForEditing(submission); }}>{dashboardArabic ? "سحب للتعديل" : "Withdraw"}</button>}
-                      {editable && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void clearWeeklyDraft(plan)}>{dashboardArabic ? "مسح المسودة" : "Clear draft"}</button>}
+                      {editable && !workingOnBehalf && <button type="button" className="teacher-secondary-button danger" disabled={saving} onClick={() => void clearWeeklyDraft(plan)}>{dashboardArabic ? "مسح المسودة" : "Clear draft"}</button>}
                     </div></td>
                   </tr>;
                 })}
@@ -1775,7 +1818,7 @@ export default function TeachersDashboardPage() {
           {isSupervisor && activeNav === "Department Teachers" && <section className="teacher-card department-teachers-card">
             <div className="teacher-card-heading"><div><p className="teacher-kicker">{dashboardArabic ? "إدارة القسم" : "Department management"}</p><h2>{dashboardArabic ? "معلمو القسم" : "Department teachers"}</h2><p>{dashboardArabic ? "اعرض معلميك المرتبطين بك وتكليفاتهم من الفصول والمواد." : "See your linked teachers and their class and subject assignments."}</p></div><span className="supervisor-review-authority">{departmentTeachers.length} {dashboardArabic ? "معلم" : "teachers"}</span></div>
             <div className="department-teachers-layout"><div className="department-teacher-list">{departmentTeachers.map((teacher, index) => <button key={teacher.userId || `${teacher.name}-${index}`} className={selectedDepartmentTeacherId === teacher.userId ? "active" : ""} onClick={() => selectDepartmentTeacher(teacher.userId)}><span>{initials(teacher.name)}</span><div><strong>{teacher.name}</strong><small>{teacher.userId ? dashboardArabic ? `${teacher.assignments.length} تكليف فصل ومادة` : `${teacher.assignments.length} class / subject assignments` : dashboardArabic ? "لم يُفعّل الحساب بعد" : "Account not registered yet"}</small></div><em>{dashboardArabic ? "إدارة" : "Manage"}</em></button>)}{departmentTeachers.length === 0 && <p className="supervisor-review-empty">{dashboardArabic ? "لا يوجد معلمون مرتبطون بقسمك حاليًا." : "No teachers are linked to your department yet."}</p>}</div>
-              {selectedDepartmentTeacher && <section className="department-teacher-editor"><div><p className="teacher-kicker">{dashboardArabic ? "تكليفات المعلم" : "Teacher assignments"}</p><h3>{selectedDepartmentTeacher.name}</h3><p>{dashboardArabic ? "أضف الفصل والمادة أو احذف تكليفًا موجودًا." : "Assign classes and subjects, or remove an existing assignment."}</p></div>{!selectedDepartmentTeacher.userId ? <p className="supervisor-review-feedback">{dashboardArabic ? "يجب إنشاء حساب المعلم وتفعيله قبل تكليفه بفصل أو مادة." : "This teacher must create and activate a school account before classes and subjects can be assigned."}</p> : <><div className="department-assignment-picker"><label>{dashboardArabic ? "الفصل" : "Class"}<select value={departmentAssignmentDraft.classId} onChange={(event) => setDepartmentAssignmentDraft((current) => ({ ...current, classId: event.target.value }))}><option value="">{dashboardArabic ? "اختر الفصل" : "Select class"}</option>{schoolClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>Grade {schoolClass.grade} {schoolClass.section}</option>)}</select></label><label>{dashboardArabic ? "المادة" : "Subject"}<select value={departmentAssignmentDraft.subjectId} onChange={(event) => setDepartmentAssignmentDraft((current) => ({ ...current, subjectId: event.target.value }))}><option value="">{dashboardArabic ? "اختر المادة" : "Select subject"}</option>{schoolSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_en}</option>)}</select></label><button disabled={saving || !departmentAssignmentDraft.classId || !departmentAssignmentDraft.subjectId} type="button" className="teacher-primary-button" onClick={() => void addDepartmentAssignment(selectedDepartmentTeacher.userId)}>{dashboardArabic ? "إضافة التكليف" : "Assign to teacher"}</button></div><div className="department-assignment-chips">{selectedDepartmentTeacher.assignments.map((assignment) => <span key={assignment.id}>{`Grade ${assignment.grade} ${assignment.section} · ${assignment.subject}`}<button disabled={saving} type="button" aria-label={dashboardArabic ? `حذف تكليف ${assignment.subject}` : `Remove ${assignment.subject}`} onClick={() => void removeDepartmentAssignment(assignment.id)}>×</button></span>)}{selectedDepartmentTeacher.assignments.length === 0 && <small>{dashboardArabic ? "لا توجد فصول أو مواد مكلف بها حاليًا." : "No classes or subjects assigned yet."}</small>}</div></>}</section>}</div>
+              {selectedDepartmentTeacher && <section className="department-teacher-editor"><div><p className="teacher-kicker">{dashboardArabic ? "تكليفات المعلم" : "Teacher assignments"}</p><h3>{selectedDepartmentTeacher.name}</h3><p>{dashboardArabic ? "أضف الفصل والمادة أو احذف تكليفًا موجودًا." : "Assign classes and subjects, or remove an existing assignment."}</p></div>{!selectedDepartmentTeacher.userId ? <p className="supervisor-review-feedback">{dashboardArabic ? "يجب إنشاء حساب المعلم وتفعيله قبل تكليفه بفصل أو مادة." : "This teacher must create and activate a school account before classes and subjects can be assigned."}</p> : <><div className="department-assignment-picker"><label>{dashboardArabic ? "الفصل" : "Class"}<select value={departmentAssignmentDraft.classId} onChange={(event) => setDepartmentAssignmentDraft((current) => ({ ...current, classId: event.target.value }))}><option value="">{dashboardArabic ? "اختر الفصل" : "Select class"}</option>{schoolClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>Grade {schoolClass.grade} {schoolClass.section}</option>)}</select></label><label>{dashboardArabic ? "المادة" : "Subject"}<select value={departmentAssignmentDraft.subjectId} onChange={(event) => setDepartmentAssignmentDraft((current) => ({ ...current, subjectId: event.target.value }))}><option value="">{dashboardArabic ? "اختر المادة" : "Select subject"}</option>{schoolSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_en}</option>)}</select></label><button disabled={workingOnBehalf || saving || !departmentAssignmentDraft.classId || !departmentAssignmentDraft.subjectId} type="button" className="teacher-primary-button" onClick={() => void addDepartmentAssignment(selectedDepartmentTeacher.userId)}>{dashboardArabic ? "إضافة التكليف" : "Assign to teacher"}</button></div><div className="department-assignment-chips">{selectedDepartmentTeacher.assignments.map((assignment) => <span key={assignment.id}>{`Grade ${assignment.grade} ${assignment.section} · ${assignment.subject}`}<button disabled={workingOnBehalf || saving} type="button" aria-label={dashboardArabic ? `حذف تكليف ${assignment.subject}` : `Remove ${assignment.subject}`} onClick={() => void removeDepartmentAssignment(assignment.id)}>×</button></span>)}{selectedDepartmentTeacher.assignments.length === 0 && <small>{dashboardArabic ? "لا توجد فصول أو مواد مكلف بها حاليًا." : "No classes or subjects assigned yet."}</small>}</div></>}</section>}</div>
           </section>}
           {isSupervisor && activeNav === "Teacher Reviews" && <section className="teacher-card supervisor-review-card">
             <div className="teacher-card-heading supervisor-review-heading">
@@ -1809,7 +1852,7 @@ export default function TeachersDashboardPage() {
 
       {weeklyBuilderOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && closeWeeklyEditor()}><section className={`teacher-editor-modal weekly-builder-modal ${weeklyBuilderReadOnly ? "is-read-only" : ""}`} role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
         <div className="teacher-modal-heading"><div><p>{dashboardArabic ? `الأسبوع ${selectedWeek.week_number}` : `Week ${selectedWeek.week_number}`} · {academicWeekRange(selectedWeek, dashboardArabic)}</p><h2 id="weekly-builder-title">{weeklyBuilderReadOnly ? dashboardArabic ? "معاينة الخطة الأسبوعية" : "Weekly plan preview" : publishedEditPlanId ? dashboardArabic ? approvedEditPublished ? "تعديل الخطة المنشورة" : "تعديل الخطة المعتمدة" : approvedEditPublished ? "Edit published plan" : "Edit approved plan" : dashboardArabic ? "إعداد الخطة الأسبوعية" : "Build the whole week"}</h2></div><button disabled={saving} aria-label={dashboardArabic ? "إغلاق محرر الخطة" : "Close weekly builder"} onClick={() => closeWeeklyEditor()}>×</button></div>
-        <div className="teacher-editor-context"><span>{weeklyBuilderReadOnly ? dashboardArabic ? "وضع المعاينة فقط" : "Preview-only mode" : publishedEditPlanId ? dashboardArabic ? "تعديل خطة معتمدة — حفظ يدوي فقط" : "Approved edit — manual save only" : dashboardArabic ? "حفظ واحد لخطة الأسبوع كاملة" : "One save for the whole week"}</span><i />{weeklyBuilderReadOnly ? dashboardArabic ? "يمكنك مشاهدة الخطة، ولا يمكن تعديلها أو حفظها في هذا الوضع." : "You can view the plan, but it cannot be edited or saved in this mode." : publishedEditPlanId ? dashboardArabic ? "التغييرات لا تُحفظ تلقائيًا؛ اضغط حفظ التعديل بعد المراجعة." : "Changes are not saved automatically. Review and save explicitly." : dashboardArabic ? "تُرتب المدخلات تلقائيًا حسب حصص جدولك." : "Entries are placed according to your timetable slots."}{!weeklyBuilderReadOnly && !publishedEditPlanId && <b className={`teacher-autosave-state ${autoSaveState}`}>{autoSaveState === "saving" ? dashboardArabic ? "جارٍ حفظ المسودة…" : "Saving draft…" : autoSaveState === "saved" ? dashboardArabic ? "تم حفظ المسودة تلقائيًا" : "Draft saved automatically" : dashboardArabic ? "الحفظ التلقائي مُفعّل" : "Auto-save is on"}</b>}</div>
+        <div className="teacher-editor-context">{workingOnBehalf && <strong>{dashboardArabic ? `نيابةً عن ${teacherName} — حفظ يدوي فقط` : `On behalf of ${teacherName} — manual save only`}</strong>}<span>{weeklyBuilderReadOnly ? dashboardArabic ? "وضع المعاينة فقط" : "Preview-only mode" : publishedEditPlanId ? dashboardArabic ? "تعديل خطة معتمدة — حفظ يدوي فقط" : "Approved edit — manual save only" : dashboardArabic ? "حفظ واحد لخطة الأسبوع كاملة" : "One save for the whole week"}</span><i />{weeklyBuilderReadOnly ? dashboardArabic ? "يمكنك مشاهدة الخطة، ولا يمكن تعديلها أو حفظها في هذا الوضع." : "You can view the plan, but it cannot be edited or saved in this mode." : publishedEditPlanId ? dashboardArabic ? "التغييرات لا تُحفظ تلقائيًا؛ اضغط حفظ التعديل بعد المراجعة." : "Changes are not saved automatically. Review and save explicitly." : dashboardArabic ? "تُرتب المدخلات تلقائيًا حسب حصص جدولك." : "Entries are placed according to your timetable slots."}{!workingOnBehalf && !weeklyBuilderReadOnly && !publishedEditPlanId && <b className={`teacher-autosave-state ${autoSaveState}`}>{autoSaveState === "saving" ? dashboardArabic ? "جارٍ حفظ المسودة…" : "Saving draft…" : autoSaveState === "saved" ? dashboardArabic ? "تم حفظ المسودة تلقائيًا" : "Draft saved automatically" : dashboardArabic ? "الحفظ التلقائي مُفعّل" : "Auto-save is on"}</b>}</div>
         <form onSubmit={(event) => { event.preventDefault(); if (!weeklyBuilderReadOnly) { if (publishedEditPlanId) setPublishedEditConfirmationOpen(true); else confirmAndSendWholeWeek(); } }}>
           {builderFeedback && <div className={`weekly-builder-feedback ${builderFeedback.tone}`} role="status">{builderFeedback.text}</div>}
           {builderStatus !== "new" && <div className={`weekly-builder-review-state ${builderStatus}`}><strong>{dashboardArabic ? builderStatus === "approved" ? isSupervisor ? "تم الاعتماد تلقائيًا" : "تم الاعتماد" : builderStatus === "submitted" ? "في انتظار اعتماد المشرف" : builderStatus === "changes_requested" ? "مطلوب إجراء تعديلات" : "تم حفظ المسودة" : builderStatus === "approved" ? isSupervisor ? "Approved automatically" : "Approved" : builderStatus === "submitted" ? "Waiting for supervisor approval" : builderStatus === "changes_requested" ? "Changes requested" : "Draft saved"}</strong><span>{dashboardArabic ? builderStatus === "approved" ? isSupervisor ? "تم اعتماد خطتك التعليمية تلقائيًا. تظهر خطة الفصل بعد انتهاء مراجعة الخطط المرسلة، وتظهر حصص غير المرسلين بعبارة Plan not published." : "تم اعتماد الجزء الخاص بك. تظهر خطة الفصل بعد انتهاء مراجعة الخطط المرسلة، وتظهر حصص غير المرسلين بعبارة Plan not published." : builderStatus === "submitted" ? "أُرسلت الخطة وأصبحت مقفلة حتى يراجعها المشرف أو تسحبها للتعديل." : builderStatus === "changes_requested" ? "راجع ملاحظة المشرف، وعدّل الخطة، ثم أرسلها مرة أخرى." : "عملك محفوظ كمسودة خاصة ولا يظهر لأولياء الأمور. أرسله للمشرف بعد اكتماله." : builderStatus === "approved" ? isSupervisor ? "Your teaching plan is approved automatically. The class plan is visible when no submitted plan is still waiting for review; missing teachers appear as Plan not published." : "Your part is approved. The class plan is visible when no submitted plan is still waiting for review; missing teachers appear as Plan not published." : builderStatus === "submitted" ? "This plan has been sent and is locked until the supervisor reviews it or you withdraw it." : builderStatus === "changes_requested" ? "Review the supervisor note, update the plan, then send it again." : "Your work is private and is not visible to families. Send it to the supervisor when it is complete."}</span></div>}
@@ -1820,7 +1863,7 @@ export default function TeachersDashboardPage() {
           <fieldset className="weekly-builder-fields" disabled={weeklyBuilderReadOnly}>
           <div className={`weekly-builder-days days-${visibleBuilderDayIndexes.length}`}>{visibleBuilderDayIndexes.map((index) => { const day = dayNames[index]; const daySlots = selectedClassSlots.filter((slot) => slot.day_of_week === index); return <section className="weekly-builder-day" key={day}><header><strong>{dashboardArabic ? arabicDayNames[day] : day}</strong><small>{dashboardArabic ? `${daySlots.length} حصص` : `${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"}`}</small></header>{daySlots.map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = isEnglishSubject(assignment?.subject ?? ""); return <article key={slot.id}><header><span>{dashboardArabic ? `الحصة ${slot.period_number}` : `Period ${slot.period_number}`}</span><strong>{isEnglish ? "English" : assignment?.subject ?? (dashboardArabic ? "المادة" : "Subject")}</strong></header>{assignment?.subject === "Integrated Science" && <label>{dashboardArabic ? "فرع العلوم" : "Science component"}<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">{dashboardArabic ? "اختر الكيمياء أو الفيزياء أو الأحياء" : "Select Chemistry, Physics or Biology"}</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>{dashboardArabic ? "برنامج اللغة الإنجليزية" : "English programme"}<select value={draft.englishProgramme} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}><option value="">{dashboardArabic ? "اختر AL أو OL" : "Select AL or OL"}</option>{englishProgrammes.map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">{dashboardArabic ? "يُضاف AL أو OL تلقائيًا قبل عمل الحصة بالصيغة: AL - Classwork." : "AL or OL is added automatically before Classwork using the format: AL - Classwork."}</p>}<label>{dashboardArabic ? "عمل الحصة" : "Classwork"}<textarea rows={3} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder={dashboardArabic ? "اكتب الدرس والوحدة والصفحات" : "Lesson, unit and pages"} /></label><label>{dashboardArabic ? "الواجب المنزلي" : "Homework"}<textarea rows={3} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder={dashboardArabic ? "اكتب واجب هذه الحصة" : "Homework for this lesson"} /></label><label>{dashboardArabic ? "ملاحظات كلاسيرا" : "Classera notes"}<textarea rows={3} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder={dashboardArabic ? "تذكير أو مواد مطلوبة" : "Reminder or materials"} /></label></article>})}</section>})}</div>
           {departmentName === "English Department" && <section className="weekly-builder-extra english-dictation-editor"><div className="weekly-builder-section-heading"><div><span>DW</span><div><strong>{dashboardArabic ? "كلمات الإملاء باللغة الإنجليزية" : "English Dictation Words"}</strong><small>{dashboardArabic ? "اختر يوم الإملاء، ثم اكتب كل كلمة في سطر أو افصل الكلمات بفواصل." : "Choose the dictation day, then enter one word per line or separate words with commas."}</small></div></div></div><div className="weekly-builder-dictation-row"><label>{dashboardArabic ? "يوم الإملاء" : "Dictation day"}<select value={dictationDay} onChange={(event) => setDictationDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{dashboardArabic ? arabicDayNames[day] : day}</option>)}</select></label><label>{dashboardArabic ? "الكلمات" : "Words"}<textarea className="weekly-builder-notes" rows={3} value={dictationWords} onChange={(event) => setDictationWords(event.target.value)} placeholder="school, teacher, classroom, homework" /></label></div></section>}
-          {isFaridTeacher && <FaridQuizzesPanel weeks={academicWeeks} assignments={assignments} teacherId={profileId} initialWeekId={selectedWeekId} contextWeekId={selectedWeekId} contextClassId={selectedClassId} embedded readOnly={weeklyBuilderReadOnly} arabic={dashboardArabic} />}
+          {isFaridTeacher && <FaridQuizzesPanel weeks={academicWeeks} assignments={assignments} teacherId={profileId} initialWeekId={selectedWeekId} contextWeekId={selectedWeekId} contextClassId={selectedClassId} embedded readOnly={weeklyBuilderReadOnly || workingOnBehalf} arabic={dashboardArabic} />}
           </fieldset>
           <div className="teacher-editor-footer"><span>{weeklyBuilderReadOnly ? dashboardArabic ? "هذه معاينة فقط؛ لن يتم حفظ أو إرسال أي تغييرات." : "This is a read-only preview; no changes will be saved or submitted." : publishedEditPlanId ? dashboardArabic ? approvedEditPublished ? "بعد التأكيد سيظهر التعديل لولي الأمر إذا كان الأسبوع ظاهرًا له. لا حاجة لاعتماد المشرف مرة أخرى." : "سيُحفظ التعديل دون إعادة إرساله للمشرف، ولن يظهر لولي الأمر قبل استيفاء شروط النشر." : approvedEditPublished ? "After confirmation, changes appear for families if the week is visible. No new review is needed." : "Changes are saved without another review and remain hidden until publication conditions are met." : dashboardArabic ? selectedClassSlots.length > 0 ? isSupervisor ? "تُعتمد خطتك التعليمية تلقائيًا عند الإرسال. ولا تمنع حصص المعلمين غير المرسلة نشر باقي الخطة." : "احفظ عملك كمسودة خاصة، ثم أرسل الخطة المكتملة إلى المشرف للاعتماد." : "يتوقف الحفظ حتى يتم ربط جدول الحصص." : selectedClassSlots.length > 0 ? isSupervisor ? "Your teaching plan is approved automatically when sent. Missing teachers do not block the class plan and appear as Plan not published." : "Save privately as a draft, then send the completed plan to your supervisor. Missing teachers do not block an otherwise approved class plan." : "Saving is blocked until the timetable is connected."}</span><div><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button teacher-preview-button" onClick={() => void openParentPreview()}>{dashboardArabic ? "معاينة خطة ولي الأمر" : "Preview parent plan"}</button><button disabled={saving} type="button" className="teacher-secondary-button" onClick={() => closeWeeklyEditor()}>{weeklyBuilderReadOnly ? dashboardArabic ? "إغلاق المعاينة" : "Close preview" : dashboardArabic ? "إلغاء" : "Cancel"}</button>{!weeklyBuilderReadOnly && (publishedEditPlanId ? <button disabled={saving || !builderHydrated || selectedClassSlots.length === 0} className="teacher-primary-button" type="submit">{saving ? dashboardArabic ? "جارٍ حفظ التعديل…" : "Saving changes…" : dashboardArabic ? "حفظ التعديل" : "Save changes"}</button> : <><button disabled={saving || selectedClassSlots.length === 0} type="button" className="teacher-secondary-button" onClick={() => void saveWholeWeek(false)}>{saving ? dashboardArabic ? "جارٍ الحفظ…" : "Saving…" : dashboardArabic ? "حفظ كمسودة" : "Save draft"}</button><button disabled={saving || selectedClassSlots.length === 0 || builderStatus === "submitted" || builderStatus === "approved"} className="teacher-primary-button" type="submit">{saving ? dashboardArabic ? "جارٍ إكمال الحفظ التلقائي…" : "Send after automatic save" : isSupervisor ? dashboardArabic ? "اعتماد خطتي التعليمية" : "Approve my teaching plan" : dashboardArabic ? "إرسال للمشرف للاعتماد" : "Send to supervisor for approval"}</button></>)}</div></div>
         </form>
