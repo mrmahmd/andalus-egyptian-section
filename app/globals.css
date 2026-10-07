@@ -2004,6 +2004,51 @@ body.arabic-ui .super-own-password-fields label, body.arabic-ui .super-own-passw
 .week-library-item { border-radius: 15px; }
 .week-details strong { font-size: 16px; font-weight: 800; }
 .week-actions button { min-height: 42px; border-radius: 10px; font-size: 13px; }
+
+/* Parent library: responsive week cards, independent of the printed plan. */
+.plan-directory .week-library-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.plan-directory .week-library-item {
+  --week-accent: #1265a5; --week-tint: #edf6ff; --week-border: #c4def4;
+  position: relative; min-width: 0; min-height: 238px; padding: 22px 18px 18px;
+  grid-template-columns: 56px minmax(0, 1fr); grid-template-rows: auto 1fr auto;
+  gap: 18px 13px; align-items: start; border: 1px solid var(--week-border);
+  border-top: 5px solid var(--week-accent); border-radius: 20px;
+  background: radial-gradient(circle at 0 0, #ffffffb3, transparent 65%), var(--week-tint);
+  box-shadow: 0 7px 20px rgba(18, 54, 92, .07);
+}
+.plan-directory .week-library-item:nth-child(3n + 2) { --week-accent: #087f85; --week-tint: #eaf9f5; --week-border: #bfe4dc; }
+.plan-directory .week-library-item:nth-child(3n) { --week-accent: #804294; --week-tint: #f7effb; --week-border: #e2cdec; }
+.plan-directory .week-library-item:not(.upcoming):hover,
+.plan-directory .week-library-item:focus-within { transform: translateY(-4px); border-color: var(--week-accent); box-shadow: 0 15px 30px rgba(18, 54, 92, .14); }
+.plan-directory .week-number { width: 56px; height: 56px; border-radius: 16px; background: var(--week-accent); font-size: 22px; box-shadow: 0 5px 12px rgba(18, 54, 92, .13); }
+.plan-directory .week-details { min-width: 0; gap: 8px; align-self: center; }
+.plan-directory .week-details strong { font-size: 22px; line-height: 1.4; }
+.plan-directory .week-details small { color: #4a607a; font-size: 15px; font-weight: 700; line-height: 1.8; }
+.plan-directory .week-status { grid-column: 1 / -1; align-self: start; padding: 8px 14px; border: 1px solid #b7dfcd; border-radius: 30px; background: #fff; color: #146443; font-size: 16px; line-height: 1.5; }
+.plan-directory .week-status::before { content: "✓"; display: inline-block; margin-inline-end: 7px; font-weight: 900; }
+.plan-directory .week-actions { grid-column: 1 / -1; align-self: end; flex-wrap: wrap; gap: 9px; }
+.plan-directory .week-actions button { flex: 1 1 110px; min-height: 48px; padding: 10px 12px; font-size: 14px; line-height: 1.5; transition: background .2s ease, box-shadow .2s ease; }
+.plan-directory .week-view-button { background: var(--week-accent); }
+.plan-directory .week-download-button { border-color: var(--week-border); }
+.plan-directory .week-actions button:hover { box-shadow: 0 4px 10px rgba(18, 54, 92, .14); }
+.plan-directory button:focus-visible { outline: 3px solid #0e5fa8; outline-offset: 4px; }
+.plan-directory .week-library-heading p,
+.plan-directory .plan-directory-filters label,
+.plan-directory .plan-directory-selection small { color: #4a607a; font-size: 15px; line-height: 1.7; }
+.plan-directory .week-library-tools { flex-wrap: wrap; }
+.plan-directory .week-library-tools > span,
+.plan-directory .week-library-tools button { font-size: 14px; min-height: 40px; }
+.plan-directory .plan-directory-heading > p { font-size: 15px; line-height: 1.8; }
+@media (max-width: 1050px) { .plan-directory .week-library-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+  .plan-directory .week-library-list { grid-template-columns: 1fr; gap: 16px; }
+  .plan-directory .week-library-item { min-height: 220px; padding: 20px 16px 16px; }
+  .plan-directory .week-library-heading h2 { font-size: 23px; line-height: 1.5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plan-directory .week-library-item, .plan-directory .week-actions button { transition: none; }
+  .plan-directory .week-library-item:not(.upcoming):hover, .plan-directory .week-library-item:focus-within { transform: none; }
+}
 .support-hero p,
 .support-info small,
 .support-note { font-size: 13px; }
