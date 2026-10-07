@@ -2016,6 +2016,7 @@ body.arabic-ui .super-own-password-fields label, body.arabic-ui .super-own-passw
 .parent-section-field { min-width: 0; margin: 0; padding: 0; border: 0; }
 .parent-section-field legend { margin-bottom: 7px; padding: 0; }
 .parent-section-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.parent-section-options button:only-child { grid-column: 1 / -1; }
 .parent-section-options button { min-height: 54px; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid #bfcede; border-radius: 12px; background: #fff; color: #294663; font: inherit; font-size: 17px; font-weight: 800; cursor: pointer; transition: background .2s ease, box-shadow .2s ease; }
 .parent-section-options button[aria-pressed="true"] { border-color: #087f85; background: #087f85; color: #fff; box-shadow: 0 5px 12px #087f8526; }
 .parent-section-options button:hover { box-shadow: 0 5px 14px #12365c20; }
@@ -2057,7 +2058,7 @@ body.arabic-ui .super-own-password-fields label, body.arabic-ui .super-own-passw
 .plan-directory .week-actions { grid-column: 1 / -1; align-self: end; flex-wrap: wrap; gap: 9px; }
 .plan-directory .week-actions button { flex: 1 1 110px; min-height: 48px; padding: 10px 12px; font-size: 14px; line-height: 1.5; transition: background .2s ease, box-shadow .2s ease; }
 .plan-directory .week-view-button { background: var(--week-accent); }
-.plan-directory .week-download-button { border-color: var(--week-border); }
+.plan-directory .week-download-button { border-color: var(--week-accent); background: linear-gradient(135deg, #153b68, var(--week-accent)); color: #fff; box-shadow: 0 4px 10px rgba(18, 54, 92, .12); }
 .plan-directory .week-actions button:hover { box-shadow: 0 4px 10px rgba(18, 54, 92, .14); }
 .plan-directory button:focus-visible { outline: 3px solid #0e5fa8; outline-offset: 4px; }
 .plan-directory .week-library-heading p,
@@ -2083,24 +2084,24 @@ body:not(.arabic-ui) .plan-directory,
 body:not(.arabic-ui) .plan-directory *,
 body:not(.arabic-ui) .plan-directory-hero,
 body:not(.arabic-ui) .plan-directory-hero * { font-family: "Manrope", "Segoe UI", sans-serif; }
-body:not(.arabic-ui) .plan-directory { font-weight: 500; line-height: 1.65; }
-body:not(.arabic-ui) .plan-directory .parent-selector-heading h2 { font-size: clamp(28px, 3vw, 32px); font-weight: 700; line-height: 1.4; letter-spacing: -.025em; }
+body:not(.arabic-ui) .plan-directory { font-weight: 700; line-height: 1.65; }
+body:not(.arabic-ui) .plan-directory .parent-selector-heading h2 { font-size: clamp(28px, 3vw, 32px); font-weight: 800; line-height: 1.4; letter-spacing: -.025em; }
 body:not(.arabic-ui) .plan-directory .week-library-heading h2,
-body:not(.arabic-ui) .plan-directory .week-details strong { font-size: 22px; font-weight: 700; line-height: 1.5; letter-spacing: -.015em; }
+body:not(.arabic-ui) .plan-directory .week-details strong { font-size: 22px; font-weight: 800; line-height: 1.5; letter-spacing: -.015em; }
 body:not(.arabic-ui) .plan-directory .parent-selector-description,
 body:not(.arabic-ui) .plan-directory .week-details small,
-body:not(.arabic-ui) .plan-directory .week-library-heading p { font-size: 16px; font-weight: 500; line-height: 1.75; color: #4a607a; }
+body:not(.arabic-ui) .plan-directory .week-library-heading p { font-size: 16px; font-weight: 700; line-height: 1.75; color: #344d69; }
 body:not(.arabic-ui) .plan-directory .parent-selector-label,
 body:not(.arabic-ui) .plan-directory .parent-selector-fields select,
-body:not(.arabic-ui) .plan-directory button { font-size: 16px; font-weight: 600; line-height: 1.5; }
-body:not(.arabic-ui) .plan-directory .parent-selector-summary strong { font-size: 18px; font-weight: 600; }
-body:not(.arabic-ui) .plan-directory .parent-selector-summary > div > span { font-size: 16px; font-weight: 500; }
-body:not(.arabic-ui) .plan-directory .week-status { font-size: 16px; font-weight: 600; }
+body:not(.arabic-ui) .plan-directory button { font-size: 16px; font-weight: 700; line-height: 1.5; }
+body:not(.arabic-ui) .plan-directory .parent-selector-summary strong { font-size: 18px; font-weight: 800; }
+body:not(.arabic-ui) .plan-directory .parent-selector-summary > div > span { font-size: 16px; font-weight: 700; }
+body:not(.arabic-ui) .plan-directory .week-status { font-size: 16px; font-weight: 700; }
 body:not(.arabic-ui) .plan-directory .week-number,
-body:not(.arabic-ui) .plan-directory .parent-library-count { font-weight: 700; }
-body:not(.arabic-ui) .plan-directory .eyebrow { font-weight: 600; letter-spacing: .08em; }
-body:not(.arabic-ui) .plan-directory-hero h1 { font-weight: 700; letter-spacing: -.03em; }
-body:not(.arabic-ui) .plan-directory-hero span { font-weight: 500; line-height: 1.75; }
+body:not(.arabic-ui) .plan-directory .parent-library-count { font-weight: 800; }
+body:not(.arabic-ui) .plan-directory .eyebrow { font-weight: 700; letter-spacing: .08em; }
+body:not(.arabic-ui) .plan-directory-hero h1 { font-weight: 800; letter-spacing: -.03em; }
+body:not(.arabic-ui) .plan-directory-hero span { font-weight: 700; line-height: 1.75; }
 .support-hero p,
 .support-info small,
 .support-note { font-size: 13px; }

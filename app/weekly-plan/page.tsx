@@ -72,7 +72,7 @@ export default function WeeklyPlanPage() {
       setIsArabic(window.localStorage.getItem("andalus-language") === "ar");
       const requested = new URLSearchParams(window.location.search);
       const requestedGrade = requested.get("grade");
-      const requestedSection = requested.get("section")?.toUpperCase();
+      const requestedSection = requestedGrade === "2" ? "A" : requested.get("section")?.toUpperCase();
       if (requestedGrade && /^(?:[1-9]|10)$/.test(requestedGrade)) setGrade(`Grade ${requestedGrade}`);
       if (requestedSection === "A" || requestedSection === "B") setClassType(`Class ${requestedSection}`);
     }, 0);
@@ -101,7 +101,7 @@ export default function WeeklyPlanPage() {
       try {
         const requested = new URLSearchParams(window.location.search);
         const requestedGrade = requested.get("grade");
-        const requestedSection = requested.get("section")?.toUpperCase();
+        const requestedSection = requestedGrade === "2" ? "A" : requested.get("section")?.toUpperCase();
         const requestedWeek = Number(requested.get("week"));
         const supabase = getSupabasePublicClient();
         const { data, error } = await supabase
@@ -219,8 +219,8 @@ export default function WeeklyPlanPage() {
     <section className="plan-directory page-width" aria-label="Weekly plan selector">
       <div className="plan-directory-heading parent-selector-heading"><div><span className="directory-icon" aria-hidden="true">WP</span><div><p className="eyebrow">{isArabic ? "البحث عن الخطة" : "PLAN FINDER"}</p><h2>{isArabic ? "اختر فصل الطالب" : "Choose your child’s class"}</h2><p className="parent-selector-description">{isArabic ? "حدد الصف والشعبة لعرض الخطط المتاحة." : "Select the grade and class to find available weekly plans."}</p></div></div></div>
       <div className="plan-directory-filters parent-selector-fields">
-        <label><span className="parent-selector-label"><b aria-hidden="true">1</b>{isArabic ? "الصف الدراسي" : "Grade"}</span><select value={grade} onChange={(event) => { setGrade(event.target.value); setSelectedWeek(null); }}>{Array.from({ length: 10 }, (_, index) => <option key={index} value={`Grade ${index + 1}`}>{gradeLabel(index + 1)}</option>)}</select></label>
-        <fieldset className="parent-section-field"><legend><span className="parent-selector-label"><b aria-hidden="true">2</b>{isArabic ? "الشعبة" : "Class"}</span></legend><div className="parent-section-options">{["A", "B"].map((section) => <button key={section} type="button" aria-pressed={classType === `Class ${section}`} onClick={() => { setClassType(`Class ${section}`); setSelectedWeek(null); }}><span>{classLabel(section)}</span>{classType === `Class ${section}` && <span aria-hidden="true">✓</span>}</button>)}</div></fieldset>
+        <label><span className="parent-selector-label"><b aria-hidden="true">1</b>{isArabic ? "الصف الدراسي" : "Grade"}</span><select value={grade} onChange={(event) => { setGrade(event.target.value); if (event.target.value === "Grade 2") setClassType("Class A"); setSelectedWeek(null); }}>{Array.from({ length: 10 }, (_, index) => <option key={index} value={`Grade ${index + 1}`}>{gradeLabel(index + 1)}</option>)}</select></label>
+        <fieldset className="parent-section-field"><legend><span className="parent-selector-label"><b aria-hidden="true">2</b>{isArabic ? "الشعبة" : "Class"}</span></legend><div className="parent-section-options">{(grade === "Grade 2" ? ["A"] : ["A", "B"]).map((section) => <button key={section} type="button" aria-pressed={classType === `Class ${section}`} onClick={() => { setClassType(`Class ${section}`); setSelectedWeek(null); }}><span>{classLabel(section)}</span>{classType === `Class ${section}` && <span aria-hidden="true">✓</span>}</button>)}</div></fieldset>
       </div>
       <div className="parent-selector-summary"><div aria-live="polite" aria-atomic="true"><strong>{gradeLabel(Number(grade.replace("Grade ", "")))} · {classLabel(classType.replace("Class ", ""))}</strong><span>{loadingPlans ? (isArabic ? "جارٍ تحديث الخطط…" : "Updating plans…") : plansError ? (isArabic ? "تعذر تحميل الخطط" : "Plans could not be loaded") : (isArabic ? `${plansForClass.length} خطط متاحة` : `${plansForClass.length} plan${plansForClass.length === 1 ? "" : "s"} available`)}</span></div><button className="parent-latest-plan-button" type="button" disabled={loadingPlans || !!plansError || !plansForClass.length} onClick={() => { if (plansForClass[0]) openPlan(plansForClass[0].weekNumber); }}>{isArabic ? "عرض أحدث خطة" : "View latest plan"}<span aria-hidden="true">↗</span></button></div>
       <div className="week-library"><div className="week-library-heading"><div><div className="parent-library-title"><h2>{isArabic ? "الخطط الأسبوعية المتاحة" : "Available weekly plans"}</h2><span className="parent-library-count" aria-label={isArabic ? "عدد الخطط المتاحة" : "Number of available plans"}>{loadingPlans || plansError ? "—" : plansForClass.length}</span></div><p>{isArabic ? "العام الدراسي 2026–2027" : "Academic Year 2026–2027"}</p></div><div className="week-library-tools"><button type="button" onClick={refreshPlans} disabled={loadingPlans} aria-busy={loadingPlans}><span aria-hidden="true">↻</span> {loadingPlans ? (isArabic ? "جارٍ التحديث…" : "Updating…") : (isArabic ? "تحديث الخطط" : "Refresh plans")}</button></div></div>
