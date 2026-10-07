@@ -2705,6 +2705,7 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 .parent-special-quizzes table { width: 100%; margin-top: 12px; border-collapse: collapse; table-layout: fixed; border: 1px solid #a8d3e6; }
 .parent-special-quizzes th { padding: 10px 8px; background: #126c91; color: white; font-size: 13px; font-weight: 900; text-align: center; letter-spacing: .02em; }
 .parent-special-quizzes th:nth-child(2) { background: #3175a0; }.parent-special-quizzes th:nth-child(3) { background: #873d88; }
+.plan-paper .parent-special-quizzes thead th { text-align: center; vertical-align: middle; }
 .parent-special-quizzes td { padding: 11px 10px; border: 1px solid #c7e1ea; background: #fff; color: #183c61; font-size: 14px; font-weight: 750; line-height: 1.45; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; }
 .parent-special-quizzes tbody tr:nth-child(even) td { background: #f9fcfe; }
 .parent-special-quizzes .special-quiz-day-column { width: 14%; }.parent-special-quizzes .special-quiz-subject-column { width: 18%; }.parent-special-quizzes .special-quiz-content-column { width: 68%; }
