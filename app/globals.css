@@ -410,6 +410,17 @@ button, select, input { font: inherit; }
 
 /* Weekly plan */
 .plan-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; padding: 55px 0 28px; }
+@media screen {
+  .plan-page .plan-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); direction: ltr; }
+  .plan-page .plan-toolbar > div:first-child { grid-column: 2; grid-row: 1; text-align: center; }
+  .plan-page .plan-toolbar .toolbar-actions { grid-column: 1; grid-row: 1; }
+  .arabic-ui .plan-page .plan-toolbar .toolbar-actions { direction: rtl; }
+}
+@media screen and (max-width: 1100px) {
+  .plan-page .plan-toolbar { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .plan-page .plan-toolbar > div:first-child { grid-column: 1; }
+  .plan-page .plan-toolbar .toolbar-actions { grid-column: 1; grid-row: 2; justify-content: center; }
+}
 .plan-directory-hero { padding: 55px 0 95px; background: radial-gradient(circle at 78% 22%, rgba(36,183,208,.3), transparent 30%), linear-gradient(135deg, #071e42, #104779); color: white; }.plan-directory-hero .eyebrow { color: #62d7e9; }.plan-directory-hero h1 { margin: 7px 0 10px; font-size: clamp(38px, 5vw, 62px); letter-spacing: -.05em; }.plan-directory-hero span { display: block; max-width: 600px; color: #d2e0f0; font-size: 17px; line-height: 1.65; }
 .plan-directory { position: relative; z-index: 2; margin-top: -54px; margin-bottom: 55px; padding: 28px; border: 1px solid #dbe5ef; border-radius: 17px; background: white; box-shadow: 0 22px 55px rgba(18,45,82,.16); }.plan-directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 25px; padding-bottom: 22px; border-bottom: 1px solid #e7edf4; }.plan-directory-heading > div { display: flex; align-items: center; gap: 13px; }.directory-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, #0b3e75, #14a2c3); color: white; font-size: 11px; font-weight: 900; }.plan-directory-heading .eyebrow { margin: 0 0 3px; }.plan-directory-heading h2 { margin: 0; color: #172c4c; font-size: 24px; }.plan-directory-heading > p { max-width: 360px; margin: 0; color: #687991; font-size: 13px; line-height: 1.55; }
 .plan-directory-filters { margin-top: 23px; padding: 18px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 14px; align-items: end; background: #f5f8fc; }.plan-directory-filters label { display: grid; gap: 7px; color: #344660; font-size: 13px; font-weight: 800; }.plan-directory-filters select { height: 49px; padding: 0 13px; border: 1px solid #cbd8e6; border-radius: 9px; background: white; color: #173151; font: inherit; font-size: 14px; font-weight: 700; }.plan-directory-selection { min-height: 49px; padding: 9px 13px; border: 1px solid #cfe3ea; border-radius: 9px; display: grid; gap: 2px; background: #edf9fb; }.plan-directory-selection small { color: #5a7786; font-size: 11px; }.plan-directory-selection strong { color: #116a7e; font-size: 14px; }
