@@ -2860,8 +2860,9 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 .staff-unstarted-icon { display: grid; place-items: center; flex: 0 0 46px; height: 46px; border-radius: 13px; background: var(--unstarted-ink); color: #fff; font-size: 25px; }
 .teacher-portal .staff-unstarted-list strong { display: block; color: #173b61; font-size: 18px; font-weight: 800; line-height: 1.7; }
 .staff-unstarted-status { display: block; margin-top: 3px; color: var(--unstarted-ink); font-size: 13px; font-weight: 700; line-height: 1.7; }
-.teacher-portal .staff-unstarted-list button { display: flex; align-items: center; justify-content: space-between; min-height: 46px; padding: 10px 16px; border: 1px solid var(--unstarted-ink); border-radius: 11px; background: var(--unstarted-ink); color: #fff; font-size: 16px; font-weight: 800; }
-.teacher-portal .staff-unstarted-list button:disabled { opacity: .5; cursor: not-allowed; }
+.teacher-portal:not(.super-admin-portal) .staff-unstarted-list button { display: flex; align-items: center; justify-content: space-between; min-height: 46px; padding: 10px 16px; border: 1px solid var(--unstarted-ink); border-radius: 11px; background: var(--unstarted-ink); color: #fff; font-size: 16px; font-weight: 800; }
+.teacher-portal:not(.super-admin-portal) .staff-unstarted-list button:disabled { opacity: .5; cursor: not-allowed; }
+.teacher-portal:not(.super-admin-portal) .staff-unstarted-list button:hover { background: var(--unstarted-ink); border-color: var(--unstarted-ink); color: #fff; }
 @media screen and (max-width: 600px) {
   .teacher-portal .staff-unstarted-list { padding: 14px; gap: 12px; }
   .teacher-portal .staff-unstarted-card .teacher-card-heading h2 { font-size: 21px; }
