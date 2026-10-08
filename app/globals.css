@@ -2767,10 +2767,10 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
   .teacher-overview-class.not-started { --plan-bg: #f4effd; --plan-border: #d9c9ee; --plan-ink: #74519a; }
   .teacher-overview-class > header { padding: 19px; border-top: 4px solid var(--plan-ink); background: linear-gradient(115deg, var(--plan-bg), #fff); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
   .teacher-overview-class h4 { margin: 0; color: #163c64; font-size: 24px; font-weight: 800; line-height: 1.5; overflow-wrap: anywhere; }
-  .teacher-overview-class > header span { padding: 7px 10px; border: 1px solid var(--plan-border); border-radius: 20px; background: #ffffffd9; color: var(--plan-ink); font-size: 11px; font-weight: 800; }
+  .teacher-overview-class > header span { padding: 7px 10px; border: 1px solid var(--plan-border); border-radius: 20px; background: #ffffffd9; color: var(--plan-ink); font-size: 12px; font-weight: 800; }
   .teacher-overview-class > div { padding: 20px; display: flex; flex-direction: column; min-height: 174px; }
-  .teacher-overview-class > div > strong { display: block; color: #294d74; font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
-  .teacher-overview-class p { margin: 12px 0 20px; color: #5c728d; font-size: 12px; line-height: 1.9; }
+  .teacher-overview-class > div > strong { display: block; color: #294d74; font-size: 16px; font-weight: 800; overflow-wrap: anywhere; }
+  .teacher-overview-class p { margin: 12px 0 20px; color: #3d5877; font-size: 14px; font-weight: 700; line-height: 1.9; }
   .teacher-overview-class button { margin-top: auto; width: 100%; min-height: 45px; padding: 12px; border: 1px solid var(--plan-border); border-radius: 10px; background: var(--plan-bg); color: var(--plan-ink); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
   .teacher-overview-class button:disabled { opacity: .55; cursor: not-allowed; }
   .teacher-overview-class button:focus-visible { outline: 3px solid var(--plan-ink); outline-offset: 3px; }
