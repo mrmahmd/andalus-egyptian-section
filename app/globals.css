@@ -2738,6 +2738,54 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 .teacher-portal:not(.super-admin-portal) .teacher-nav button { transition: background .2s ease, color .2s ease, transform .2s ease; }
 .teacher-portal:not(.super-admin-portal) .teacher-nav button:hover { transform: translateX(-2px); }
 .staff-dashboard { display: grid; gap: 18px; margin-top: 20px; }
+/* Teacher overview: keep the review workspace and printed plans independent. */
+@media screen {
+  .teacher-portal.teacher-dashboard-refresh .teacher-page-heading { background: linear-gradient(110deg, #e9f7fa, #fff 65%); }
+  .teacher-portal.teacher-dashboard-refresh .teacher-page-heading h1 { font-size: clamp(25px, 2.5vw, 34px); line-height: 1.5; font-weight: 800; letter-spacing: -.025em; }
+  .teacher-dashboard-refresh .staff-dashboard-hero { min-height: auto; padding: 0; border-radius: 0; background: transparent; box-shadow: none; color: #123358; }
+  .teacher-dashboard-refresh .staff-dashboard-hero::after, .teacher-dashboard-refresh .staff-dashboard-hero > div { display: none; }
+  .teacher-dashboard-refresh .staff-dashboard-hero label { width: min(430px, 100%); padding: 0; background: transparent; border: 0; color: #123358; }
+  .teacher-dashboard-refresh .staff-dashboard-hero label small { width: fit-content; padding: 7px 12px; border-radius: 20px; background: #e0f4eb; color: #21664e; font-weight: 700; }
+  .teacher-dashboard-refresh .staff-dashboard-hero select { min-height: 49px; border-color: #ccdfed; font-size: 14px; }
+  .teacher-dashboard-refresh .staff-dashboard-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .teacher-dashboard-refresh .staff-metric { overflow: hidden; min-height: 145px; padding: 23px; border-radius: 18px; }
+  .teacher-dashboard-refresh .staff-metric::after { content: ""; position: absolute; width: 110px; height: 110px; border: 18px solid currentColor; opacity: .035; border-radius: 50%; inset-inline-end: -25px; bottom: -45px; pointer-events: none; }
+  .teacher-dashboard-refresh .staff-metric span { font-size: 15px; }
+  .teacher-dashboard-refresh .staff-metric strong { font-size: 39px; font-weight: 800; }
+  .teacher-dashboard-refresh .staff-metric small { font-size: 12px; }
+  .teacher-dashboard-refresh .staff-metric.sent { background: linear-gradient(115deg, #eaf1ff, #f5f8ff); border-color: #cddbf5; color: #315ba7; }
+  .teacher-dashboard-refresh .staff-dashboard-panels { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .teacher-dashboard-refresh .staff-dashboard-panels > .staff-dashboard-panel:first-child { padding: 0; background: transparent; border: 0; box-shadow: none; }
+  .teacher-dashboard-refresh .staff-dashboard-panels > .staff-dashboard-panel:first-child > header { min-height: 72px; border: 0; padding-bottom: 16px; }
+  .teacher-dashboard-refresh .staff-dashboard-panel h3 { font-size: 23px; font-weight: 800; }
+  .teacher-overview-class-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .teacher-overview-class { --plan-bg: #fff5e4; --plan-border: #eedbb8; --plan-ink: #955a12; min-width: 0; overflow: hidden; border: 1px solid #dbe5f0; border-radius: 18px; background: #fff; box-shadow: 0 8px 22px #23496908; transition: transform .18s ease, box-shadow .18s ease; }
+  .teacher-overview-class:hover { transform: translateY(-2px); box-shadow: 0 12px 26px #23496914; }
+  .teacher-overview-class.sent { --plan-bg: #eef3ff; --plan-border: #cddbf5; --plan-ink: #315ba7; }
+  .teacher-overview-class.approved { --plan-bg: #e9f8f1; --plan-border: #bfe6d6; --plan-ink: #16705c; }
+  .teacher-overview-class.not-started { --plan-bg: #f4effd; --plan-border: #d9c9ee; --plan-ink: #74519a; }
+  .teacher-overview-class > header { padding: 19px; border-top: 4px solid var(--plan-ink); background: linear-gradient(115deg, var(--plan-bg), #fff); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .teacher-overview-class h4 { margin: 0; color: #163c64; font-size: 24px; font-weight: 800; line-height: 1.5; overflow-wrap: anywhere; }
+  .teacher-overview-class > header span { padding: 7px 10px; border: 1px solid var(--plan-border); border-radius: 20px; background: #ffffffd9; color: var(--plan-ink); font-size: 11px; font-weight: 800; }
+  .teacher-overview-class > div { padding: 20px; display: flex; flex-direction: column; min-height: 174px; }
+  .teacher-overview-class > div > strong { display: block; color: #294d74; font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
+  .teacher-overview-class p { margin: 12px 0 20px; color: #5c728d; font-size: 12px; line-height: 1.9; }
+  .teacher-overview-class button { margin-top: auto; width: 100%; min-height: 45px; padding: 12px; border: 1px solid var(--plan-border); border-radius: 10px; background: var(--plan-bg); color: var(--plan-ink); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+  .teacher-overview-class button:disabled { opacity: .55; cursor: not-allowed; }
+  .teacher-overview-class button:focus-visible { outline: 3px solid var(--plan-ink); outline-offset: 3px; }
+  .teacher-dashboard-refresh .timetable-preview { border-radius: 18px; }
+}
+@media screen and (max-width: 1100px) { .teacher-overview-class-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media screen and (max-width: 760px) {
+  .teacher-dashboard-refresh .staff-dashboard-metrics { gap: 8px; }
+  .teacher-dashboard-refresh .staff-metric { padding: 14px 10px; min-height: 140px; border-radius: 13px; }
+  .teacher-dashboard-refresh .staff-metric span { font-size: 11px; }
+  .teacher-dashboard-refresh .staff-metric strong { font-size: 30px; }
+  .teacher-dashboard-refresh .staff-metric small { font-size: 10px; }
+  .teacher-overview-class-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .teacher-dashboard-refresh .staff-dashboard-panel h3 { font-size: 20px; }
+  .teacher-dashboard-refresh .staff-dashboard-panels > .staff-dashboard-panel:first-child > header { align-items: center; flex-direction: row; }
+}
 .staff-dashboard-hero { position: relative; overflow: hidden; min-height: 155px; padding: 25px 27px; border-radius: 22px; display: flex; align-items: center; justify-content: space-between; gap: 24px; color: #fff; background: linear-gradient(115deg, #10376a, #0b718f 67%, #159da4); box-shadow: 0 18px 36px rgba(7,75,110,.17); }
 .staff-dashboard-hero::after { content: ""; position: absolute; width: 240px; height: 240px; inset: -145px auto auto -55px; border-radius: 50%; background: rgba(255,255,255,.07); box-shadow: 0 0 0 46px rgba(255,255,255,.04); pointer-events: none; }
 .staff-dashboard-hero > * { position: relative; z-index: 1; }
