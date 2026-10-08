@@ -2906,9 +2906,9 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day > header small { color: var(--editor-day); font-size: 14px; font-weight: 700; }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article { display: grid; grid-template-columns: minmax(90px, .55fr) minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: 14px; padding: 18px; margin-top: 14px; border: 1px solid #dbe5ef; border-radius: 14px; background: #fff; }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article::before { display: none; }
-  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > header { grid-column: 1; grid-row: 1 / span 4; flex-direction: column; justify-content: flex-start; align-items: stretch; padding: 12px; border: 0; border-radius: 10px; background: var(--editor-tint); gap: 10px; }
-  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > header span { color: var(--editor-day); font-size: 13px; font-weight: 800; }
-  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > header strong { color: #163c64; font-size: 15px; overflow-wrap: anywhere; line-height: 1.7; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > header { grid-column: 1; grid-row: 1 / span 4; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 12px; border: 0; border-radius: 10px; background: var(--editor-tint); gap: 12px; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > header span { color: var(--editor-day); font-size: 16px; font-weight: 800; line-height: 1.6; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > header strong { color: #163c64; font-size: 18px; font-weight: 800; overflow-wrap: anywhere; line-height: 1.7; }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > label { grid-column: 2 / -1; min-width: 0; margin: 0; font-size: 15px; font-weight: 800; gap: 9px; }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > .weekly-field-classwork { grid-column: 2; }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > .weekly-field-homework { grid-column: 3; }
@@ -2925,7 +2925,7 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 }
 @media screen and (max-width: 980px) {
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article { grid-template-columns: minmax(0, 1fr); padding: 15px; }
-  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > header { grid-column: 1; grid-row: auto; flex-direction: row; align-items: center; justify-content: space-between; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > header { grid-column: 1; grid-row: auto; min-height: 94px; flex-direction: column; align-items: center; justify-content: center; }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > label,
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > label.weekly-field-classwork,
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > label.weekly-field-homework,
