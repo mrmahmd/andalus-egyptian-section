@@ -2746,6 +2746,7 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
   .teacher-dashboard-refresh .staff-dashboard-hero::after, .teacher-dashboard-refresh .staff-dashboard-hero > div { display: none; }
   .teacher-dashboard-refresh .staff-dashboard-hero label { width: min(430px, 100%); padding: 0; background: transparent; border: 0; color: #123358; }
   .teacher-dashboard-refresh .staff-dashboard-hero label small { width: fit-content; padding: 7px 12px; border-radius: 20px; background: #e0f4eb; color: #21664e; font-weight: 700; }
+  .teacher-dashboard-refresh .staff-dashboard-hero label small.week-closed { background: #fff0eb; color: #9b3c28; }
   .teacher-dashboard-refresh .staff-dashboard-hero select { min-height: 49px; border-color: #ccdfed; font-size: 14px; }
   .teacher-dashboard-refresh .staff-dashboard-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
   .teacher-dashboard-refresh .staff-metric { overflow: hidden; min-height: 145px; padding: 23px; border-radius: 18px; }
