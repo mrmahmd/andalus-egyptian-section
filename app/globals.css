@@ -2895,6 +2895,17 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 
 /* Classic editor: days side by side, with stacked lesson fields and the whole week available. */
 @media screen {
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-editor-heading { display: block; min-height: 0; padding: 16px 64px; text-align: center; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-editor-heading h2 { font-size: clamp(23px, 2vw, 29px); font-weight: 800; line-height: 1.5; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-editor-heading > button { position: absolute; top: 16px; inset-inline-end: 16px; }
+  .weekly-editor-heading-details { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin-top: 9px; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-editor-heading-details > span { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 6px 12px; margin: 0; border: 1px solid #d4e4ef; border-radius: 10px; font-size: 14px; font-weight: 800; line-height: 1.6; }
+  .weekly-editor-week-badge { color: #7b3d92; background: #f5edfa; }
+  .weekly-editor-date-badge { color: #12658e; background: #eaf5fc; }
+  .weekly-editor-heading-details .weekly-editor-class-name { color: #275f80; background: #fff; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-toolbar { padding: 14px; gap: 14px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(180px, .65fr); }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-toolbar label { font-size: 15px; font-weight: 800; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .teacher-timetable-ready { min-height: 52px; font-size: 15px; font-weight: 800; border: 1px solid #bfe8d7; white-space: normal; text-align: center; }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-days { gap: 16px; align-items: start; }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day { --editor-day: #126f9b; --editor-tint: #edf7fd; min-width: 230px; padding: 12px; background: var(--editor-tint); border: 1px solid #d1e2ed; border-radius: 18px; scroll-margin-top: 145px; box-shadow: 0 6px 18px #173e600a; }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .day-tone-1 { --editor-day: #087f85; --editor-tint: #eaf8f5; }
@@ -2929,8 +2940,16 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .teacher-editor-footer button { min-height: 48px; font-size: 14px; font-weight: 800; }
 }
 @media screen and (max-width: 980px) {
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-toolbar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day { min-width: 0; scroll-margin-top: 155px; }
   .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .teacher-editor-footer > div { flex-wrap: wrap; }
+}
+
+@media screen and (max-width: 760px) {
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-editor-heading { padding: 14px 50px 14px; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-editor-heading > button { top: 12px; inset-inline-end: 8px; width: 34px; height: 34px; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-editor-heading-details > span { font-size: 13px; padding: 5px 9px; }
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-toolbar { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Mohamed Farid's scoped announcement and quiz workspaces. */
