@@ -7,6 +7,7 @@ import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 import { getClassTeacherName } from "../../lib/class-teachers";
 import ParentSpecialExtras from "./parent-special-extras";
 import PlanPaperHeader from "./plan-paper-header";
+import { gradeEightHistoricalCounterpart } from "../../lib/grade-eight-timetable";
 
 type PublishedPlan = { id: string; weekId: string; classId: string; grade: number; section: string; weekNumber: number; weekLabel: string; startsOn: string; endsOn: string };
 type LiveLesson = { day_of_week: number; period_number: number; course: string; classwork: string; homework: string; notes: string };
@@ -181,8 +182,11 @@ export default function WeeklyPlanPage() {
       const entries = (data?.plan_entries ?? []) as unknown as PublishedEntry[];
       const holidayRows = (holidayData ?? []) as LiveHoliday[];
       const publishedEntryByPeriod = new Map(entries.map((entry) => [`${entry.day_of_week}-${entry.period_number}`, entry]));
-      const lessonRows = ((timetableData ?? []) as unknown as ParentTimetableSlot[]).flatMap((slot) => {
-        const subject = one(slot.subjects);
+      const parentSlots = (timetableData ?? []) as unknown as ParentTimetableSlot[];
+      const lessonRows = parentSlots.flatMap((slot) => {
+        const previousPosition = gradeEightHistoricalCounterpart(selectedPlan.grade, selectedPlan.section, selectedPlan.weekNumber, slot.day_of_week, slot.period_number);
+        const previous = previousPosition && parentSlots.find((candidate) => candidate.day_of_week === previousPosition[0] && candidate.period_number === previousPosition[1]);
+        const subject = one(previous ? previous.subjects : slot.subjects);
         if (!subject) return [];
         const fixed = fixedLessonText[subject.code];
         if (fixed) return [{ day_of_week: slot.day_of_week, period_number: slot.period_number, course: fixed.course, classwork: fixed.classwork, homework: "—", notes: "—" }];

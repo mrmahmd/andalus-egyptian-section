@@ -6,6 +6,7 @@ import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 import { delegatedStaffId, getStaffWorkspaceClient } from "../../lib/supabase/staff-workspace";
 import { formatAcademicWeekRange } from "../../lib/format-academic-week";
+import { gradeEightHistoricalCounterpart } from "../../lib/grade-eight-timetable";
 import FaridQuizzesPanel from "./farid-quizzes-panel";
 import ClosedWeekAlert from "./closed-week-alert";
 import "../exceptional-publication.css";
@@ -100,6 +101,9 @@ function assignedPlanSlotsForWeek(slots: TimetableSlot[], teacherAssignments: As
   const preservePreWeekFive5B = schoolClass?.grade === 5 && schoolClass.section === "B" && (week?.week_number ?? 5) < 5 && sundayPeriodSix && tuesdayPeriodOne;
   return classSlots
     .map((slot) => {
+      const previousPosition = gradeEightHistoricalCounterpart(schoolClass?.grade ?? 0, schoolClass?.section ?? "", week?.week_number ?? 7, slot.day_of_week, slot.period_number);
+      const previousSubjectSlot = previousPosition && classSlots.find((candidate) => candidate.day_of_week === previousPosition[0] && candidate.period_number === previousPosition[1]);
+      if (previousSubjectSlot) return { ...slot, subject_id: previousSubjectSlot.subject_id };
       if (!preservePreWeekFive5B) return slot;
       if (slot.id === sundayPeriodSix.id) return { ...slot, subject_id: tuesdayPeriodOne.subject_id };
       if (slot.id === tuesdayPeriodOne.id) return { ...slot, subject_id: sundayPeriodSix.subject_id };
@@ -801,7 +805,11 @@ export default function TeachersDashboardPage() {
           subject: related?.parent_plan_name || related?.name_en || "Subject",
         };
       });
-      setParentPreviewSlots(slots);
+      setParentPreviewSlots(slots.map((slot) => {
+        const previousPosition = gradeEightHistoricalCounterpart(selectedClass.grade, selectedClass.section, selectedWeek.week_number, slot.day_of_week, slot.period_number);
+        const previous = previousPosition && slots.find((candidate) => candidate.day_of_week === previousPosition[0] && candidate.period_number === previousPosition[1]);
+        return previous ? { ...slot, subject_id: previous.subject_id, subject: previous.subject } : slot;
+      }));
     } catch (error) {
       setParentPreviewSlots([]);
       setMessage(error instanceof Error ? error.message : "The parent-plan preview could not be loaded.");

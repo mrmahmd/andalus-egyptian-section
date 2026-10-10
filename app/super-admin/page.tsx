@@ -1,4 +1,5 @@
 "use client";
+import { gradeEightHistoricalCounterpart } from "../../lib/grade-eight-timetable";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -714,13 +715,19 @@ export default function SuperAdminPage() {
 
   const selectedPlanWeek = academicWeeks.find((week) => week.id === selectedPlanWeekId) ?? null;
   const effectiveTimetableRequirements = useMemo(() => {
-    if (!selectedPlanWeek || selectedPlanWeek.week_number >= 5) return timetableRequirements;
+    const weekRequirements = timetableRequirements.map((requirement) => {
+      const schoolClass = classes.find((candidate) => candidate.id === requirement.classId);
+      const previousPosition = gradeEightHistoricalCounterpart(schoolClass?.grade ?? 0, schoolClass?.section ?? "", selectedPlanWeek?.week_number ?? 7, requirement.dayOfWeek, requirement.periodNumber);
+      const previous = previousPosition && timetableRequirements.find((candidate) => candidate.classId === requirement.classId && candidate.dayOfWeek === previousPosition[0] && candidate.periodNumber === previousPosition[1]);
+      return previous ? { ...requirement, subjectId: previous.subjectId, subjectName: previous.subjectName, department: previous.department } : requirement;
+    });
+    if (!selectedPlanWeek || selectedPlanWeek.week_number >= 5) return weekRequirements;
     const gradeFiveB = classes.find((schoolClass) => schoolClass.grade === 5 && schoolClass.section === "B");
-    if (!gradeFiveB) return timetableRequirements;
+    if (!gradeFiveB) return weekRequirements;
     const sundaySix = timetableRequirements.find((requirement) => requirement.classId === gradeFiveB.id && requirement.dayOfWeek === 0 && requirement.periodNumber === 6);
     const tuesdayOne = timetableRequirements.find((requirement) => requirement.classId === gradeFiveB.id && requirement.dayOfWeek === 2 && requirement.periodNumber === 1);
-    if (!sundaySix || !tuesdayOne) return timetableRequirements;
-    return timetableRequirements.map((requirement) => {
+    if (!sundaySix || !tuesdayOne) return weekRequirements;
+    return weekRequirements.map((requirement) => {
       const historicalSubject = requirement === sundaySix ? tuesdayOne : requirement === tuesdayOne ? sundaySix : null;
       return historicalSubject ? { ...requirement, teacherId: historicalSubject.teacherId, subjectId: historicalSubject.subjectId, subjectName: historicalSubject.subjectName, department: historicalSubject.department } : requirement;
     });

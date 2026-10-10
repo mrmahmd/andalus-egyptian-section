@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { currentGradeEightSubject } from "../../lib/grade-eight-timetable";
 import timetableSource from "../data/class-timetables.json";
 
 const dayOrder = ["sunday", "monday", "tuesday", "wednesday", "thursday"];
@@ -21,7 +22,7 @@ export default function TimetablePage() {
   const gradeOptions = [...new Set(classes.map((entry) => entry.grade))].sort((a, b) => a - b);
   const selectedGrade = selectedClass?.grade ?? 4;
   const sectionOptions = classes.filter((entry) => entry.grade === selectedGrade);
-  const timetable = dayOrder.map((day) => ({ day: dayLabels[day], lessons: (selectedClass?.schedule?.[day]?.periods ?? []).slice().sort((a, b) => a.period - b.period) }));
+  const timetable = dayOrder.map((day, dayIndex) => ({ day: dayLabels[day], lessons: (selectedClass?.schedule?.[day]?.periods ?? []).map((lesson) => ({ ...lesson, subject: currentGradeEightSubject(selectedClass?.grade ?? 0, selectedClass?.section ?? "", dayIndex, lesson.period, lesson.subject) })).sort((a, b) => a.period - b.period) }));
 
   return <main className="subpage timetable-page">
     <header className="compact-header"><Link href="/" className="brand-lockup"><img src={`${basePath}/school-logo.png`} alt="AlAndalus Private Schools" /><span className="brand-copy"><strong>ALANDALUS PRIVATE SCHOOLS</strong><small>Egyptian Section</small></span></Link><nav><Link href="/">Home</Link><Link href="/weekly-plan">Weekly Plan</Link><Link className="active" href="/timetable">Timetable</Link></nav><Link className="button button-outline" href="/support">Technical Support</Link></header>
