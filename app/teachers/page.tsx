@@ -1635,7 +1635,7 @@ export default function TeachersDashboardPage() {
     return { ...plan, missingLessons, dictations: plan.weeklyNotes.map(parseEnglishDictation).filter((item): item is EnglishDictation => Boolean(item)).map((item) => ({ day: dayNames[item.day], words: item.words })) };
   });
   const reviewTeacherCompletion = summarizeTeacherCompletion(departmentTeachers.flatMap((teacher) => teacher.assignments.filter((assignment) =>
-    assignedPlanSlotsForWeek(timetableSlots, teacher.assignments, teacher.userId, assignment.classId, selectedReviewWeek, schoolHolidays).some((slot) => slot.subject_id === assignment.subjectId && slot.requires_weekly_plan_submission)
+    (!effectiveReviewClassId || assignment.classId === effectiveReviewClassId) && assignedPlanSlotsForWeek(timetableSlots, teacher.assignments, teacher.userId, assignment.classId, selectedReviewWeek, schoolHolidays).some((slot) => slot.subject_id === assignment.subjectId && slot.requires_weekly_plan_submission)
   ).map((assignment) => ({ teacherId: teacher.userId, teacherName: teacher.name, classId: assignment.classId, className: `Grade ${assignment.grade} · ${assignment.section}`, subjectId: assignment.subjectId }))), reviewItems.filter((item) => item.weekId === selectedReviewWeekId));
 
   const selectedWeekWaitingReviews = reviewItems.filter((item) => item.weekId === selectedReviewWeekId && item.status === "submitted");
