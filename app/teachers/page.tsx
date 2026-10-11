@@ -9,6 +9,8 @@ import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 import { gradeEightHistoricalCounterpart } from "../../lib/grade-eight-timetable";
 import FaridQuizzesPanel from "./farid-quizzes-panel";
 import ClosedWeekAlert from "./closed-week-alert";
+import SupervisorReviewQueue from "./supervisor-review-queue";
+import { summarizeTeacherCompletion, reviewSelectedSubmissions } from "../../lib/supervisor-review";
 import "../exceptional-publication.css";
 
 const navigation = [
@@ -248,11 +250,6 @@ function academicWeekRange(week: AcademicWeek, isArabic = false) {
   return formatAcademicWeekRange(week, isArabic ? "ar-EG" : "en-GB");
 }
 
-function reviewStatusLabel(status: string, arabic: boolean) {
-  if (!arabic) return status.replaceAll("_", " ");
-  return status === "approved" ? "معتمدة" : status === "changes_requested" ? "مطلوب تعديل" : status === "submitted" ? "مرسلة للمراجعة" : status;
-}
-
 export default function TeachersDashboardPage() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const [activeNav, setActiveNav] = useState("Overview");
@@ -278,11 +275,8 @@ export default function TeachersDashboardPage() {
   const [mySubmissions, setMySubmissions] = useState<MySubmission[]>([]);
   const [isSupervisor, setIsSupervisor] = useState(false);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
-  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [selectedReviewWeekId, setSelectedReviewWeekId] = useState("");
   const [selectedReviewClassId, setSelectedReviewClassId] = useState("");
-  const [bulkApprovalConfirmationOpen, setBulkApprovalConfirmationOpen] = useState(false);
-  const [bulkApprovalArabic, setBulkApprovalArabic] = useState(false);
   const [dashboardArabic, setDashboardArabic] = useState(false);
   const [departmentTeachers, setDepartmentTeachers] = useState<DepartmentTeacher[]>([]);
   const [schoolClasses, setSchoolClasses] = useState<SchoolClass[]>([]);
@@ -381,7 +375,6 @@ export default function TeachersDashboardPage() {
       setSendConfirmationOpen(false);
       setCopyDialogOpen(false);
       setParentPreviewOpen(false);
-      setBulkApprovalConfirmationOpen(false);
       if (url.searchParams.has("editor")) {
         url.searchParams.delete("editor");
         window.history.replaceState({ staffSection: requestedSection }, "", `${url.pathname}${url.search}${url.hash}`);
@@ -1456,11 +1449,9 @@ export default function TeachersDashboardPage() {
       .select("teacher_entry_enabled").eq("id", weekId).single();
     if (error || !data?.teacher_entry_enabled) {
       if (!error) setAcademicWeeks((current) => current.map((week) => week.id === weekId ? { ...week, teacher_entry_enabled: false } : week));
-      setMessage(error
+      throw new Error(error
         ? arabic ? "تعذر التحقق من فتح الأسبوع. حدّث الصفحة وحاول مرة أخرى." : "Could not verify week access. Refresh and try again."
-        : closedReviewWeekMessage(arabic));
-      setMessageTone("error");
-      return false;
+        : "This week is closed. Contact administration.");
     }
     return true;
   };
@@ -1468,80 +1459,43 @@ export default function TeachersDashboardPage() {
   const reviewErrorMessage = (error: unknown, arabic: boolean, fallback: string) => {
     const detail = error && typeof error === "object" && "message" in error ? String(error.message) : "";
     if (detail.includes("This week is closed. Contact administration.")) setAcademicWeeks((current) => current.map((week) => week.id === selectedReviewWeekId ? { ...week, teacher_entry_enabled: false } : week));
-    return detail.includes("This week is closed. Contact administration.")
+    return detail.startsWith("تغيّرت حالة") || detail.startsWith("تعذر التحقق") ? detail : detail.includes("This week is closed. Contact administration.")
       ? closedReviewWeekMessage(arabic) : arabic ? fallback : detail || fallback;
   };
 
-  const reviewWeeklyPlan = async (review: SupervisorPlanReview, decision: "approved" | "changes_requested") => {
+  const performSelectedReview = async (plans: SupervisorPlanReview[], decision: "approved" | "changes_requested", note = "") => {
     const arabic = window.localStorage.getItem("andalus-language") === "ar";
-    const note = reviewNotes[review.key]?.trim() ?? "";
-    if (decision === "changes_requested" && !note) {
-      setMessage(arabic ? "اكتب ملاحظة المراجعة قبل إعادة الخطة الأسبوعية إلى المعلم." : "Write a review note before returning the weekly plan to the teacher.");
-      setMessageTone("error");
-      return;
-    }
+    if (decision === "changes_requested" && !note.trim()) return;
+    if (!plans.length || plans.some((plan) => plan.weekId !== selectedReviewWeekId)) return;
     setSaving(true);
+    const client = getStaffWorkspaceClient();
+    const submissions = plans.flatMap((plan) => plan.reviews.filter((item) => item.status === "submitted"));
     try {
-      if (!await verifySupervisorWeekAccess(review.weekId)) return;
-      const supabase = getStaffWorkspaceClient();
-      const pendingReviewIds = review.reviews.filter((item) => item.status === "submitted").map((item) => item.id);
-      const results = await Promise.all(pendingReviewIds.map((submissionId) => supabase.rpc("review_plan_submission", { submission_id: submissionId, decision, note: note || null })));
-      const failed = results.find((result) => result.error)?.error;
-      if (failed) throw failed;
-      setMessage(decision === "approved"
-        ? arabic ? "تم اعتماد الخطة الأسبوعية كاملة. ستظهر لأولياء الأمور عند عدم وجود أي خطة مرسلة ما زالت بانتظار المراجعة، وتظهر حصص المعلم الذي لم يرسل بعبارة Plan not published." : "The full weekly plan was approved. It becomes visible when no submitted plan is still waiting for review; lessons from teachers who did not submit show Plan not published."
-        : arabic ? "تمت إعادة الخطة الأسبوعية كاملة إلى المعلم مع ملاحظتك." : "The full weekly plan was returned to the teacher with your note.");
-      setMessageTone("success");
-      setReviewNotes((current) => ({ ...current, [review.key]: "" }));
-      await loadTeacherDashboard();
-    } catch (error) {
-      setMessage(reviewErrorMessage(error, arabic, arabic ? "تعذر إكمال إجراء المراجعة." : "The review action could not be completed."));
-      setMessageTone("error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const reviewSubmission = async (review: ReviewItem, decision: "approved" | "changes_requested") => {
-    const matchingReviews = reviewItems.filter((item) => item.weeklyPlanId === review.weeklyPlanId && item.teacherId === review.teacherId);
-    const plan: SupervisorPlanReview = {
-      key: review.id, weeklyPlanId: review.weeklyPlanId, teacherId: review.teacherId, weekId: review.weekId, classId: review.classId,
-      teacherName: review.teacherName, className: review.className, week: review.week,
-      status: review.status === "approved" ? "approved" : review.status === "changes_requested" ? "changes_requested" : "submitted",
-      submittedAt: review.submittedAt, note: review.note, reviews: matchingReviews, entries: review.entries, quizzes: review.quizzes, weeklyNotes: review.weeklyNotes,
-    };
-    await reviewWeeklyPlan(plan, decision);
-  };
-
-  const approveAllSelectedWeekPlans = async () => {
-    if (!selectedReviewWeekId) return;
-    const arabic = window.localStorage.getItem("andalus-language") === "ar";
-    setBulkApprovalConfirmationOpen(false);
-    setSaving(true);
-    try {
-      if (!await verifySupervisorWeekAccess(selectedReviewWeekId)) return;
-      const { data, error } = await getStaffWorkspaceClient().rpc("approve_my_week_submissions", {
-        target_week_id: selectedReviewWeekId,
+      const result = await reviewSelectedSubmissions(submissions.map((item) => item.id), async (ids) => {
+        if (!await verifySupervisorWeekAccess(selectedReviewWeekId)) throw new Error("This week is closed. Contact administration.");
+        const { data, error } = await client.from("plan_submissions").select("id,status,teacher_id,weekly_plan_id").in("id", ids);
+        if (error) throw error;
+        if (data?.length !== ids.length || submissions.some((item) => !data.some((row) => row.id === item.id && row.status === "submitted" && row.teacher_id === item.teacherId && row.weekly_plan_id === item.weeklyPlanId))) {
+          throw new Error(arabic ? "تغيّرت حالة إحدى الخطط. راجع القائمة المحدّثة ثم حاول مرة أخرى." : "A plan has changed. Review the refreshed list before trying again.");
+        }
+      }, async (id) => {
+        if (!await verifySupervisorWeekAccess(selectedReviewWeekId)) throw new Error("This week is closed. Contact administration.");
+        const { error } = await client.rpc("review_plan_submission", { submission_id: id, decision, note: note.trim() || null });
+        if (error) throw error;
       });
-      if (error) throw error;
-      const approvedCount = Number(data ?? 0);
-      setMessage(approvedCount > 0
-        ? arabic ? `تم اعتماد ${approvedCount} خطة مادة مرسلة. ستُنشر خطة كل فصل عند عدم بقاء أي خطة مرسلة قيد المراجعة، وتظهر حصص غير المرسلين بعبارة Plan not published.` : `${approvedCount} submitted subject plan${approvedCount === 1 ? " was" : "s were"} approved. Each class plan publishes when no submitted plan remains under review; missing teachers show Plan not published.`
-        : arabic ? "لا توجد خطط مرسلة تنتظر اعتمادك في هذا الأسبوع." : "There were no submitted plans waiting for your approval in this week.");
-      setMessageTone(approvedCount > 0 ? "success" : "info");
-      await loadTeacherDashboard();
-    } catch (error) {
-      setMessage(reviewErrorMessage(error, arabic, arabic ? "تعذر اعتماد خطط الأسبوع المحدد." : "The selected week plans could not be approved."));
-      setMessageTone("error");
+      if (result.error) {
+        const prefix = result.completed ? (arabic ? `تم تنفيذ الإجراء على ${result.completed} خطة مادة قبل توقف العملية. ` : `${result.completed} subject plans were processed before the operation stopped. `) : "";
+        setMessage(prefix + reviewErrorMessage(result.error, arabic, arabic ? "تعذر إكمال المراجعة. حدّث القائمة وحاول مجددًا." : "Could not complete the review. Refresh and try again."));
+        setMessageTone("error");
+      } else {
+        setMessage(decision === "approved" ? (arabic ? `تم اعتماد ${result.completed} خطة مادة مرسلة ضمن ${plans.length} خطة معلم محددة. ظهورها لولي الأمر يتبع شروط النشر وإتاحة الأسبوع.` : `${result.completed} submitted subject plans approved across ${plans.length} selected teacher plans. Parent visibility follows publication and week visibility rules.`) : (arabic ? "تم إرجاع الخطة للمعلم مع ملاحظتك." : "The plan was returned to the teacher with your note."));
+        setMessageTone("success");
+      }
     } finally {
-      setSaving(false);
+      try { await loadTeacherDashboard(); } finally { setSaving(false); }
     }
   };
 
-  const requestBulkApproval = () => {
-    setBulkApprovalArabic(window.localStorage.getItem("andalus-language") === "ar");
-    setBulkApprovalConfirmationOpen(true);
-  };
 
   const selectDepartmentTeacher = (teacherId: string) => {
     setSelectedDepartmentTeacherId(teacherId);
@@ -1674,12 +1628,17 @@ export default function TeachersDashboardPage() {
     groups.set(key, current);
     return groups;
   }, new Map<string, SupervisorPlanReview>()).values()).map((plan) => ({ ...plan, entries: plan.entries.sort((a, b) => dayNames.indexOf(a.day) - dayNames.indexOf(b.day) || a.period - b.period), quizzes: Array.from(new Map(plan.quizzes.map((quiz) => [`${quiz.subject}-${quiz.date}-${quiz.details}`, quiz])).values()), weeklyNotes: Array.from(new Set(plan.weeklyNotes)) })), [selectedClassReviewRawItems]);
-  const selectedClassReviewItems = useMemo(() => selectedClassTeacherPlans
-    .map((plan) => ({
-      id: plan.key, weeklyPlanId: plan.weeklyPlanId, teacherId: plan.teacherId, subjectId: plan.reviews[0]?.subjectId ?? "", weekId: plan.weekId, classId: plan.classId,
-      teacherName: plan.teacherName, className: plan.className, week: plan.week,
-      subject: plan.reviews.map((item) => item.subject).join(" + "), status: plan.status, note: plan.note, submittedAt: plan.submittedAt, entries: plan.entries, quizzes: plan.quizzes, weeklyNotes: plan.weeklyNotes,
-    })).sort((a, b) => Number(b.status === "submitted") - Number(a.status === "submitted") || a.className.localeCompare(b.className) || a.teacherName.localeCompare(b.teacherName)), [selectedClassTeacherPlans]);
+  const reviewQueuePlans = selectedClassTeacherPlans.map((plan) => {
+    const teacher = departmentTeachers.find((item) => item.userId === plan.teacherId);
+    const slots = teacher ? assignedPlanSlotsForWeek(timetableSlots, teacher.assignments, teacher.userId, plan.classId, selectedReviewWeek, schoolHolidays).filter((slot) => slot.requires_weekly_plan_submission) : [];
+    const missingLessons = slots.filter((slot) => !plan.reviews.some((review) => review.subjectId === slot.subject_id && review.entries.some((entry) => entry.day === dayNames[slot.day_of_week] && entry.period === slot.period_number)))
+      .map((slot) => ({ day: dayNames[slot.day_of_week], period: slot.period_number, subject: teacher?.assignments.find((assignment) => assignment.subjectId === slot.subject_id)?.subject ?? "", classwork: "", homework: "", notes: "" }));
+    return { ...plan, missingLessons, dictations: plan.weeklyNotes.map(parseEnglishDictation).filter((item): item is EnglishDictation => Boolean(item)).map((item) => ({ day: dayNames[item.day], words: item.words })) };
+  });
+  const reviewTeacherCompletion = summarizeTeacherCompletion(departmentTeachers.flatMap((teacher) => teacher.assignments.filter((assignment) =>
+    assignedPlanSlotsForWeek(timetableSlots, teacher.assignments, teacher.userId, assignment.classId, selectedReviewWeek, schoolHolidays).some((slot) => slot.subject_id === assignment.subjectId && slot.requires_weekly_plan_submission)
+  ).map((assignment) => ({ teacherId: teacher.userId, teacherName: teacher.name, classId: assignment.classId, className: `Grade ${assignment.grade} · ${assignment.section}`, subjectId: assignment.subjectId }))), reviewItems.filter((item) => item.weekId === selectedReviewWeekId));
+
   const selectedWeekWaitingReviews = reviewItems.filter((item) => item.weekId === selectedReviewWeekId && item.status === "submitted");
   const selectedWeekPendingCount = selectedWeekWaitingReviews.length;
   const selectedReviewWeekOpen = Boolean(academicWeeks.find((week) => week.id === selectedReviewWeekId)?.teacher_entry_enabled);
@@ -1891,29 +1850,21 @@ export default function TeachersDashboardPage() {
               <button type="button" className="supervisor-review-authority supervisor-review-shortcut" disabled={waitingReviews.length === 0} onClick={openFirstWaitingReview}><strong>{dashboardArabic ? `${waitingReviews.length} خطط تحتاج للمراجعة` : `${waitingReviews.length} subject entries waiting for review`}</strong><span>{dashboardArabic ? "عرض الخطط المعلقة" : "Open waiting plans"} ←</span></button>
             </div>
             <div className="supervisor-review-selector">
-              <label>{dashboardArabic ? "١. الأسبوع الدراسي" : "1. School week"}<select value={selectedReviewWeekId} onChange={(event) => setSelectedReviewWeekId(event.target.value)}><option value="">{dashboardArabic ? "اختر الأسبوع" : "Select week"}</option>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select></label>
-              <label>{dashboardArabic ? "٢. الفصل والشعبة · اختياري" : "2. Class & section · optional"}<select value={effectiveReviewClassId} onChange={(event) => setSelectedReviewClassId(event.target.value)} disabled={!selectedReviewWeek || supervisorReviewClasses.length === 0}><option value="">{dashboardArabic ? "كل الفصول والشعب" : "All classes and sections"}</option>{supervisorReviewClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}</select></label>
-              <div className="supervisor-review-found"><span>{dashboardArabic ? `تم العثور على ${selectedClassReviewItems.length} خطة معلم في العرض` : `${selectedClassReviewItems.length} teacher plan${selectedClassReviewItems.length === 1 ? "" : "s"} shown`}</span>{selectedWeekPendingCount > 0 && <button type="button" onClick={openSelectedWeekWaitingReview}>{dashboardArabic ? `انتقل إلى خطة تنتظر مراجعتك (${selectedWeekPendingCount})` : `Jump to a plan awaiting review (${selectedWeekPendingCount})`}</button>}</div>
-              <button type="button" className="teacher-primary-button supervisor-approve-all" disabled={saving || !selectedReviewWeekOpen || selectedWeekPendingCount === 0} onClick={requestBulkApproval}>{dashboardArabic ? `اعتماد جميع خطط معلمي القسم لهذا الأسبوع (${selectedWeekPendingCount})` : `Approve every submitted department plan this week (${selectedWeekPendingCount})`}</button>
+              <label>{dashboardArabic ? "١. الأسبوع الدراسي" : "1. School week"}<select disabled={saving} value={selectedReviewWeekId} onChange={(event) => setSelectedReviewWeekId(event.target.value)}><option value="">{dashboardArabic ? "اختر الأسبوع" : "Select week"}</option>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select></label>
+              <label>{dashboardArabic ? "٢. الفصل والشعبة · اختياري" : "2. Class & section · optional"}<select value={effectiveReviewClassId} onChange={(event) => setSelectedReviewClassId(event.target.value)} disabled={saving || !selectedReviewWeek || supervisorReviewClasses.length === 0}><option value="">{dashboardArabic ? "كل الفصول والشعب" : "All classes and sections"}</option>{supervisorReviewClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}</select></label>
+              <div className="supervisor-review-found"><span>{dashboardArabic ? `تم العثور على ${selectedClassTeacherPlans.length} خطة معلم في العرض` : `${selectedClassTeacherPlans.length} teacher plan${selectedClassTeacherPlans.length === 1 ? "" : "s"} shown`}</span>{selectedWeekPendingCount > 0 && <button type="button" onClick={openSelectedWeekWaitingReview}>{dashboardArabic ? `انتقل إلى خطة تنتظر مراجعتك (${selectedWeekPendingCount})` : `Jump to a plan awaiting review (${selectedWeekPendingCount})`}</button>}</div>
             </div>
             {selectedReviewWeek && !selectedReviewWeekOpen && <p className="teacher-access-notice" role="status">{closedReviewWeekMessage(dashboardArabic)}</p>}
-            <div className="supervisor-review-list" id="supervisor-review-results">
-              {!selectedReviewWeek ? <p className="supervisor-review-empty">{dashboardArabic ? "اختر الأسبوع الدراسي لعرض خطط معلميك." : "Select a school week to view teacher plans."}</p> : selectedClassReviewItems.map((review) => <article key={review.id}>
-                <header><div><span className={`teacher-status ${review.status === "approved" ? "green" : review.status === "changes_requested" ? "amber" : "navy"}`}><i />{reviewStatusLabel(review.status, dashboardArabic)}</span><h3>{review.teacherName}</h3><p>{review.subject} · {review.className} · {review.week}</p></div><small>{dashboardArabic ? `أُرسلت في ${review.submittedAt}` : `Submitted ${review.submittedAt}`}</small></header>
-                <div className="supervisor-entry-grid">{review.entries.map((entry) => <section key={`${entry.subject}-${entry.day}-${entry.period}`}><strong>{entry.subject} · {dashboardArabic ? arabicDayNames[entry.day] ?? entry.day : entry.day} · {dashboardArabic ? `الحصة ${entry.period}` : `Period ${entry.period}`}</strong><p><b>{dashboardArabic ? "عمل الحصة" : "Classwork"}</b>{entry.classwork || "—"}</p><p><b>{dashboardArabic ? "الواجب المنزلي" : "Homework"}</b>{entry.homework || "—"}</p><p><b>{dashboardArabic ? "ملاحظات كلاسيرا" : "Classera"}</b>{entry.notes || "—"}</p></section>)}</div>
-                {(review.quizzes.length > 0 || review.weeklyNotes.some((note) => Boolean(parseEnglishDictation(note)))) && <div className="supervisor-plan-extras">{review.quizzes.length > 0 && <section><strong>{dashboardArabic ? "الاختبارات والتقييمات" : "Quizzes & assessments"}</strong>{review.quizzes.map((quiz, index) => <p key={`${quiz.subject}-${index}`}><b>{quiz.subject}{quiz.date ? ` · ${quiz.date}` : ""}</b>{quiz.details}</p>)}</section>}{review.weeklyNotes.map(parseEnglishDictation).filter((dictation): dictation is EnglishDictation => Boolean(dictation)).map((dictation) => <section key={`dictation-${dictation.day}`}><strong>Vocabulary for Dictation on {dayNames[dictation.day]}</strong><div className="dictation-word-grid compact">{dictation.words.map((word) => <span key={word}>{word}</span>)}</div></section>)}</div>}
-                {review.status === "submitted" && <div className="supervisor-review-actions"><label>{dashboardArabic ? "ملاحظة المراجعة" : "Review note"}<textarea disabled={saving || !selectedReviewWeekOpen} value={reviewNotes[review.id] ?? review.note} onChange={(event) => setReviewNotes((current) => ({ ...current, [review.id]: event.target.value }))} placeholder={dashboardArabic ? "اكتب التعديلات المطلوبة من المعلم" : "Write the required changes for the teacher"} rows={3} /></label><div><button disabled={saving || !selectedReviewWeekOpen} className="teacher-secondary-button" onClick={() => void reviewSubmission(review, "changes_requested")}>{dashboardArabic ? "إرجاع الخطة كاملة للتعديل" : "Return whole plan"}</button><button disabled={saving || !selectedReviewWeekOpen} className="teacher-primary-button" onClick={() => void reviewSubmission(review, "approved")}>{dashboardArabic ? "اعتماد الخطة كاملة" : "Approve whole plan"}</button></div></div>}
-                {review.status === "changes_requested" && <p className="supervisor-review-feedback"><strong>{dashboardArabic ? "ملاحظتك للمراجعة" : "Your review note"}</strong>{review.note || (dashboardArabic ? "طُلب من المعلم مراجعة هذه الخطة وتعديلها." : "The teacher has been asked to revise this plan.")}</p>}
-                {review.status === "approved" && <p className="supervisor-review-feedback approved"><strong>{dashboardArabic ? "معتمدة من هذه الشعبة" : "Approved for this department"}</strong>{dashboardArabic ? "تم اعتماد خطة الشعبة كاملة. ستظهر خطة الفصل عند عدم بقاء أي خطة مرسلة قيد المراجعة، وتظهر حصص غير المرسلين بعبارة Plan not published." : "This department plan was approved. The class plan is visible when no submitted plan remains under review; missing teachers show Plan not published."}</p>}
-              </article>)}
-              {selectedReviewWeek && selectedClassReviewItems.length === 0 && <p className="supervisor-review-empty">{dashboardArabic ? <>لا توجد خطط لمعلميك في <strong>{selectedReviewWeek.label}</strong> ضمن هذا الاختيار.</> : <>No linked teacher plans match this selection in <strong>{selectedReviewWeek.label}</strong>.</>}</p>}
-            </div>
+            {selectedReviewWeek ? <SupervisorReviewQueue key={`${selectedReviewWeekId}-${effectiveReviewClassId}`} plans={reviewQueuePlans} teachers={reviewTeacherCompletion} arabic={dashboardArabic} open={selectedReviewWeekOpen} saving={saving}
+              onReview={async (key, note) => { const plan = selectedClassTeacherPlans.find((item) => item.key === key); if (plan) await performSelectedReview([plan], "changes_requested", note); }}
+              onApprove={async (keys) => { const plans = selectedClassTeacherPlans.filter((plan) => keys.includes(plan.key) && plan.status === "submitted"); if (plans.length === new Set(keys).size) await performSelectedReview(plans, "approved"); }}
+            /> : <p className="supervisor-review-empty">{dashboardArabic ? "اختر الأسبوع الدراسي لعرض خطط معلميك." : "Select a school week to view teacher plans."}</p>}
+
           </section>}
         </div>
       </section>
 
       {isSupervisor && activeNav === "Teacher Reviews" && selectedReviewWeek && !selectedReviewWeekOpen && <ClosedWeekAlert key={selectedReviewWeekId} arabic={dashboardArabic} />}
-      {bulkApprovalConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setBulkApprovalConfirmationOpen(false)}><section className="weekly-send-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="bulk-approval-title" dir={bulkApprovalArabic ? "rtl" : "ltr"}><span aria-hidden="true">✓</span><h3 id="bulk-approval-title">{bulkApprovalArabic ? "اعتماد كل خطط الأسبوع" : "Approve every plan this week"}</h3><p>{bulkApprovalArabic ? `سيتم اعتماد ${selectedWeekPendingCount} خطة مادة مرسلة لكل معلميك في جميع الفصول والشعب خلال الأسبوع المحدد، وضمن نطاق إشرافك فقط. ستُنشر خطة الفصل عندما لا تبقى أي خطة مرسلة قيد المراجعة، وتظهر حصص غير المرسلين بعبارة Plan not published.` : `${selectedWeekPendingCount} submitted subject plan${selectedWeekPendingCount === 1 ? "" : "s"} from all your linked teachers across every class and section in the selected week will be approved. Each class plan publishes when no submitted plan remains under review; missing teachers show Plan not published.`}</p><div><button type="button" className="teacher-secondary-button" onClick={() => setBulkApprovalConfirmationOpen(false)}>{bulkApprovalArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={saving || !selectedReviewWeekOpen} onClick={() => void approveAllSelectedWeekPlans()}>{bulkApprovalArabic ? "نعم، اعتماد الجميع" : "Yes, approve all"}</button></div></section></div>}
 
       {weeklyBuilderOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && closeWeeklyEditor()}><section className={`teacher-editor-modal weekly-builder-modal weekly-editor-refresh ${weeklyBuilderReadOnly ? "is-read-only" : ""}`} role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
         <div className="teacher-modal-heading weekly-editor-heading"><div><h2 id="weekly-builder-title">{weeklyBuilderReadOnly ? dashboardArabic ? "معاينة الخطة الأسبوعية" : "Weekly plan preview" : publishedEditPlanId ? dashboardArabic ? approvedEditPublished ? "تعديل الخطة المنشورة" : "تعديل الخطة المعتمدة" : approvedEditPublished ? "Edit published plan" : "Edit approved plan" : dashboardArabic ? "إعداد الخطة الأسبوعية" : "Build the whole week"}</h2><div className="weekly-editor-heading-details"><span className="weekly-editor-week-badge">{dashboardArabic ? `الأسبوع ${selectedWeek.week_number}` : `Week ${selectedWeek.week_number}`}</span><span className="weekly-editor-date-badge"><bdi dir="ltr">{academicWeekRange(selectedWeek, dashboardArabic)}</bdi></span><span className="weekly-editor-class-name">{dashboardArabic ? `الصف ${selectedClass.grade} · الشعبة ${selectedClass.section}` : `Grade ${selectedClass.grade} · Class ${selectedClass.section}`}</span></div></div><button disabled={saving} aria-label={dashboardArabic ? "إغلاق محرر الخطة" : "Close weekly builder"} onClick={() => closeWeeklyEditor()}>×</button></div>

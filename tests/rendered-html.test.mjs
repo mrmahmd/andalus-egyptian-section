@@ -383,7 +383,8 @@ test("adds a department-supervisor review workflow without removing the supervis
   assert.match(teacherSource, /review_plan_submission/);
   assert.match(teacherSource, /Send to supervisor for approval/);
   assert.match(teacherSource, /Waiting for supervisor approval/);
-  assert.match(teacherSource, /Approve whole plan/);
+  const queueSource = await readFile(new URL("../app/teachers/supervisor-review-queue.tsx", import.meta.url), "utf8");
+  assert.match(queueSource, /Approve this plan/);
   assert.match(teacherSource, /See your linked teachers and their class and subject assignments/);
   assert.match(loginSource, /administrative_role/);
   assert.match(loginSource, /isSupervisor/);
@@ -441,8 +442,8 @@ test("publishes approved partial class plans without exposing missing teachers' 
   const parentSource = await readFile(new URL("../app/weekly-plan/page.tsx", import.meta.url), "utf8");
   const publishingSql = await readFile(new URL("../supabase/migrations/20260920225647_publish_approved_partial_class_plans.sql", import.meta.url), "utf8");
 
-  assert.match(teacherSource, /Approve every submitted department plan this week/);
-  assert.match(teacherSource, /no submitted plan is still waiting for review/);
+  assert.match(teacherSource, /performSelectedReview/);
+  assert.match(teacherSource, /Parent visibility follows publication and week visibility rules/);
   assert.match(teacherSource, /missing teachers appear as Plan not published/);
   assert.match(parentSource, /publishedEntryByPeriod/);
   assert.match(parentSource, /classwork: publishedEntry\?\.classwork \|\| "Plan not published"/);
@@ -555,13 +556,14 @@ test("rechecks live week access before opening or saving a teacher plan", async 
   assert.match(teacherSource, /This week is now closed by school administration/);
 });
 
-test("repairs stale supervisor submissions and supports one-click approval for the selected week", async () => {
+test("retains supervisor repairs and supports explicit selected-plan approval", async () => {
   const teacherSource = await readFile(new URL("../app/teachers/page.tsx", import.meta.url), "utf8");
   const migration = await readFile(new URL("../supabase/migrations/20260920054000_autoapprove_supervisors_and_add_week_bulk_approval.sql", import.meta.url), "utf8");
 
-  assert.match(teacherSource, /approve_my_week_submissions/);
+  const queueSource = await readFile(new URL("../app/teachers/supervisor-review-queue.tsx", import.meta.url), "utf8");
+  assert.match(teacherSource, /reviewSelectedSubmissions/);
   assert.match(teacherSource, /item\.weekId === selectedReviewWeekId && item\.status === "submitted"/);
-  assert.match(teacherSource, /اعتماد جميع خطط معلمي القسم لهذا الأسبوع/);
+  assert.match(queueSource, /اعتماد الخطط المحددة/);
   assert.doesNotMatch(teacherSource, /approveAllSelectedClassPlans/);
   assert.match(migration, /create or replace function public\.approve_my_week_submissions/);
   assert.match(migration, /plan\.week_id = target_week_id/);
