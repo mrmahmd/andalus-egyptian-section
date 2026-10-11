@@ -8,12 +8,20 @@
 .review-completion-filters { display:flex; flex-wrap:wrap; gap:9px; margin:18px 0; }
 .review-completion-filters button { padding:10px 14px; border:1px solid #cadde8; border-radius:12px; background:white; color:#214c73; font:inherit; cursor:pointer; }
 .review-completion-filters button[aria-pressed=true] { background:#0d7481; border-color:#0d7481; color:white; }
-.review-completion-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px; }
-.review-completion-grid article { padding:17px; border:1px solid #b9e3d6; border-inline-start:5px solid #188269; border-radius:14px; background:#fff; }
+.review-completion-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:10px; align-items:start; }
+.review-completion-grid article { padding:12px 14px; border:1px solid #b9e3d6; border-inline-start:4px solid #188269; border-radius:12px; background:#fff; min-width:0; }
 .review-completion-grid article.needs-followup { border-color:#efd5b0; border-inline-start-color:#b87621; background:#fffaf0; }
-.review-completion-grid h4 { font-size:19px; font-weight:850; margin-bottom:9px; }
+.teacher-portal .review-completion-grid .review-completion-title { display:flex; justify-content:space-between; align-items:start; gap:10px; }
+.teacher-portal .review-completion-grid h4 { font-size:17px; line-height:1.6; font-weight:850; margin:0; }
+.teacher-portal .review-completion-title > strong { padding:4px 8px; border-radius:8px; background:#e9f8f1; font-size:12px; line-height:1.6; white-space:nowrap; }
+.teacher-portal .needs-followup .review-completion-title > strong { background:#ffedd3; }
+.teacher-portal .review-completion-counts { display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:8px; color:#855016; font-size:12px; font-weight:750; line-height:1.6; }
+.teacher-portal .review-completion-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.teacher-portal .review-completion-chip { display:inline-flex; align-items:center; padding:4px 9px; border:1px solid #ead2b0; border-radius:8px; background:#fff3df; color:#754812; font-size:14px; font-weight:850; line-height:1.5; }
+.teacher-portal .review-completion-more { margin-top:8px; }
+.teacher-portal .review-completion-more > summary { width:fit-content; padding:4px 0; color:#23648c; font-size:12px; font-weight:800; line-height:1.6; cursor:pointer; }
 .review-completion-grid strong { color:#12775e; }.review-completion-grid .needs-followup strong { color:#99580d; }
-.review-completion-grid p { margin-top:9px; line-height:1.8; }.review-completion-grid small { display:block; margin-top:10px; color:#245caa; font-size:15px; font-weight:800; }
+.teacher-portal .review-completion-grid small { display:block; margin-top:8px; color:#245caa; font-size:12px; font-weight:800; line-height:1.6; }
 .review-status-filters { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
 .review-status-filters button { display:grid; gap:8px; padding:17px; border:1px solid #d4e2f0; border-radius:15px; color:#315271; background:#f4f8ff; font:inherit; cursor:pointer; }
 .review-status-filters strong { font-size:28px; }.review-status-filters button[aria-pressed=true] { color:#fff; background:linear-gradient(125deg,#165d9c,#197e96); border-color:#176d94; box-shadow:0 8px 18px #12578620; }
