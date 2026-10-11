@@ -1,4 +1,9 @@
 .review-queue { color: #17385e; font-size: 16px; font-weight: 650; }
+.teacher-portal .supervisor-closed-week-banner { display:flex; align-items:center; gap:14px; margin:18px; padding:16px 20px; border:1px solid #f0bbb6; border-inline-start:5px solid #b93434; border-radius:14px; background:linear-gradient(110deg,#fff1ef,#fff8f2); color:#992727; }
+.teacher-portal .supervisor-closed-week-banner > span { display:grid; place-items:center; flex-shrink:0; width:36px; height:36px; border-radius:50%; background:#b93434; color:white; font-size:24px; font-weight:850; }
+.teacher-portal .supervisor-closed-week-banner strong { display:block; color:#992727; font-size:19px; font-weight:850; line-height:1.8; }
+.teacher-portal .supervisor-closed-week-banner p { margin:4px 0 0; color:#89504b; font-size:14px; font-weight:700; line-height:1.8; }
+@media(max-width:760px) { .teacher-portal .supervisor-closed-week-banner { margin:12px; padding:13px; align-items:flex-start; gap:10px; }.teacher-portal .supervisor-closed-week-banner strong { font-size:17px; } }
 .review-queue h3,.review-queue h4,.review-queue p { margin: 0; }
 .review-completion { margin: 18px 0; padding: 20px; border: 1px solid #c9e4e7; border-radius: 20px; background: linear-gradient(120deg,#effafa,#f6f8ff); }
 .review-completion header,.review-teacher > header { display:flex; align-items:center; justify-content:space-between; gap:16px; }
