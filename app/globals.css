@@ -3040,5 +3040,5 @@ html[dir="ltr"] .teacher-portal:not(.super-admin-portal),
 .october-exam-notice { display: grid; gap: .4rem; padding: 1rem; margin: .75rem; border: 1px solid #93d7df; border-radius: 14px; background: linear-gradient(120deg,#e7f7fa,#f3edf9); text-align: center; color: #285572; }
 .october-exam-notice strong { color: #9b287e; font-size: 1.25rem; font-weight: 800; }
 .october-exam-notice small { font-weight: 700; }
-.weekly-table td.october-exam-cell { background: #edf7fc; color: #9b287e; text-align: center; font-size: 1.1rem; font-weight: 800; letter-spacing: .02em; }
-@media print { .weekly-table td.october-exam-cell { color: #83246a; background: #edf7fc; print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
+.weekly-table td.october-exam-cell:not(.day-cell):not(.course-cell) { background: #edf7fc; color: #9b287e; text-align: center; font-size: 1.1rem; font-weight: 800; letter-spacing: .02em; }
+@media print { .weekly-table td.october-exam-cell:not(.day-cell):not(.course-cell) { color: #83246a; background: #edf7fc; print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
