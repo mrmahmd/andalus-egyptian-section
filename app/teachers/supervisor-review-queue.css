@@ -31,6 +31,10 @@
 .review-status-filters button { display:grid; gap:8px; padding:17px; border:1px solid #d4e2f0; border-radius:15px; color:#315271; background:#f4f8ff; font:inherit; cursor:pointer; }
 .review-status-filters strong { font-size:28px; }.review-status-filters button[aria-pressed=true] { color:#fff; background:linear-gradient(125deg,#165d9c,#197e96); border-color:#176d94; box-shadow:0 8px 18px #12578620; }
 .review-selection-bar { display:flex; justify-content:space-between; align-items:center; gap:15px; margin:18px 0; padding:14px 18px; border-radius:14px; background:#edf4fa; }
+.review-selection-bar > span small { display:block; margin-top:5px; font-size:13px; line-height:1.7; font-weight:700; color:#496680; }
+.review-selection-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.teacher-portal .review-selection-actions .review-approve-all { background:linear-gradient(120deg,#107b67,#139ba1); }
+@media(max-width:760px) { .review-selection-actions { width:100%; }.review-selection-actions > button { flex:1 1 220px; min-width:0; white-space:normal; } }
 .review-teachers { display:grid; gap:18px; scroll-margin-top:24px; }
 .review-teacher { border:1px solid #d1e0ed; border-radius:18px; overflow:hidden; background:white; box-shadow:0 8px 22px #163c6310; }
 .review-teacher > header { padding:18px 20px; background:linear-gradient(115deg,#e8f4fb,#f5f2fb); }
