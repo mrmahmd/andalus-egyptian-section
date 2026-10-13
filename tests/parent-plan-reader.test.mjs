@@ -55,7 +55,7 @@ test('day selection changes screen attribute only: original table and all five c
 });
 test('text controls work without storage, never modify plan content, and reset day on new reader mount',()=>{
   const h=harness();const before=structuredClone(days);
-  let tree=h.render();button(tree,'Largest').props.onClick();tree=h.render();
+  let tree=h.render();button(tree,'Large').props.onClick();tree=h.render();
   assert.equal(tree.props['data-reader-size'],'larger');assert.ok(nodes(tree).includes(h.child));
   button(tree,'Normal').props.onClick();assert.equal(h.render().props['data-reader-size'],'normal');
   button(tree,'Sunday').props.onClick();assert.equal(harness().render().props['data-reader-day'],'all');
@@ -63,10 +63,22 @@ test('text controls work without storage, never modify plan content, and reset d
 });
 test('Arabic controls are translated while public cards retain English labels and LTR direction',()=>{
   const tree=harness({arabic:true}).render();assert.equal(tree.props.dir,'ltr');
-  assert.ok(button(tree,'الأسبوع كاملًا'));assert.ok(button(tree,'الثلاثاء'));assert.ok(button(tree,'أكبر'));
+  assert.ok(button(tree,'الأسبوع كاملًا'));assert.ok(button(tree,'الثلاثاء'));assert.ok(button(tree,'متوسط'));
   assert.equal(nodes(tree).find(node=>node.props?.className==='parent-reader-controls').props.dir,'rtl');
   const cards=nodes(tree).find(node=>node.props?.className==='parent-reader-cards');
   assert.equal(cards.props.dir,'ltr');assert.match(text(cards),/Sunday.*Classwork.*Homework.*Classera Notes/);
+});
+test('size labels are normal, medium and large in order without changing their stored sizes',()=>{
+  for(const arabic of [true,false]){
+    const h=harness({arabic});
+    const labels=arabic?['عادي','متوسط','كبير']:['Normal','Medium','Large'];
+    const group=nodes(h.render()).find(node=>node.props?.className==='parent-reader-size-controls');
+    assert.deepEqual(nodes(group).filter(node=>node.type==='button').map(text),labels);
+    for(const [index,label] of labels.entries()){
+      button(h.render(),label).props.onClick();
+      assert.equal(h.render().props['data-reader-size'],['normal','large','larger'][index]);
+    }
+  }
 });
 test('mobile cards preserve holiday, unpublished, mixed-language, multiline and long content',()=>{
   const lesson={day_of_week:0,period_number:0,course:'School holiday',classwork:'No classes today.\nالعطلة المدرسية '+ 'LongWord'.repeat(40),homework:'',notes:'School-wide holiday'};
