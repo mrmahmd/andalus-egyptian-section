@@ -8,6 +8,7 @@ import { delegatedStaffId, getStaffWorkspaceClient } from "../../lib/supabase/st
 import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 import { gradeEightHistoricalCounterpart } from "../../lib/grade-eight-timetable";
 import { isOctoberExam, octoberExamText } from "../../lib/october-exam";
+import { fetchTeacherPlanAccess, mergeTeacherAccessWeeks } from "../../lib/teacher-plan-access";
 import FaridQuizzesPanel from "./farid-quizzes-panel";
 import SupervisorReviewQueue from "./supervisor-review-queue";
 import { summarizeTeacherCompletion, reviewSelectedSubmissions } from "../../lib/supervisor-review";
@@ -94,7 +95,7 @@ type TimetableSlot = {
 
 type PersonalTimetableSlot = TimetableSlot & { className: string; subject: string };
 
-function assignedPlanSlotsForWeek(slots: TimetableSlot[], teacherAssignments: Assignment[], teacherId: string, classId: string, week: AcademicWeek | undefined, holidays: SchoolHoliday[]) {
+function assignedPlanSlotsForWeek(slots: TimetableSlot[], teacherAssignments: Assignment[], teacherId: string, classId: string, week: Pick<AcademicWeek, "id" | "week_number"> | undefined, holidays: SchoolHoliday[]) {
   const classAssignments = teacherAssignments.filter((assignment) => assignment.classId === classId);
   const schoolClass = classAssignments[0];
   const classSlots = slots.filter((slot) => slot.class_id === classId);
@@ -112,7 +113,7 @@ function assignedPlanSlotsForWeek(slots: TimetableSlot[], teacherAssignments: As
       return slot;
     })
     .filter((slot) => {
-      if (isOctoberExam(week?.week_number, slot.period_number, slot.day_of_week)) return false;
+      if (isOctoberExam(week?.week_number, slot.period_number, slot.day_of_week, schoolClass?.grade)) return false;
       const assignedSubject = classAssignments.some((assignment) => assignment.subjectId === slot.subject_id);
       const historicalSwapSlot = Boolean(preservePreWeekFive5B && (slot.id === sundayPeriodSix.id || slot.id === tuesdayPeriodOne.id));
       const assignedTeacher = historicalSwapSlot ? assignedSubject : String(slot.teacher_id) === teacherId && assignedSubject;
@@ -435,7 +436,7 @@ export default function TeachersDashboardPage() {
         supabase.from("weekly_plan_holidays").select("id, week_id, day_of_week, title, note"),
         supabase.from("timetable_slots").select("id, class_id, subject_id, teacher_id, day_of_week, period_number, requires_weekly_plan_submission, school_classes(grade, section), subjects(name_en)").eq("teacher_id", targetUserId).order("day_of_week").order("period_number"),
       ]);
-      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, mySubmissionsResult.error, reviewsResult.error, classesResult.error, subjectsResult.error, holidaysResult.error].find(Boolean);
+      const firstError = [assignmentsResult.error, weeksResult.error, slotsResult.error, entriesResult.error, mySubmissionsResult.error, reviewsResult.error, classesResult.error, subjectsResult.error, holidaysResult.error, accessResult.error, teacherAccessResult.error].find(Boolean);
       if (firstError) throw firstError;
 
       const requiredSlotRows = (slotsResult.data ?? []) as TimetableSlot[];
@@ -578,6 +579,50 @@ export default function TeachersDashboardPage() {
     return () => window.clearTimeout(timer);
   }, [loadTeacherDashboard]);
 
+  const refreshTeacherAccess = useCallback(async () => {
+    const live = await fetchTeacherPlanAccess(getStaffWorkspaceClient(), profileId);
+    setAcademicWeeks((current) => mergeTeacherAccessWeeks(current, live.weeks));
+    setWeeklyPlanCreationOpen(live.creationOpen);
+    setDashboardWeekId((current) => current || live.weeks.find((week) => week.teacher_entry_enabled && week.is_current)?.id || live.weeks.find((week) => week.teacher_entry_enabled)?.id || "");
+    setSelectedWeekId((current) => current || live.weeks.find((week) => week.teacher_entry_enabled && week.is_current)?.id || live.weeks.find((week) => week.teacher_entry_enabled)?.id || "");
+    return live;
+  }, [profileId]);
+
+  const recheckAccessNow = async () => {
+    try {
+      const live = await refreshTeacherAccess();
+      const week = live.weeks.find((item) => item.id === dashboardWeekId);
+      setMessage(!live.creationOpen
+        ? dashboardArabic ? "كتابة الخطط مغلقة لهذا الحساب من الإدارة؛ فتح الأسبوع لا يلغي قفل الحساب." : "Plan writing is closed for this account; opening a week does not override the account lock."
+        : week?.teacher_entry_enabled
+          ? dashboardArabic ? "تم التحقق: الأسبوع المختار مفتوح لكتابة الخطط." : "Verified: the selected week is open for plan writing."
+          : dashboardArabic ? "تم تحديث الحالة: الأسبوع المختار مغلق للتحرير من الإدارة." : "Access refreshed: the selected week is closed for editing by administration.");
+      setMessageTone("info");
+    } catch {
+      setMessage(dashboardArabic ? "تعذر تحديث حالة الأسبوع الآن. حاول مرة أخرى؛ لم يتم تغيير خطتك." : "Week access could not be refreshed. Try again; your plan has not changed.");
+      setMessageTone("error");
+    }
+  };
+
+  useEffect(() => {
+    if (loading || !profileId) return;
+    let inFlight = false;
+    const refresh = async () => {
+      if (document.visibilityState !== "visible" || inFlight) return;
+      inFlight = true;
+      try { await refreshTeacherAccess(); } catch { /* Keep last verified state; writes recheck access. */ }
+      finally { inFlight = false; }
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    const timer = window.setInterval(refresh, 30000);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [loading, profileId, refreshTeacherAccess]);
+
   const verifyTeacherWeekAccess = useCallback(async (weekId: string, closeEditorWhenClosed = true) => {
     const arabic = window.localStorage.getItem("andalus-language") === "ar";
     try {
@@ -587,7 +632,10 @@ export default function TeachersDashboardPage() {
         .eq("id", weekId)
         .single();
       if (error) throw error;
-      if (liveWeek?.teacher_entry_enabled) return true;
+      if (liveWeek?.teacher_entry_enabled) {
+        setAcademicWeeks((current) => current.map((week) => week.id === weekId && !week.teacher_entry_enabled ? { ...week, teacher_entry_enabled: true } : week));
+        return true;
+      }
       const text = arabic
         ? "هذا الأسبوع مغلق الآن من إدارة المدرسة، لذلك لا يمكن فتحه أو حفظ أي كتابة جديدة فيه. الخطط المحفوظة سابقًا لم تُحذف."
         : "This week is now closed by school administration, so it cannot be opened or receive new saves. Previously saved plans were not deleted.";
@@ -623,12 +671,14 @@ export default function TeachersDashboardPage() {
 
   const teacherEntryWeeks = useMemo(() => academicWeeks.filter((week) => week.teacher_entry_enabled), [academicWeeks]);
   const selectedWeek = academicWeeks.find((week) => week.id === selectedWeekId);
+  const selectedWeekStartsOn = selectedWeek?.starts_on;
+  const slotWeek = useMemo(() => selectedWeek ? { id: selectedWeek.id, week_number: selectedWeek.week_number } : undefined, [selectedWeek?.id, selectedWeek?.week_number]);
   const holidayForDay = (dayOfWeek: number) => schoolHolidays.find((holiday) => holiday.week_id === selectedWeekId && holiday.day_of_week === dayOfWeek) ?? null;
   const selectedClassAssignments = useMemo(() => assignments.filter((assignment) => assignment.classId === selectedClassId), [assignments, selectedClassId]);
   const selectedClass = selectedClassAssignments[0];
-  const selectedClassSlots = useMemo(() => assignedPlanSlotsForWeek(timetableSlots, assignments, profileId, selectedClassId, selectedWeek, schoolHolidays), [timetableSlots, assignments, profileId, selectedClassId, selectedWeek, schoolHolidays]);
+  const selectedClassSlots = useMemo(() => assignedPlanSlotsForWeek(timetableSlots, assignments, profileId, selectedClassId, slotWeek, schoolHolidays), [timetableSlots, assignments, profileId, selectedClassId, slotWeek, schoolHolidays]);
   const editableClassSlots = useMemo(() => selectedClassSlots.filter((slot) => !holidayForDay(slot.day_of_week)), [selectedClassSlots, selectedWeekId, schoolHolidays]);
-  const activeDayIndexes = dayNames.map((_, index) => index).filter((index) => selectedClassSlots.some((slot) => slot.day_of_week === index) || Boolean(holidayForDay(index)) || isOctoberExam(selectedWeek?.week_number, 3, index));
+  const activeDayIndexes = dayNames.map((_, index) => index).filter((index) => selectedClassSlots.some((slot) => slot.day_of_week === index) || Boolean(holidayForDay(index)) || isOctoberExam(selectedWeek?.week_number, 3, index, selectedClass?.grade));
   const visibleBuilderDayIndexes = activeDayIndexes;
   const assignmentForSlot = (slot: TimetableSlot) => selectedClassAssignments.find((assignment) => assignment.subjectId === slot.subject_id);
   const slotDraftFor = (slot: TimetableSlot) => slotDrafts[slot.id] ?? emptySlotDraft();
@@ -707,8 +757,8 @@ export default function TeachersDashboardPage() {
       const quiz = ((plan?.plan_quizzes ?? []) as Array<{ subject_id: string; quiz_date: string | null; details: string }>).find((row) => Boolean(row.details));
       setQuizSubjectId(quiz?.subject_id ?? "");
       setQuizDetails(quiz?.details ?? "");
-      if (quiz?.quiz_date && selectedWeek) {
-        const offset = Math.max(0, Math.min(4, Math.round((new Date(`${quiz.quiz_date}T12:00:00`).getTime() - new Date(`${selectedWeek.starts_on}T12:00:00`).getTime()) / 86400000)));
+      if (quiz?.quiz_date && selectedWeekStartsOn) {
+        const offset = Math.max(0, Math.min(4, Math.round((new Date(`${quiz.quiz_date}T12:00:00`).getTime() - new Date(`${selectedWeekStartsOn}T12:00:00`).getTime()) / 86400000)));
         setQuizDay(String(offset));
       }
       const note = ((plan?.plan_notes ?? []) as Array<{ note_text: string; teacher_id: string }>).find((row) => row.teacher_id === profileId);
@@ -725,16 +775,11 @@ export default function TeachersDashboardPage() {
       setMessageTone("error");
       setBuilderHydrated(true);
     }
-  }, [profileId, selectedClassId, selectedWeekId, selectedClassSlots, weeklyBuilderOpen, savedParentPreview, selectedWeek]);
+  }, [profileId, selectedClassId, selectedWeekId, selectedClassSlots, weeklyBuilderOpen, savedParentPreview, selectedWeekStartsOn]);
 
   useEffect(() => { void loadPlanIntoBuilder(); }, [loadPlanIntoBuilder]);
 
   const openWeeklyBuilder = async (targetWeekId?: string, targetClassId?: string) => {
-    if (!weeklyPlanCreationOpen) {
-      setMessage("Weekly plan creation is currently closed by school administration.");
-      setMessageTone("info");
-      return;
-    }
     if (loading) {
       setMessage("Your teacher data is still loading. Please wait a moment and try again.");
       setMessageTone("info");
@@ -745,13 +790,26 @@ export default function TeachersDashboardPage() {
       setMessageTone("info");
       return;
     }
-    if (teacherEntryWeeks.length === 0) {
+    let liveAccess;
+    try { liveAccess = await refreshTeacherAccess(); }
+    catch {
+      setMessage(dashboardArabic ? "تعذر التحقق من فتح الأسبوع. حاول مرة أخرى؛ لم يتم تغيير خطتك." : "Week access could not be verified. Try again; your plan has not changed.");
+      setMessageTone("error");
+      return;
+    }
+    if (!liveAccess.creationOpen) {
+      setMessage(dashboardArabic ? "كتابة الخطط مغلقة لهذا الحساب من إدارة المدرسة، وليست حالة الأسبوع نفسه." : "Plan creation is closed for this account by school administration, independently of the week setting.");
+      setMessageTone("info");
+      return;
+    }
+    const liveEntryWeeks = liveAccess.weeks.filter((week) => week.teacher_entry_enabled);
+    if (liveEntryWeeks.length === 0) {
       setMessage("No academic week is currently open for teacher entry. Your saved and submitted plans remain available in plan history.");
       setMessageTone("info");
       return;
     }
     const firstAssignment = assignments.find((assignment) => assignment.classId === targetClassId) ?? selectedClass ?? assignments[0];
-    const firstWeek = targetWeekId ? teacherEntryWeeks.find((week) => week.id === targetWeekId) : selectedWeek ?? teacherEntryWeeks.find((week) => week.is_current) ?? teacherEntryWeeks[0];
+    const firstWeek = targetWeekId ? liveEntryWeeks.find((week) => week.id === targetWeekId) : liveEntryWeeks.find((week) => week.id === selectedWeekId) ?? liveEntryWeeks.find((week) => week.is_current) ?? liveEntryWeeks[0];
     if (targetWeekId && !firstWeek) {
       setMessage(dashboardArabic ? "هذا الأسبوع مغلق لكتابة الخطط؛ يمكنك معاينة الخطط المحفوظة فقط." : "This week is closed for writing plans; saved plans remain available for preview.");
       setMessageTone("info");
@@ -1582,13 +1640,13 @@ export default function TeachersDashboardPage() {
   const approvedPlans = dashboardPlans.filter((plan) => plan.status === "approved");
   const assignedClassChoices = Array.from(new Map(assignments.map((assignment) => [assignment.classId, { id: assignment.classId, name: `Grade ${assignment.grade} · ${assignment.section}` }])).values());
   const unstartedClasses = assignedClassChoices.filter((schoolClass) =>
-    timetableSlots.some((slot) => slot.class_id === schoolClass.id && slot.teacher_id === profileId && !isOctoberExam(dashboardWeek?.week_number, slot.period_number, slot.day_of_week))
+    timetableSlots.some((slot) => slot.class_id === schoolClass.id && slot.teacher_id === profileId && !isOctoberExam(dashboardWeek?.week_number, slot.period_number, slot.day_of_week, assignments.find((item) => item.classId === schoolClass.id)?.grade))
     && !dashboardPlans.some((plan) => plan.classId === schoolClass.id));
   const dashboardWaitingReviews = waitingReviews.filter((review) => review.weekId === dashboardWeekId);
   const dashboardWaitingPlans = Array.from(new Map(dashboardWaitingReviews.map((review) => [`${review.teacherId}-${review.classId}`, review])).values());
   const missingTeacherClassPlans = departmentTeachers.flatMap((teacher) => {
     const assignedClasses = Array.from(new Map(teacher.assignments.filter((assignment) =>
-      timetableSlots.some((slot) => slot.class_id === assignment.classId && slot.subject_id === assignment.subjectId && slot.teacher_id === teacher.userId && !isOctoberExam(dashboardWeek?.week_number, slot.period_number, slot.day_of_week))
+      timetableSlots.some((slot) => slot.class_id === assignment.classId && slot.subject_id === assignment.subjectId && slot.teacher_id === teacher.userId && !isOctoberExam(dashboardWeek?.week_number, slot.period_number, slot.day_of_week, assignment.grade))
     ).map((assignment) => [assignment.classId, assignment])).values());
     return assignedClasses.filter((assignment) => !reviewItems.some((review) =>
       review.weekId === dashboardWeekId && review.teacherId === teacher.userId && review.classId === assignment.classId
@@ -1737,7 +1795,7 @@ export default function TeachersDashboardPage() {
         {isSupervisor && <nav className="teacher-mobile-supervisor-nav" aria-label="Supervisor workspace navigation">{supervisorNavigation.map(([label, icon]) => <button key={label} className={activeNav === label ? "active" : ""} onClick={() => openWorkspaceSection(label)}><span>{icon}</span><b>{navLabel(label)}</b>{label === "Teacher Reviews" && waitingReviews.length > 0 && <i>{waitingReviews.length}</i>}{label === "Department Teachers" && <i>{departmentTeachers.length}</i>}</button>)}</nav>}
 
         <div className="teacher-content">
-          <div className="teacher-page-heading"><div><p className="teacher-kicker">{dashboardWeek ? dashboardArabic ? `الأسبوع ${dashboardWeek.week_number} · ${academicWeekRange(dashboardWeek, true)}` : `Week ${dashboardWeek.week_number} · ${academicWeekRange(dashboardWeek)}` : dashboardArabic ? "مساحة العمل" : "Staff workspace"}</p><h1>{activeNav === "Overview" ? dashboardArabic ? `أهلًا، ${teacherName}` : `Welcome, ${teacherName}.` : navLabel(activeNav)}</h1><span>{activeNav === "Overview" ? dashboardArabic ? isSupervisor ? "خطط معلميك، خطتك، وحصصك أمامك في صفحة واحدة." : "تابع خططك وحصصك وما يحتاج منك إجراء هذا الأسبوع." : isSupervisor ? "Review your teachers' plans, write your own, and follow your lessons in one place." : "See the plans and lessons needing your attention this week." : dashboardArabic ? "اختر الإجراء المناسب وتابع حالته بوضوح." : "Choose the next action and follow its status clearly."}</span></div><div className="teacher-heading-actions"><button type="button" className="teacher-primary-button" disabled={saving || !weeklyPlanCreationOpen || !dashboardWeek?.teacher_entry_enabled} aria-busy={loading} onClick={() => void openWeeklyBuilder(dashboardWeekId)}><span>＋</span> {loading ? dashboardArabic ? "جارٍ تحميل البيانات…" : "Loading teacher data…" : weeklyPlanCreationOpen && dashboardWeek?.teacher_entry_enabled ? dashboardArabic ? isSupervisor ? "إعداد خطتي التعليمية" : "إعداد خطة الأسبوع" : isSupervisor ? "Write my teaching plan" : "Create weekly plan" : dashboardArabic ? "الأسبوع مغلق للتحرير" : "Week closed for editing"}</button></div></div>
+          <div className="teacher-page-heading"><div><p className="teacher-kicker">{dashboardWeek ? dashboardArabic ? `الأسبوع ${dashboardWeek.week_number} · ${academicWeekRange(dashboardWeek, true)}` : `Week ${dashboardWeek.week_number} · ${academicWeekRange(dashboardWeek)}` : dashboardArabic ? "مساحة العمل" : "Staff workspace"}</p><h1>{activeNav === "Overview" ? dashboardArabic ? `أهلًا، ${teacherName}` : `Welcome, ${teacherName}.` : navLabel(activeNav)}</h1><span>{activeNav === "Overview" ? dashboardArabic ? isSupervisor ? "خطط معلميك، خطتك، وحصصك أمامك في صفحة واحدة." : "تابع خططك وحصصك وما يحتاج منك إجراء هذا الأسبوع." : isSupervisor ? "Review your teachers' plans, write your own, and follow your lessons in one place." : "See the plans and lessons needing your attention this week." : dashboardArabic ? "اختر الإجراء المناسب وتابع حالته بوضوح." : "Choose the next action and follow its status clearly."}</span></div><div className="teacher-heading-actions"><button type="button" className="teacher-primary-button" disabled={saving || !weeklyPlanCreationOpen || !dashboardWeek?.teacher_entry_enabled} aria-busy={loading} onClick={() => void openWeeklyBuilder(dashboardWeekId)}><span>＋</span> {loading ? dashboardArabic ? "جارٍ تحميل البيانات…" : "Loading teacher data…" : weeklyPlanCreationOpen && dashboardWeek?.teacher_entry_enabled ? dashboardArabic ? isSupervisor ? "إعداد خطتي التعليمية" : "إعداد خطة الأسبوع" : isSupervisor ? "Write my teaching plan" : "Create weekly plan" : !weeklyPlanCreationOpen ? dashboardArabic ? "كتابة الخطط مغلقة لحسابك" : "Plan writing closed for your account" : dashboardArabic ? "الأسبوع مغلق للتحرير" : "Week closed for editing"}</button><button type="button" className="teacher-secondary-button" disabled={loading || saving} onClick={() => void recheckAccessNow()}>{dashboardArabic ? "تحديث حالة الأسبوع" : "Refresh week access"}</button></div></div>
 
           {message && <p className={`super-admin-live-message ${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
 
@@ -1877,7 +1935,7 @@ export default function TeachersDashboardPage() {
           </fieldset>
           {activeDayIndexes.length > 1 && <nav className="weekly-builder-mobile-days" aria-label={dashboardArabic ? "الانتقال إلى يوم داخل الخطة" : "Jump to a day in the plan"}>{activeDayIndexes.map((index) => { const day = dayNames[index]; return <button type="button" key={day} className={`day-tone-${index}`} onClick={() => document.getElementById(`weekly-editor-day-${index}`)?.scrollIntoView({ behavior: "instant", block: "start" })}><strong>{dashboardArabic ? arabicDayNames[day] : day}</strong><small>{selectedClassSlots.filter((slot) => slot.day_of_week === index).length}</small></button>; })}</nav>}
           <fieldset className="weekly-builder-fields" disabled={weeklyBuilderReadOnly}>
-          <div className={`weekly-builder-days days-${visibleBuilderDayIndexes.length}`}>{visibleBuilderDayIndexes.map((index) => { const day = dayNames[index]; const daySlots = selectedClassSlots.filter((slot) => slot.day_of_week === index); return <section className={`weekly-builder-day day-tone-${index}`} id={`weekly-editor-day-${index}`} key={day}><header><strong>{dashboardArabic ? arabicDayNames[day] : day}</strong><small>{dashboardArabic ? `${daySlots.length} حصص` : `${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"}`}</small></header>{isOctoberExam(selectedWeek?.week_number, 3, index) && !holidayForDay(index) && <div className="october-exam-notice" role="note"><small>{dashboardArabic ? "الحصة الثالثة — موحّدة ومغلقة للكتابة" : "Period 3 — school-wide, read only"}</small><strong dir="ltr">{octoberExamText}</strong></div>}{daySlots.map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = isEnglishSubject(assignment?.subject ?? ""); return <article key={slot.id}><header><span>{dashboardArabic ? `الحصة ${slot.period_number}` : `Period ${slot.period_number}`}</span><strong>{isEnglish ? "English" : assignment?.subject ?? (dashboardArabic ? "المادة" : "Subject")}</strong></header>{assignment?.subject === "Integrated Science" && <label>{dashboardArabic ? "فرع العلوم" : "Science component"}<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">{dashboardArabic ? "اختر الكيمياء أو الفيزياء أو الأحياء" : "Select Chemistry, Physics or Biology"}</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>{dashboardArabic ? "برنامج اللغة الإنجليزية" : "English programme"}<select value={draft.englishProgramme} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}><option value="">{dashboardArabic ? "اختر AL أو OL" : "Select AL or OL"}</option>{englishProgrammes.map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">{dashboardArabic ? "يُضاف AL أو OL تلقائيًا قبل عمل الحصة بالصيغة: AL - Classwork." : "AL or OL is added automatically before Classwork using the format: AL - Classwork."}</p>}<label className="weekly-field-classwork">{dashboardArabic ? "عمل الحصة" : "Classwork"}<textarea ref={resizeWeeklyTextarea} onInput={(event) => resizeWeeklyTextarea(event.currentTarget)} rows={3} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder={dashboardArabic ? "اكتب الدرس والوحدة والصفحات" : "Lesson, unit and pages"} /></label><label className="weekly-field-homework">{dashboardArabic ? "الواجب المنزلي" : "Homework"}<textarea ref={resizeWeeklyTextarea} onInput={(event) => resizeWeeklyTextarea(event.currentTarget)} rows={3} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder={dashboardArabic ? "اكتب واجب هذه الحصة" : "Homework for this lesson"} /></label><label className="weekly-field-notes">{dashboardArabic ? "ملاحظات كلاسيرا" : "Classera notes"}<textarea ref={resizeWeeklyTextarea} onInput={(event) => resizeWeeklyTextarea(event.currentTarget)} rows={3} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder={dashboardArabic ? "تذكير أو مواد مطلوبة" : "Reminder or materials"} /></label></article>})}</section>})}</div>
+          <div className={`weekly-builder-days days-${visibleBuilderDayIndexes.length}`}>{visibleBuilderDayIndexes.map((index) => { const day = dayNames[index]; const daySlots = selectedClassSlots.filter((slot) => slot.day_of_week === index); return <section className={`weekly-builder-day day-tone-${index}`} id={`weekly-editor-day-${index}`} key={day}><header><strong>{dashboardArabic ? arabicDayNames[day] : day}</strong><small>{dashboardArabic ? `${daySlots.length} حصص` : `${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"}`}</small></header>{isOctoberExam(selectedWeek?.week_number, 3, index, selectedClass?.grade) && !holidayForDay(index) && <div className="october-exam-notice" role="note"><small>{dashboardArabic ? "الحصة الثالثة — موحّدة ومغلقة للكتابة" : "Period 3 — school-wide, read only"}</small><strong dir="ltr">{octoberExamText}</strong></div>}{daySlots.map((slot) => { const assignment = assignmentForSlot(slot); const draft = slotDraftFor(slot); const isEnglish = isEnglishSubject(assignment?.subject ?? ""); return <article key={slot.id}><header><span>{dashboardArabic ? `الحصة ${slot.period_number}` : `Period ${slot.period_number}`}</span><strong>{isEnglish ? "English" : assignment?.subject ?? (dashboardArabic ? "المادة" : "Subject")}</strong></header>{assignment?.subject === "Integrated Science" && <label>{dashboardArabic ? "فرع العلوم" : "Science component"}<select value={draft.scienceComponent} onChange={(event) => updateSlotDraft(slot.id, "scienceComponent", event.target.value)}><option value="">{dashboardArabic ? "اختر الكيمياء أو الفيزياء أو الأحياء" : "Select Chemistry, Physics or Biology"}</option>{scienceComponents.map((component) => <option key={component} value={component}>{component}</option>)}</select></label>}{isEnglish && <label>{dashboardArabic ? "برنامج اللغة الإنجليزية" : "English programme"}<select value={draft.englishProgramme} onChange={(event) => updateSlotDraft(slot.id, "englishProgramme", event.target.value)}><option value="">{dashboardArabic ? "اختر AL أو OL" : "Select AL or OL"}</option>{englishProgrammes.map((programme) => <option key={programme} value={programme}>{programme}</option>)}</select></label>}{isEnglish && <p className="teacher-programme-note">{dashboardArabic ? "يُضاف AL أو OL تلقائيًا قبل عمل الحصة بالصيغة: AL - Classwork." : "AL or OL is added automatically before Classwork using the format: AL - Classwork."}</p>}<label className="weekly-field-classwork">{dashboardArabic ? "عمل الحصة" : "Classwork"}<textarea ref={resizeWeeklyTextarea} onInput={(event) => resizeWeeklyTextarea(event.currentTarget)} rows={3} value={draft.classwork} onChange={(event) => updateSlotDraft(slot.id, "classwork", event.target.value)} placeholder={dashboardArabic ? "اكتب الدرس والوحدة والصفحات" : "Lesson, unit and pages"} /></label><label className="weekly-field-homework">{dashboardArabic ? "الواجب المنزلي" : "Homework"}<textarea ref={resizeWeeklyTextarea} onInput={(event) => resizeWeeklyTextarea(event.currentTarget)} rows={3} value={draft.homework} onChange={(event) => updateSlotDraft(slot.id, "homework", event.target.value)} placeholder={dashboardArabic ? "اكتب واجب هذه الحصة" : "Homework for this lesson"} /></label><label className="weekly-field-notes">{dashboardArabic ? "ملاحظات كلاسيرا" : "Classera notes"}<textarea ref={resizeWeeklyTextarea} onInput={(event) => resizeWeeklyTextarea(event.currentTarget)} rows={3} value={draft.classeraNotes} onChange={(event) => updateSlotDraft(slot.id, "classeraNotes", event.target.value)} placeholder={dashboardArabic ? "تذكير أو مواد مطلوبة" : "Reminder or materials"} /></label></article>})}</section>})}</div>
           {departmentName === "English Department" && <section className="weekly-builder-extra english-dictation-editor"><div className="weekly-builder-section-heading"><div><span>DW</span><div><strong>{dashboardArabic ? "كلمات الإملاء باللغة الإنجليزية" : "English Dictation Words"}</strong><small>{dashboardArabic ? "اختر يوم الإملاء، ثم اكتب كل كلمة في سطر أو افصل الكلمات بفواصل." : "Choose the dictation day, then enter one word per line or separate words with commas."}</small></div></div></div><div className="weekly-builder-dictation-row"><label>{dashboardArabic ? "يوم الإملاء" : "Dictation day"}<select value={dictationDay} onChange={(event) => setDictationDay(event.target.value)}>{dayNames.map((day, index) => <option key={day} value={index}>{dashboardArabic ? arabicDayNames[day] : day}</option>)}</select></label><label>{dashboardArabic ? "الكلمات" : "Words"}<textarea className="weekly-builder-notes" rows={3} value={dictationWords} onChange={(event) => setDictationWords(event.target.value)} placeholder="school, teacher, classroom, homework" /></label></div></section>}
           {isFaridTeacher && <FaridQuizzesPanel weeks={academicWeeks} assignments={assignments} teacherId={profileId} initialWeekId={selectedWeekId} contextWeekId={selectedWeekId} contextClassId={selectedClassId} embedded readOnly={weeklyBuilderReadOnly || workingOnBehalf} arabic={dashboardArabic} />}
           </fieldset>
@@ -1900,7 +1958,7 @@ export default function TeachersDashboardPage() {
           <div className="weekly-copy-dialog-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={closeCopyPlanDialog}>{dashboardArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={saving || !copySourceAssignments.length || !copyTargetClassId || Boolean(copyConflict)} onClick={() => void copyPlanToOtherClasses()}>{saving ? dashboardArabic ? "جارٍ النسخ…" : "Copying…" : dashboardArabic ? "نسخ الخطة بالكامل وفتح المحرر" : "Copy full plan and open editor"}</button></div>
         </section>
       </div>}
-      {parentPreviewOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop parent-preview-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeParentPreview()}><section className="teacher-parent-preview" dir="ltr" role="dialog" aria-modal="true" aria-labelledby="parent-preview-title"><div className="teacher-modal-heading"><div><p>{savedParentPreview ? "Saved plan — read-only preview" : "Preview only — nothing has been saved or sent"}</p><h2 id="parent-preview-title">Parent weekly-plan preview</h2></div><button aria-label="Close parent plan preview" onClick={() => closeParentPreview()}>×</button></div><div className="parent-preview-intro">{savedParentPreview ? "Your saved lessons are shown in their timetable position. This private preview does not publish the plan; other teachers’ work is not shown." : "Your current writing is shown in its real timetable position. Other subjects are intentionally blank because this is only your private preview."}</div>{parentPreviewLoading || (savedParentPreview && !builderHydrated) ? <p className="parent-preview-loading">Loading the class timetable…</p> : <section className="parent-preview-paper"><div className="parent-preview-paper-header"><img src={`${basePath}/school-logo.png`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS PRIVATE SCHOOLS</strong><span>The Egyptian Section</span><h3>WEEKLY STUDY PLAN</h3></div></div><div className="parent-preview-meta"><span><small>Class</small><strong>Grade {selectedClass.grade} · Class {selectedClass.section}</strong></span><span><small>Week No.</small><strong>{selectedWeek.week_number}</strong></span><span><small>Date</small><strong>{academicWeekRange(selectedWeek)}</strong></span></div>{departmentName === "English Department" && parseDictationWords(dictationWords).length > 0 && <section className="parent-dictation-block"><h3>Vocabulary for Dictation on {dayNames[Number(dictationDay)]}</h3><table><tbody>{chunkWords(parseDictationWords(dictationWords)).map((row, rowIndex) => <tr key={rowIndex}>{row.map((word) => <td key={word}>{word}</td>)}</tr>)}</tbody></table></section>}<div className="table-wrap"><table className="weekly-table parent-preview-table"><colgroup><col className="day-column" /><col className="course-column" /><col className="classwork-column" /><col className="homework-column" /><col className="classera-column" /></colgroup><thead><tr><th>Day</th><th>Course</th><th>Classwork</th><th>Homework</th><th>Classera Notes</th></tr></thead>{dayNames.map((day, dayIndex) => { const daySlots = parentPreviewSlots.filter((slot) => slot.day_of_week === dayIndex); return daySlots.length > 0 ? <tbody className="weekly-day-group" key={day}>{daySlots.map((slot, index) => { const ownSlot = selectedClassSlots.find((teacherSlot) => teacherSlot.id === slot.id); const draft = ownSlot ? slotDraftFor(ownSlot) : null; return <tr key={slot.id} className={index === 0 ? "new-day" : ""}>{index === 0 && <td className="day-cell" rowSpan={daySlots.length}>{day}</td>}<td className="course-cell">{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week) ? "Examination" : slot.subject}</td><td className={isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week) ? "october-exam-cell" : draft?.classwork.trim() ? "preview-written" : "preview-empty"}>{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week) ? octoberExamText : ownSlot ? previewClasswork(ownSlot) || "—" : "—"}</td><td className={draft?.homework.trim() ? "preview-written" : "preview-empty"}>{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week) ? "—" : ownSlot ? draft?.homework.trim() || "—" : "—"}</td><td className={draft?.classeraNotes.trim() ? "preview-written" : "preview-empty"}>{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week) ? "—" : ownSlot ? draft?.classeraNotes.trim() || "—" : "—"}</td></tr>; })}</tbody> : null; })}</table>{parentPreviewSlots.length === 0 && <p className="parent-preview-loading">No timetable lessons are available for this class yet.</p>}</div></section>}<div className="teacher-editor-footer parent-preview-footer"><span>This preview does not submit, approve, or publish the weekly plan.</span><div><button type="button" className="teacher-primary-button" onClick={() => closeParentPreview()}>{savedParentPreview ? "Close preview" : "Return to editor"}</button></div></div></section></div>}
+      {parentPreviewOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop parent-preview-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeParentPreview()}><section className="teacher-parent-preview" dir="ltr" role="dialog" aria-modal="true" aria-labelledby="parent-preview-title"><div className="teacher-modal-heading"><div><p>{savedParentPreview ? "Saved plan — read-only preview" : "Preview only — nothing has been saved or sent"}</p><h2 id="parent-preview-title">Parent weekly-plan preview</h2></div><button aria-label="Close parent plan preview" onClick={() => closeParentPreview()}>×</button></div><div className="parent-preview-intro">{savedParentPreview ? "Your saved lessons are shown in their timetable position. This private preview does not publish the plan; other teachers’ work is not shown." : "Your current writing is shown in its real timetable position. Other subjects are intentionally blank because this is only your private preview."}</div>{parentPreviewLoading || (savedParentPreview && !builderHydrated) ? <p className="parent-preview-loading">Loading the class timetable…</p> : <section className="parent-preview-paper"><div className="parent-preview-paper-header"><img src={`${basePath}/school-logo.png`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS PRIVATE SCHOOLS</strong><span>The Egyptian Section</span><h3>WEEKLY STUDY PLAN</h3></div></div><div className="parent-preview-meta"><span><small>Class</small><strong>Grade {selectedClass.grade} · Class {selectedClass.section}</strong></span><span><small>Week No.</small><strong>{selectedWeek.week_number}</strong></span><span><small>Date</small><strong>{academicWeekRange(selectedWeek)}</strong></span></div>{departmentName === "English Department" && parseDictationWords(dictationWords).length > 0 && <section className="parent-dictation-block"><h3>Vocabulary for Dictation on {dayNames[Number(dictationDay)]}</h3><table><tbody>{chunkWords(parseDictationWords(dictationWords)).map((row, rowIndex) => <tr key={rowIndex}>{row.map((word) => <td key={word}>{word}</td>)}</tr>)}</tbody></table></section>}<div className="table-wrap"><table className="weekly-table parent-preview-table"><colgroup><col className="day-column" /><col className="course-column" /><col className="classwork-column" /><col className="homework-column" /><col className="classera-column" /></colgroup><thead><tr><th>Day</th><th>Course</th><th>Classwork</th><th>Homework</th><th>Classera Notes</th></tr></thead>{dayNames.map((day, dayIndex) => { const daySlots = parentPreviewSlots.filter((slot) => slot.day_of_week === dayIndex); return daySlots.length > 0 ? <tbody className="weekly-day-group" key={day}>{daySlots.map((slot, index) => { const ownSlot = selectedClassSlots.find((teacherSlot) => teacherSlot.id === slot.id); const draft = ownSlot ? slotDraftFor(ownSlot) : null; return <tr key={slot.id} className={index === 0 ? "new-day" : ""}>{index === 0 && <td className="day-cell" rowSpan={daySlots.length}>{day}</td>}<td className="course-cell">{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week, selectedClass.grade) ? "Examination" : slot.subject}</td><td className={isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week, selectedClass.grade) ? "october-exam-cell" : draft?.classwork.trim() ? "preview-written" : "preview-empty"}>{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week, selectedClass.grade) ? octoberExamText : ownSlot ? previewClasswork(ownSlot) || "—" : "—"}</td><td className={draft?.homework.trim() ? "preview-written" : "preview-empty"}>{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week, selectedClass.grade) ? "—" : ownSlot ? draft?.homework.trim() || "—" : "—"}</td><td className={draft?.classeraNotes.trim() ? "preview-written" : "preview-empty"}>{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week, selectedClass.grade) ? "—" : ownSlot ? draft?.classeraNotes.trim() || "—" : "—"}</td></tr>; })}</tbody> : null; })}</table>{parentPreviewSlots.length === 0 && <p className="parent-preview-loading">No timetable lessons are available for this class yet.</p>}</div></section>}<div className="teacher-editor-footer parent-preview-footer"><span>This preview does not submit, approve, or publish the weekly plan.</span><div><button type="button" className="teacher-primary-button" onClick={() => closeParentPreview()}>{savedParentPreview ? "Close preview" : "Return to editor"}</button></div></div></section></div>}
     </main>
   );
 }

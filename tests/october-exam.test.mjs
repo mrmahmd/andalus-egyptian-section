@@ -5,6 +5,7 @@ import ts from 'typescript';
 import { PGlite } from '../tmp/copy-validation/node_modules/@electric-sql/pglite/dist/index.js';
 const read = path => readFile(new URL(path,import.meta.url),'utf8');
 const sql = await read('../supabase/migrations/20261012094154_october_exam_week_seven.sql');
+const gradeSql = await read('../supabase/migrations/20261013044540_october_exam_grade_scope.sql');
 const id = n => `00000000-0000-0000-0000-${String(n).padStart(12,'0')}`;
 const teacher=id(1),other=id(2),source=id(10),target=id(11),week=id(20),plan=id(30),arabic=id(40),religion=id(41),english=id(42),plus=id(43),discover=id(44);
 const variables={teacher,other,source,target,week,plan,arabic,religion,english,plus,discover};
@@ -32,11 +33,11 @@ async function fixture() {
     insert into plan_submissions(weekly_plan_id,teacher_id,subject_id,status) values('${plan}','${teacher}','${arabic}','approved');`);
   return db;
 }
-test('Week 7 only, period 3, all five school days; adjacent weeks untouched',async()=>{
+test('Week 7 only, period 3, all five school days, Grade 3 onward; Grades 1/2 and adjacent weeks untouched',async()=>{
   const code=ts.transpileModule(await read('../lib/october-exam.ts'),{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText;
   const {isOctoberExam}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
-  for(const w of [undefined,6,7,8]) for(let d=-1;d<=6;d++) for(let p=1;p<=8;p++)
-    assert.equal(isOctoberExam(w,p,d),w===7&&p===3&&d>=0&&d<=4);
+  for(const g of [undefined,1,2,3,4,10]) for(const w of [undefined,6,7,8]) for(let d=-1;d<=6;d++) for(let p=1;p<=8;p++)
+    assert.equal(isOctoberExam(w,p,d,g),w===7&&p===3&&d>=0&&d<=4&&g!==undefined&&g>=3);
 });
 test('Installation is idempotent and preserves every saved entry, approval and plan',async()=>{
   const db=await fixture();try{
@@ -86,5 +87,42 @@ test('Approved correction accepts remaining lessons without rewriting protected 
     const result=await db.query('select update_my_published_plan($1,$2::jsonb,null) count',[plan,JSON.stringify([{slot_id:id(50),classwork:'Corrected teaching',homework:'',classera_notes:''}])]);
     assert.equal(result.rows[0].count,1);await db.exec('reset role;');
     assert.equal((await db.query('select classwork from plan_entries where id=$1',[id(61)])).rows[0].classwork,'Preserve this old exam-slot text');
+  }finally{await db.close();}
+});
+
+test('Grade-scope installation preserves data and is idempotent',async()=>{
+  const db=await fixture();try{
+    await db.exec(sql);
+    const before=(await db.query('select to_jsonb(e) data from plan_entries e order by id')).rows;
+    await db.exec(gradeSql);await db.exec(gradeSql);
+    assert.deepEqual((await db.query('select to_jsonb(e) data from plan_entries e order by id')).rows,before);
+    assert.equal((await db.query('select status from plan_submissions')).rows[0].status,'approved');
+    assert.equal((await db.query('select status from weekly_plans')).rows[0].status,'published');
+  }finally{await db.close();}
+});
+
+test('Grades 1/2 regain period 3 writing and full copy; Grade 3 onward stays protected',async()=>{
+  for(const grade of [1,2,3,10]) {
+    const db=await fixture();try{
+      await db.exec(sql);await db.exec(gradeSql);
+      await db.query('update school_classes set grade=$1',[grade]);
+      await db.exec(`set test.uid='${teacher}';set role authenticated;`);
+      const write=`update plan_entries set classwork='Updated period 3' where id='${id(61)}'`;
+      if(grade<=2) await db.exec(write); else await assert.rejects(db.exec(write),/October Exam/);
+      const result=(await db.query('select copy_my_weekly_plan($1,$2) result',[plan,target])).rows[0].result;
+      assert.equal(result.copied_lessons,grade<=2?2:1);
+      await db.exec('reset role;');
+      const rows=(await db.query('select e.period_number from plan_entries e join weekly_plans p on p.id=e.weekly_plan_id where p.class_id=$1 order by period_number',[target])).rows;
+      assert.deepEqual(rows.map(row=>row.period_number),grade<=2?[3,5]:[5]);
+    }finally{await db.close();}
+  }
+});
+
+test('Grade 2 approved corrections must include restored third-period lesson',async()=>{
+  const db=await fixture();try{
+    await db.exec(sql);await db.exec(gradeSql);await db.exec('update school_classes set grade=2;');
+    await db.exec(`set test.uid='${teacher}';set role authenticated;`);
+    const changes=[50,51].map((slot,i)=>({slot_id:id(slot),classwork:`Restored lesson ${i}`,homework:'',classera_notes:''}));
+    assert.equal((await db.query('select update_my_published_plan($1,$2::jsonb,null) count',[plan,JSON.stringify(changes)])).rows[0].count,2);
   }finally{await db.close();}
 });

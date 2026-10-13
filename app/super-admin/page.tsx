@@ -716,7 +716,7 @@ export default function SuperAdminPage() {
 
   const selectedPlanWeek = academicWeeks.find((week) => week.id === selectedPlanWeekId) ?? null;
   const effectiveTimetableRequirements = useMemo(() => {
-    const weekRequirements = timetableRequirements.filter((requirement) => !isOctoberExam(selectedPlanWeek?.week_number, requirement.periodNumber, requirement.dayOfWeek)).map((requirement) => {
+    const weekRequirements = timetableRequirements.filter((requirement) => !isOctoberExam(selectedPlanWeek?.week_number, requirement.periodNumber, requirement.dayOfWeek, classes.find((item) => item.id === requirement.classId)?.grade)).map((requirement) => {
       const schoolClass = classes.find((candidate) => candidate.id === requirement.classId);
       const previousPosition = gradeEightHistoricalCounterpart(schoolClass?.grade ?? 0, schoolClass?.section ?? "", selectedPlanWeek?.week_number ?? 7, requirement.dayOfWeek, requirement.periodNumber);
       const previous = previousPosition && timetableRequirements.find((candidate) => candidate.classId === requirement.classId && candidate.dayOfWeek === previousPosition[0] && candidate.periodNumber === previousPosition[1]);
