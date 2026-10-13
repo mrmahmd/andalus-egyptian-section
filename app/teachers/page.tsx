@@ -9,6 +9,7 @@ import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 import { gradeEightHistoricalCounterpart } from "../../lib/grade-eight-timetable";
 import { isOctoberExam, octoberExamText } from "../../lib/october-exam";
 import { fetchTeacherPlanAccess, mergeTeacherAccessWeeks } from "../../lib/teacher-plan-access";
+import { readStaffWeek, rememberStaffWeek, resolveStaffWeek } from "../../lib/staff-week-selection";
 import FaridQuizzesPanel from "./farid-quizzes-panel";
 import SupervisorReviewQueue from "./supervisor-review-queue";
 import { summarizeTeacherCompletion, reviewSelectedSubmissions } from "../../lib/supervisor-review";
@@ -272,12 +273,13 @@ export default function TeachersDashboardPage() {
   const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>([]);
   const [personalTimetable, setPersonalTimetable] = useState<PersonalTimetableSlot[]>([]);
   const [dashboardWeekId, setDashboardWeekId] = useState("");
+  const workspaceWeek = useRef({ staffId: "", weekId: "" });
   const [planViewFilter, setPlanViewFilter] = useState<"all" | "needs_action" | "submitted" | "approved">("all");
   const [entries, setEntries] = useState<TeacherEntry[]>([]);
   const [mySubmissions, setMySubmissions] = useState<MySubmission[]>([]);
   const [isSupervisor, setIsSupervisor] = useState(false);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
-  const [selectedReviewWeekId, setSelectedReviewWeekId] = useState("");
+  const selectedReviewWeekId = dashboardWeekId;
   const [selectedReviewClassId, setSelectedReviewClassId] = useState("");
   const [dashboardArabic, setDashboardArabic] = useState(false);
   const [departmentTeachers, setDepartmentTeachers] = useState<DepartmentTeacher[]>([]);
@@ -291,7 +293,7 @@ export default function TeachersDashboardPage() {
   const approvedLessonSnapshot = useRef<Record<string, ApprovedLessonSnapshot>>({});
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"success" | "error" | "info">("info");
-  const [selectedWeekId, setSelectedWeekId] = useState("");
+  const selectedWeekId = dashboardWeekId;
   const [selectedClassId, setSelectedClassId] = useState("");
   const [slotDrafts, setSlotDrafts] = useState<Record<string, SlotDraft>>({});
   const [quizDay, setQuizDay] = useState("2");
@@ -323,6 +325,12 @@ export default function TeachersDashboardPage() {
   const [editorCompletionKind, setEditorCompletionKind] = useState<EditorCompletionKind>("submitted");
 
   useEffect(() => { editorSaveInProgress.current = saving && weeklyBuilderOpen; }, [saving, weeklyBuilderOpen]);
+
+  const selectWorkspaceWeek = useCallback((weekId: string) => {
+    workspaceWeek.current = { staffId: profileId, weekId };
+    setDashboardWeekId(weekId);
+    rememberStaffWeek(() => window.localStorage, profileId, weekId);
+  }, [profileId]);
 
   const openWeeklyEditor = useCallback(() => {
     const url = new URL(window.location.href);
@@ -529,7 +537,6 @@ export default function TeachersDashboardPage() {
 
       const department = one(profile.departments as { name_en: string } | { name_en: string }[] | null);
       const weeks = (weeksResult.data ?? []) as AcademicWeek[];
-      const teacherEntryWeeks = weeks.filter((week) => week.teacher_entry_enabled);
       setProfileId(targetUserId);
       setTeacherName(profile.display_name);
       setDepartmentName(department?.name_en ?? "Teacher Department");
@@ -547,14 +554,11 @@ export default function TeachersDashboardPage() {
       setSchoolClasses((classesResult.data ?? []) as SchoolClass[]);
       setSchoolSubjects((subjectsResult.data ?? []) as SchoolSubject[]);
       setSelectedDepartmentTeacherId((current) => realDepartmentTeachers.some((teacher) => teacher.userId === current) ? current : realDepartmentTeachers[0]?.userId ?? "");
-      setSelectedReviewWeekId((current) => weeks.some((week) => week.id === current) ? current : weeks.find((week) => week.is_current)?.id ?? weeks[0]?.id ?? "");
-      const dashboardWeekChoices = weeks.filter((week) => week.teacher_entry_enabled || realEntries.some((entry) => entry.weekId === week.id) || supervisorAccount && realReviews.some((review) => review.weekId === week.id));
-      let rememberedWeek = "";
-      try { rememberedWeek = window.localStorage.getItem(`andalus-teacher-week:${targetUserId}`) ?? ""; } catch { /* Storage may be unavailable. */ }
-      setDashboardWeekId((current) => {
-        const preferred = rememberedWeek || current;
-        return dashboardWeekChoices.some((week) => week.id === preferred) ? preferred : dashboardWeekChoices.find((week) => week.is_current)?.id ?? dashboardWeekChoices[0]?.id ?? "";
-      });
+      const currentWeekId = workspaceWeek.current.staffId === targetUserId ? workspaceWeek.current.weekId : "";
+      const retainedWeekId = resolveStaffWeek(weeks, currentWeekId, readStaffWeek(() => window.localStorage, targetUserId));
+      workspaceWeek.current = { staffId: targetUserId, weekId: retainedWeekId };
+      setDashboardWeekId(retainedWeekId);
+      rememberStaffWeek(() => window.localStorage, targetUserId, retainedWeekId);
       if (departmentTeachersResult.error) {
         setMessage(window.localStorage.getItem("andalus-language") === "ar" ? "لوحتك جاهزة، لكن تعذّر تحميل تكليفات معلمي القسم. يرجى تحديث الصفحة." : "Your dashboard is ready. Department teacher assignments could not be loaded yet; please refresh once.");
         setMessageTone("info");
@@ -564,7 +568,6 @@ export default function TeachersDashboardPage() {
         setMessageTone("info");
       }
       setSelectedClassId((current) => realAssignments.some((assignment) => assignment.classId === current) ? current : realAssignments[0]?.classId ?? "");
-      setSelectedWeekId((current) => teacherEntryWeeks.some((week) => week.id === current) ? current : teacherEntryWeeks.find((week) => week.is_current)?.id ?? teacherEntryWeeks[0]?.id ?? "");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : typeof error === "object" && error && "message" in error ? String(error.message) : "The teacher workspace could not be loaded.";
       setMessage(errorMessage);
@@ -583,8 +586,10 @@ export default function TeachersDashboardPage() {
     const live = await fetchTeacherPlanAccess(getStaffWorkspaceClient(), profileId);
     setAcademicWeeks((current) => mergeTeacherAccessWeeks(current, live.weeks));
     setWeeklyPlanCreationOpen(live.creationOpen);
-    setDashboardWeekId((current) => current || live.weeks.find((week) => week.teacher_entry_enabled && week.is_current)?.id || live.weeks.find((week) => week.teacher_entry_enabled)?.id || "");
-    setSelectedWeekId((current) => current || live.weeks.find((week) => week.teacher_entry_enabled && week.is_current)?.id || live.weeks.find((week) => week.teacher_entry_enabled)?.id || "");
+    const retainedWeekId = resolveStaffWeek(live.weeks, workspaceWeek.current.staffId === profileId ? workspaceWeek.current.weekId : "", readStaffWeek(() => window.localStorage, profileId));
+    workspaceWeek.current = { staffId: profileId, weekId: retainedWeekId };
+    setDashboardWeekId(retainedWeekId);
+    rememberStaffWeek(() => window.localStorage, profileId, retainedWeekId);
     return live;
   }, [profileId]);
 
@@ -640,7 +645,6 @@ export default function TeachersDashboardPage() {
         ? "هذا الأسبوع مغلق الآن من إدارة المدرسة، لذلك لا يمكن فتحه أو حفظ أي كتابة جديدة فيه. الخطط المحفوظة سابقًا لم تُحذف."
         : "This week is now closed by school administration, so it cannot be opened or receive new saves. Previously saved plans were not deleted.";
       setAcademicWeeks((current) => current.map((week) => week.id === weekId ? { ...week, teacher_entry_enabled: false } : week));
-      setSelectedWeekId((current) => current === weekId ? "" : current);
       setMessage(text);
       setMessageTone("error");
       setBuilderFeedback({ tone: "error", text });
@@ -817,7 +821,7 @@ export default function TeachersDashboardPage() {
     }
     if (!firstWeek || !(await verifyTeacherWeekAccess(firstWeek.id, false))) return;
     if (firstAssignment) setSelectedClassId(firstAssignment.classId);
-    setSelectedWeekId(firstWeek.id);
+    selectWorkspaceWeek(firstWeek.id);
     setBuilderFeedback(null);
     setWeeklyBuilderReadOnly(false);
     openWeeklyEditor();
@@ -886,10 +890,7 @@ export default function TeachersDashboardPage() {
     if (savedParentPreview) void openParentPreview();
   }, [savedParentPreview, openParentPreview]);
 
-  const selectDashboardWeek = (weekId: string) => {
-    setDashboardWeekId(weekId);
-    try { window.localStorage.setItem(`andalus-teacher-week:${profileId}`, weekId); } catch { /* Selection still works without storage. */ }
-  };
+  const selectDashboardWeek = selectWorkspaceWeek;
 
   const saveWholeWeek = async (submitForReview = false, silent = false) => {
     if (publishedEditPlanId || (silent && delegatedStaffId())) return;
@@ -1277,7 +1278,7 @@ export default function TeachersDashboardPage() {
   const openSavedPlan = async (submission: MySubmission) => {
     if (!(await verifyTeacherWeekAccess(submission.weekId, false))) return;
     setSelectedClassId(submission.classId);
-    setSelectedWeekId(submission.weekId);
+    selectWorkspaceWeek(submission.weekId);
     setBuilderFeedback(null);
     setWeeklyBuilderReadOnly(false);
     openWeeklyEditor();
@@ -1286,7 +1287,7 @@ export default function TeachersDashboardPage() {
   const openEntryEditor = async (entry: TeacherEntry) => {
     if (!(await verifyTeacherWeekAccess(entry.weekId, false))) return;
     setSelectedClassId(entry.classId);
-    setSelectedWeekId(entry.weekId);
+    selectWorkspaceWeek(entry.weekId);
     setBuilderFeedback(null);
     setWeeklyBuilderReadOnly(false);
     openWeeklyEditor();
@@ -1337,7 +1338,7 @@ export default function TeachersDashboardPage() {
       setWeeklyBuilderReadOnly(true);
       setWeeklyBuilderOpen(false);
       setSelectedClassId(plan.classId);
-      setSelectedWeekId(plan.weekId);
+      selectWorkspaceWeek(plan.weekId);
       setSlotDrafts({});
       setDictationWords("");
       setBuilderHydrated(false);
@@ -1351,7 +1352,7 @@ export default function TeachersDashboardPage() {
     let canEdit = Boolean(weeklyPlanCreationOpen && week?.teacher_entry_enabled && statusAllowsEditing);
     if (canEdit) canEdit = await verifyTeacherWeekAccess(plan.weekId, false);
     setSelectedClassId(plan.classId);
-    setSelectedWeekId(plan.weekId);
+    selectWorkspaceWeek(plan.weekId);
     setBuilderFeedback(canEdit ? null : { tone: "info", text: dashboardArabic ? "هذه معاينة فقط. الأسبوع مغلق للتحرير أو أن الخطة مرسلة/معتمدة، لذلك لا يمكن تغيير أي بيانات." : "Preview only. This week is closed for editing or the plan is submitted/approved, so no data can be changed." });
     setPublishedEditPlanId("");
     setWeeklyBuilderReadOnly(!canEdit);
@@ -1373,7 +1374,7 @@ export default function TeachersDashboardPage() {
         throw new Error(dashboardArabic ? "هذه الخطة لم تعد معتمدة لك. حدّث الصفحة وراجع حالتها." : "This plan is no longer approved for you. Refresh and check its status.");
       }
       setSelectedClassId(plan.classId);
-      setSelectedWeekId(plan.weekId);
+      selectWorkspaceWeek(plan.weekId);
       setPublishedEditPlanId(plan.planId);
       setApprovedEditPublished(livePlan?.status === "published");
       setWeeklyBuilderReadOnly(false);
@@ -1410,7 +1411,7 @@ export default function TeachersDashboardPage() {
     const targetWeekId = copySourcePlan.weekId;
     closeCopyPlanDialog();
     setSelectedClassId(targetClassId);
-    setSelectedWeekId(targetWeekId);
+    selectWorkspaceWeek(targetWeekId);
     setSlotDrafts({});
     setBuilderFeedback({ tone: "info", text: dashboardArabic ? "الخطة الحالية محفوظة دون تغيير. هذه معاينة فقط؛ استخدم إجراء التعديل المناسب من قائمة الخطط." : "The existing plan was kept unchanged. This is a read-only preview; use the appropriate edit action from your plans." });
     setWeeklyBuilderReadOnly(true);
@@ -1482,7 +1483,7 @@ export default function TeachersDashboardPage() {
       setCopyTargetClassId("");
       setCopyConflict(null);
       setSelectedClassId(copiedClassId);
-      setSelectedWeekId(copiedWeekId);
+      selectWorkspaceWeek(copiedWeekId);
       setSlotDrafts({});
       setQuizSubjectId("");
       setWeeklyBuilderReadOnly(false);
@@ -1611,7 +1612,7 @@ export default function TeachersDashboardPage() {
     return { ...plan, status };
   }).sort((a, b) => Number(b.weekId === currentWeek?.id) - Number(a.weekId === currentWeek?.id) || a.week.localeCompare(b.week)), [entries, mySubmissions, currentWeek?.id]);
   const waitingReviews = reviewItems.filter((item) => item.status === "submitted");
-  const dashboardWeeks = academicWeeks.filter((week) => week.teacher_entry_enabled || entries.some((entry) => entry.weekId === week.id) || isSupervisor && reviewItems.some((review) => review.weekId === week.id));
+  const dashboardWeeks = academicWeeks.filter((week) => week.id === dashboardWeekId || week.teacher_entry_enabled || entries.some((entry) => entry.weekId === week.id) || isSupervisor && reviewItems.some((review) => review.weekId === week.id));
   const dashboardWeek = academicWeeks.find((week) => week.id === dashboardWeekId);
   const dashboardPlans = weeklyPlanRows.filter((plan) => plan.weekId === dashboardWeekId);
   const incompleteOwnPlans = dashboardPlans.map((plan) => {
@@ -1736,7 +1737,7 @@ export default function TeachersDashboardPage() {
     else void openWeeklyPlan(plan);
   };
   const openIncompleteSupervisedPlan = (classId: string) => {
-    setSelectedReviewWeekId(dashboardWeekId);
+    selectWorkspaceWeek(dashboardWeekId);
     setSelectedReviewClassId(classId);
     openWorkspaceSection("Teacher Reviews");
     window.setTimeout(() => document.getElementById("supervisor-review-results")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
@@ -1744,7 +1745,7 @@ export default function TeachersDashboardPage() {
   const openFirstWaitingReview = () => {
     const firstWaitingReview = waitingReviews[0];
     if (!firstWaitingReview) return;
-    setSelectedReviewWeekId(firstWaitingReview.weekId);
+    selectWorkspaceWeek(firstWaitingReview.weekId);
     setSelectedReviewClassId(firstWaitingReview.classId);
     openWorkspaceSection("Teacher Reviews");
     window.setTimeout(() => document.getElementById("supervisor-review-results")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
@@ -1804,7 +1805,7 @@ export default function TeachersDashboardPage() {
           {activeNav === "Overview" && <section className="staff-dashboard" aria-label={dashboardArabic ? "ملخص الأسبوع" : "Weekly overview"}>
             <div className="staff-dashboard-hero"><div><span className="staff-dashboard-eyebrow">{dashboardArabic ? isSupervisor ? "لوحة متابعة المشرف" : "لوحة متابعة المعلم" : isSupervisor ? "Supervisor dashboard" : "Teacher dashboard"}</span><h2>{dashboardArabic ? "ابدأ بما يحتاج اهتمامك" : "Start with what needs your attention"}</h2><p>{dashboardArabic ? "الأرقام والإجراءات التالية تخص الأسبوع المختار فقط، وحصصك مأخوذة من جدول المدرسة." : "The figures and actions below belong to the selected week. Your lessons come from the school timetable."}</p></div><label>{dashboardArabic ? "الأسبوع الدراسي" : "School week"}<select value={dashboardWeekId} onChange={(event) => { selectDashboardWeek(event.target.value); setPlanViewFilter("all"); }} aria-label={dashboardArabic ? "اختر الأسبوع الدراسي" : "Choose school week"}>{dashboardWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select><small className={dashboardWeek?.teacher_entry_enabled ? "week-open" : "week-closed"}>{dashboardWeek ? dashboardWeek.teacher_entry_enabled ? dashboardArabic ? "مفتوح لكتابة الخطط" : "Open for plan writing" : dashboardArabic ? "مغلق للتحرير · المعاينة متاحة" : "Editing closed · preview available" : dashboardArabic ? "لا يوجد أسبوع متاح حاليًا" : "No available week right now"}</small></label></div>
             <div className="staff-dashboard-metrics">
-              {isSupervisor && <button type="button" className="staff-metric review" onClick={() => { setSelectedReviewWeekId(dashboardWeekId); setSelectedReviewClassId(""); openWorkspaceSection("Teacher Reviews"); }}><span>{dashboardArabic ? "تنتظر مراجعتي" : "Waiting for my review"}</span><strong>{dashboardWaitingPlans.length}</strong><small>{dashboardArabic ? "افتح خطط المعلمين المرسلة" : "Open submitted teacher plans"}</small></button>}
+              {isSupervisor && <button type="button" className="staff-metric review" onClick={() => { selectWorkspaceWeek(dashboardWeekId); setSelectedReviewClassId(""); openWorkspaceSection("Teacher Reviews"); }}><span>{dashboardArabic ? "تنتظر مراجعتي" : "Waiting for my review"}</span><strong>{dashboardWaitingPlans.length}</strong><small>{dashboardArabic ? "افتح خطط المعلمين المرسلة" : "Open submitted teacher plans"}</small></button>}
               <button type="button" className="staff-metric action" onClick={() => openDashboardPlanList("needs_action")}><span>{dashboardArabic ? "تحتاج مني إجراء" : "Need my action"}</span><strong>{actionablePlans.length + unstartedClasses.length}</strong><small>{dashboardArabic ? "مسودات أو فصول لم أبدأها" : "Drafts or classes not started"}</small></button>
               <button type="button" className="staff-metric sent" onClick={() => openDashboardPlanList("submitted")}><span>{dashboardArabic ? "مرسلة للمراجعة" : "Sent for review"}</span><strong>{submittedPlans.length}</strong><small>{dashboardArabic ? "متابعة حالة خططي" : "Follow my plan status"}</small></button>
               <button type="button" className="staff-metric approved" onClick={() => openDashboardPlanList("approved")}><span>{dashboardArabic ? isSupervisor ? "خططي المعتمدة تلقائيًا" : "خطط معتمدة" : isSupervisor ? "My auto-approved plans" : "Approved plans"}</span><strong>{approvedPlans.length}</strong><small>{dashboardArabic ? "عرض الخطط المعتمدة" : "View approved plans"}</small></button>
@@ -1839,7 +1840,7 @@ export default function TeachersDashboardPage() {
               </div></section>
             </div>
             {isSupervisor && <div className="staff-supervisor-followup">
-              <section className="teacher-card staff-dashboard-panel staff-review-preview"><header><div><span>{dashboardArabic ? "متابعة معلمي القسم" : "Department follow-up"}</span><h3>{dashboardArabic ? "الخطط المنتظرة الآن" : "Plans waiting now"}</h3></div><button type="button" onClick={() => { setSelectedReviewWeekId(dashboardWeekId); setSelectedReviewClassId(""); openWorkspaceSection("Teacher Reviews"); }}>{dashboardArabic ? "فتح المراجعة" : "Open reviews"} ←</button></header><div className="staff-review-quick-list">{dashboardWaitingPlans.slice(0, 4).map((review) => <button type="button" key={`${review.teacherId}-${review.classId}`} onClick={() => { setSelectedReviewWeekId(dashboardWeekId); setSelectedReviewClassId(review.classId); openWorkspaceSection("Teacher Reviews"); }}><strong>{review.teacherName}</strong><span>{review.className}</span><em>{dashboardArabic ? "مراجعة" : "Review"} ←</em></button>)}{dashboardWaitingPlans.length === 0 && <p className="staff-dashboard-empty">{dashboardArabic ? "لا توجد خطط مرسلة تنتظر مراجعتك في هذا الأسبوع." : "No submitted plans are waiting for your review this week."}</p>}</div></section>
+              <section className="teacher-card staff-dashboard-panel staff-review-preview"><header><div><span>{dashboardArabic ? "متابعة معلمي القسم" : "Department follow-up"}</span><h3>{dashboardArabic ? "الخطط المنتظرة الآن" : "Plans waiting now"}</h3></div><button type="button" onClick={() => { selectWorkspaceWeek(dashboardWeekId); setSelectedReviewClassId(""); openWorkspaceSection("Teacher Reviews"); }}>{dashboardArabic ? "فتح المراجعة" : "Open reviews"} ←</button></header><div className="staff-review-quick-list">{dashboardWaitingPlans.slice(0, 4).map((review) => <button type="button" key={`${review.teacherId}-${review.classId}`} onClick={() => { selectWorkspaceWeek(dashboardWeekId); setSelectedReviewClassId(review.classId); openWorkspaceSection("Teacher Reviews"); }}><strong>{review.teacherName}</strong><span>{review.className}</span><em>{dashboardArabic ? "مراجعة" : "Review"} ←</em></button>)}{dashboardWaitingPlans.length === 0 && <p className="staff-dashboard-empty">{dashboardArabic ? "لا توجد خطط مرسلة تنتظر مراجعتك في هذا الأسبوع." : "No submitted plans are waiting for your review this week."}</p>}</div></section>
               <section className="teacher-card staff-dashboard-panel staff-missing-preview" id="staff-missing-teachers"><header><div><span>{dashboardArabic ? "متابعة الإرسال" : "Submission follow-up"}</span><h3>{dashboardArabic ? "فصول لم تُرسل خططها بعد" : "Classes still missing plans"}</h3></div><strong>{pendingTeacherCount} {dashboardArabic ? "معلم" : "teachers"}</strong></header><div className="staff-review-quick-list">{missingTeacherClassPlans.map((item) => <div className="staff-missing-row" key={`${item.teacherId}-${item.classId}`}><strong>{item.teacherName}</strong><span>{item.className}</span></div>)}{missingTeacherClassPlans.length === 0 && <p className="staff-dashboard-empty">{dashboardArabic ? "كل معلمي القسم المكلفين بحصص أرسلوا خططهم لهذا الأسبوع." : "All department teachers with scheduled lessons submitted their plans this week."}</p>}</div></section>
             </div>}
           </section>}
@@ -1910,7 +1911,7 @@ export default function TeachersDashboardPage() {
               <button type="button" className="supervisor-review-authority supervisor-review-shortcut" disabled={waitingReviews.length === 0} onClick={openFirstWaitingReview}><strong>{dashboardArabic ? `${waitingReviews.length} خطط تحتاج للمراجعة` : `${waitingReviews.length} subject entries waiting for review`}</strong><span>{dashboardArabic ? "عرض الخطط المعلقة" : "Open waiting plans"} ←</span></button>
             </div>
             <div className="supervisor-review-selector">
-              <label>{dashboardArabic ? "١. الأسبوع الدراسي" : "1. School week"}<select disabled={saving} value={selectedReviewWeekId} onChange={(event) => setSelectedReviewWeekId(event.target.value)}><option value="">{dashboardArabic ? "اختر الأسبوع" : "Select week"}</option>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select></label>
+              <label>{dashboardArabic ? "١. الأسبوع الدراسي" : "1. School week"}<select disabled={saving} value={selectedReviewWeekId} onChange={(event) => selectWorkspaceWeek(event.target.value)}><option value="">{dashboardArabic ? "اختر الأسبوع" : "Select week"}</option>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select></label>
               <label>{dashboardArabic ? "٢. الفصل والشعبة · اختياري" : "2. Class & section · optional"}<select value={effectiveReviewClassId} onChange={(event) => setSelectedReviewClassId(event.target.value)} disabled={saving || !selectedReviewWeek || supervisorReviewClasses.length === 0}><option value="">{dashboardArabic ? "كل الفصول والشعب" : "All classes and sections"}</option>{supervisorReviewClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}</select></label>
               <div className="supervisor-review-found"><span>{dashboardArabic ? `تم العثور على ${selectedClassTeacherPlans.length} خطة معلم في العرض` : `${selectedClassTeacherPlans.length} teacher plan${selectedClassTeacherPlans.length === 1 ? "" : "s"} shown`}</span>{selectedWeekPendingCount > 0 && <button type="button" onClick={openSelectedWeekWaitingReview}>{dashboardArabic ? `انتقل إلى خطة تنتظر مراجعتك (${selectedWeekPendingCount})` : `Jump to a plan awaiting review (${selectedWeekPendingCount})`}</button>}</div>
             </div>
@@ -1931,7 +1932,7 @@ export default function TeachersDashboardPage() {
           {builderFeedback && <div className={`weekly-builder-feedback ${builderFeedback.tone}`} role="status">{builderFeedback.text}</div>}
           {builderStatus !== "new" && <div className={`weekly-builder-review-state ${builderStatus}`}><strong>{dashboardArabic ? builderStatus === "approved" ? isSupervisor ? "تم الاعتماد تلقائيًا" : "تم الاعتماد" : builderStatus === "submitted" ? "في انتظار اعتماد المشرف" : builderStatus === "changes_requested" ? "مطلوب إجراء تعديلات" : "تم حفظ المسودة" : builderStatus === "approved" ? isSupervisor ? "Approved automatically" : "Approved" : builderStatus === "submitted" ? "Waiting for supervisor approval" : builderStatus === "changes_requested" ? "Changes requested" : "Draft saved"}</strong><span>{dashboardArabic ? builderStatus === "approved" ? isSupervisor ? "تم اعتماد خطتك التعليمية تلقائيًا. تظهر خطة الفصل بعد انتهاء مراجعة الخطط المرسلة، وتظهر حصص غير المرسلين بعبارة Plan not published." : "تم اعتماد الجزء الخاص بك. تظهر خطة الفصل بعد انتهاء مراجعة الخطط المرسلة، وتظهر حصص غير المرسلين بعبارة Plan not published." : builderStatus === "submitted" ? "أُرسلت الخطة وأصبحت مقفلة حتى يراجعها المشرف أو تسحبها للتعديل." : builderStatus === "changes_requested" ? "راجع ملاحظة المشرف، وعدّل الخطة، ثم أرسلها مرة أخرى." : "عملك محفوظ كمسودة خاصة ولا يظهر لأولياء الأمور. أرسله للمشرف بعد اكتماله." : builderStatus === "approved" ? isSupervisor ? "Your teaching plan is approved automatically. The class plan is visible when no submitted plan is still waiting for review; missing teachers appear as Plan not published." : "Your part is approved. The class plan is visible when no submitted plan is still waiting for review; missing teachers appear as Plan not published." : builderStatus === "submitted" ? "This plan has been sent and is locked until the supervisor reviews it or you withdraw it." : builderStatus === "changes_requested" ? "Review the supervisor note, update the plan, then send it again." : "Your work is private and is not visible to families. Send it to the supervisor when it is complete."}</span></div>}
           <fieldset className="weekly-builder-fields" disabled={weeklyBuilderReadOnly}>
-          <div className="weekly-builder-toolbar"><label>{dashboardArabic ? "١. الأسبوع الدراسي" : "1. Academic week"}<select disabled={Boolean(publishedEditPlanId)} value={selectedWeekId} onChange={(event) => setSelectedWeekId(event.target.value)}>{(weeklyBuilderReadOnly || publishedEditPlanId ? academicWeeks : teacherEntryWeeks).map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select></label><label>{dashboardArabic ? "٢. الفصل" : "2. Class"}<select disabled={Boolean(publishedEditPlanId)} value={selectedClassId} onChange={(event) => { setSelectedClassId(event.target.value); setSlotDrafts({}); setQuizSubjectId(""); }}>{Array.from(new Map(assignments.map((assignment) => [assignment.classId, assignment])).values()).map((assignment) => <option key={assignment.classId} value={assignment.classId}>{dashboardArabic ? `الصف ${assignment.grade} · الشعبة ${assignment.section}` : `Grade ${assignment.grade} · ${assignment.section}`}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedClassSlots.length > 0 ? "ready" : "missing"}`}>{selectedClassSlots.length > 0 ? dashboardArabic ? `✓ ${selectedClassSlots.length} حصص في جدولك` : `✓ ${selectedClassSlots.length} timetable lessons` : dashboardArabic ? "يلزم ربط جدول الحصص" : "Timetable connection required"}</span></div>
+          <div className="weekly-builder-toolbar"><label>{dashboardArabic ? "١. الأسبوع الدراسي" : "1. Academic week"}<select disabled={Boolean(publishedEditPlanId)} value={selectedWeekId} onChange={(event) => selectWorkspaceWeek(event.target.value)}>{(weeklyBuilderReadOnly || publishedEditPlanId ? academicWeeks : teacherEntryWeeks).map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : `Week ${week.week_number}`} · {academicWeekRange(week, dashboardArabic)}</option>)}</select></label><label>{dashboardArabic ? "٢. الفصل" : "2. Class"}<select disabled={Boolean(publishedEditPlanId)} value={selectedClassId} onChange={(event) => { setSelectedClassId(event.target.value); setSlotDrafts({}); setQuizSubjectId(""); }}>{Array.from(new Map(assignments.map((assignment) => [assignment.classId, assignment])).values()).map((assignment) => <option key={assignment.classId} value={assignment.classId}>{dashboardArabic ? `الصف ${assignment.grade} · الشعبة ${assignment.section}` : `Grade ${assignment.grade} · ${assignment.section}`}</option>)}</select></label><span className={`teacher-timetable-ready ${selectedClassSlots.length > 0 ? "ready" : "missing"}`}>{selectedClassSlots.length > 0 ? dashboardArabic ? `✓ ${selectedClassSlots.length} حصص في جدولك` : `✓ ${selectedClassSlots.length} timetable lessons` : dashboardArabic ? "يلزم ربط جدول الحصص" : "Timetable connection required"}</span></div>
           </fieldset>
           {activeDayIndexes.length > 1 && <nav className="weekly-builder-mobile-days" aria-label={dashboardArabic ? "الانتقال إلى يوم داخل الخطة" : "Jump to a day in the plan"}>{activeDayIndexes.map((index) => { const day = dayNames[index]; return <button type="button" key={day} className={`day-tone-${index}`} onClick={() => document.getElementById(`weekly-editor-day-${index}`)?.scrollIntoView({ behavior: "instant", block: "start" })}><strong>{dashboardArabic ? arabicDayNames[day] : day}</strong><small>{selectedClassSlots.filter((slot) => slot.day_of_week === index).length}</small></button>; })}</nav>}
           <fieldset className="weekly-builder-fields" disabled={weeklyBuilderReadOnly}>
