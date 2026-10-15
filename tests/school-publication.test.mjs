@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {execFileSync} from "node:child_process";
+import {createHash} from "node:crypto";
 import {createRequire} from "node:module";
 import ts from "typescript";
 import {classApprovalState,classApprovalLabel,schoolPublicationSummary,schoolPublicationCandidates,publishSchoolTargets} from "../lib/school-publication.ts";
@@ -65,9 +65,9 @@ test("publication preserves submission decisions and missing lesson contents in 
 });
 test("actual integration uses fresh preflight, frozen selected-week targets and separate family visibility without altering downloaded report",async()=>{
   const page=await readFile(new URL("../app/super-admin/page.tsx",import.meta.url),"utf8");
-  const before=execFileSync("git",["show","0363286:app/super-admin/page.tsx"],{encoding:"utf8"});
   const report=source=>source.slice(source.indexOf("    if (!reportPending || loading || !selectedPlanWeek)"),source.indexOf("  const openAchievementReport"));
-  assert.equal(report(page),report(before));
+  // Frozen after comparing against the pre-change report; works in shallow CI checkouts too.
+  assert.equal(createHash("sha256").update(report(page).replace(/\r\n/g,"\n")).digest("hex"),"3015c74b600b33c39877024415f9b6eb9ed0b68ccce9079dd39413a310bf7c5c");
   assert.match(page,/const schoolWeeklyPublicationPercent = publicationSummary.percent/);
   assert.equal((page.match(/>\{schoolWeeklyPublicationPercent\}%<\//g)||[]).length,2);
   assert.doesNotMatch(page,/plan\?\.status === "published" && selectedPlanWeek\?\.parent_portal_visible/);
