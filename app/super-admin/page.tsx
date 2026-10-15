@@ -8,6 +8,8 @@ import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 import { formatAcademicWeekRange } from "../../lib/format-academic-week";
 import { supervisorReportProgress } from "../../lib/supervisor-report-progress";
+import { classApprovalState, classApprovalLabel, schoolPublicationSummary, schoolPublicationCandidates, publishSchoolTargets, type ClassApprovalState, type SchoolPublicationTarget } from "../../lib/school-publication";
+import SchoolPublicationDialog, { type PublicationNotice } from "./school-publication-dialog";
 import AnnouncementsPanel from "./announcements-panel";
 import TeacherPublicationDialog, { type ExceptionalTeacherTarget } from "./teacher-publication-dialog";
 import "../exceptional-publication.css";
@@ -106,6 +108,7 @@ type PlanTrackingStatus = "not_started" | "draft" | "submitted" | "changes_reque
 
 type PlanTrackingRow = {
   key: string;
+  isPublished: boolean;
   classId: string;
   grade: number;
   section: string;
@@ -135,6 +138,7 @@ type ClassCoverage = {
   missingTeachers: ManagedAccount[];
   publishedTeachers: ManagedAccount[];
   publicationState: "not_published" | "partially_published" | "fully_published";
+  approvalState: ClassApprovalState;
   completionPercent: number;
   completedLessons: number;
   requiredLessons: number;
@@ -276,6 +280,10 @@ export default function SuperAdminPage() {
   const [planPublicationFilter, setPlanPublicationFilter] = useState("all");
   const [planTrackingStatusFilter, setPlanTrackingStatusFilter] = useState("all");
   const [bulkPublishConfirmationOpen, setBulkPublishConfirmationOpen] = useState(false);
+  const [bulkPublishCheckPending, setBulkPublishCheckPending] = useState(false);
+  const [bulkPublishScope, setBulkPublishScope] = useState<{ weekId: string; label: string; targets: SchoolPublicationTarget[]; hidden: boolean } | null>(null);
+  const [publicationNotice, setPublicationNotice] = useState<PublicationNotice | null>(null);
+  const publicationInFlight = useRef(false);
   const [teacherPublicationOverrides, setTeacherPublicationOverrides] = useState<{ planId: string; teacherId: string; publishedAt: string; publishedBy: string }[]>([]);
   const [exceptionalTargets, setExceptionalTargets] = useState<ExceptionalTeacherTarget[] | null>(null);
   const [selectedHolidayWeekId, setSelectedHolidayWeekId] = useState("");
@@ -752,7 +760,7 @@ export default function SuperAdminPage() {
         && hasCompletedTeachingWeek(plan?.id, teacherId, requirements.filter((requirement) => requirement.teacherId === teacherId), planEntrySummaries)));
       const completedLessons = requirements.reduce((total, requirement) => total + (submittedTeacherIds.has(requirement.teacherId)
         ? completedLessonCount(plan?.id, requirement.teacherId, [requirement], planEntrySummaries) : 0), 0);
-      const publishedTeacherIds = new Set(plan?.status === "published" && selectedPlanWeek?.parent_portal_visible
+      const publishedTeacherIds = new Set(plan?.status === "published"
         ? planSubmissions
           .filter((submission) => submission.weeklyPlanId === plan.id && (submission.status === "approved" || plan.manualPublicationOverride && submission.status === "submitted" || teacherPublicationOverrides.some((exception) => exception.planId === plan.id && exception.teacherId === submission.teacherId)) && meaningfulEntryKeys.has(`${submission.teacherId}:${submission.subjectId}`))
           .map((submission) => submission.teacherId)
@@ -776,13 +784,14 @@ export default function SuperAdminPage() {
         missingTeachers,
         publishedTeachers,
         publicationState,
+        approvalState: classApprovalState(plan?.id, requirements, planSubmissions),
         completionPercent: lessonCompletionPercent(completedLessons, requirements.length),
         completedLessons,
         requiredLessons: requirements.length,
         departments: Array.from(new Set(requirements.map((requirement) => requirement.department))).sort(),
       };
     }).sort((a, b) => a.grade - b.grade || a.section.localeCompare(b.section));
-  }, [accounts, classes, effectiveTimetableRequirements, planEntrySummaries, planSubmissions, schoolHolidays, selectedPlanWeek?.parent_portal_visible, selectedPlanWeekId, teacherPublicationOverrides, weeklyPlans]);
+  }, [accounts, classes, effectiveTimetableRequirements, planEntrySummaries, planSubmissions, schoolHolidays, selectedPlanWeekId, teacherPublicationOverrides, weeklyPlans]);
   const planTrackingRows = useMemo<PlanTrackingRow[]>(() => {
     const accountsByUser = new Map(accounts.filter((account) => account.userId).map((account) => [account.userId as string, account]));
     const accountsByStaff = new Map(accounts.map((account) => [account.staffId, account]));
@@ -823,13 +832,14 @@ export default function SuperAdminPage() {
       if (meaningfulSubmissions.some((submission) => submission.status === "changes_requested")) status = "changes_requested";
       else if (meaningfulSubmissions.some((submission) => submission.status === "submitted")) status = "submitted";
       else if (meaningfulSubmissions.some((submission) => submission.status === "draft")) status = "draft";
-      else if (meaningfulSubmissions.some((submission) => submission.status === "approved")) status = plan?.status === "published" && selectedPlanWeek?.parent_portal_visible ? "published" : "approved_waiting";
+      else if (meaningfulSubmissions.some((submission) => submission.status === "approved")) status = plan?.status === "published" ? "published" : "approved_waiting";
       const exception = teacherPublicationOverrides.find((item) => item.planId === plan?.id && item.teacherId === first.teacherId);
-      if (exception) status = plan?.status === "published" && selectedPlanWeek?.parent_portal_visible ? "published" : "approved_waiting";
+      if (exception) status = plan?.status === "published" ? "published" : "approved_waiting";
       const submittedDates = submissions.map((submission) => submission.submittedAt).filter((value): value is string => Boolean(value)).sort();
       const reviewedDates = submissions.map((submission) => submission.reviewedAt).filter((value): value is string => Boolean(value)).sort();
       return [{
         key,
+        isPublished: plan?.status === "published" && meaningfulSubmissions.some(submission => submission.status === "approved" || (plan.manualPublicationOverride || Boolean(exception)) && submission.status === "submitted"),
         classId: first.classId,
         grade: schoolClass.grade,
         section: schoolClass.section,
@@ -844,7 +854,7 @@ export default function SuperAdminPage() {
         weekComplete, weeklyPlanId: plan?.id ?? "", hasContent: meaningfulSubjectIds.size > 0, canPublishExceptionally: meaningfulSubmissions.length > 0 && meaningfulSubmissions.every((submission) => ["submitted", "approved"].includes(submission.status)), overrideAt: exception?.publishedAt ?? null, overrideBy: exception?.publishedBy ?? null,
       }];
     }).sort((a, b) => a.grade - b.grade || a.section.localeCompare(b.section) || a.teacher.name.localeCompare(b.teacher.name));
-  }, [accounts, classes, effectiveTimetableRequirements, planEntrySummaries, planSubmissions, schoolHolidays, selectedPlanWeek?.parent_portal_visible, selectedPlanWeekId, supervisorLinks, teacherPublicationOverrides, weeklyPlans]);
+  }, [accounts, classes, effectiveTimetableRequirements, planEntrySummaries, planSubmissions, schoolHolidays, selectedPlanWeekId, supervisorLinks, teacherPublicationOverrides, weeklyPlans]);
   const filteredPlanTrackingRows = useMemo(() => planTrackingRows.filter((row) => (
     (planGradeFilter === "all" || String(row.grade) === planGradeFilter)
     && (planSectionFilter === "all" || row.section === planSectionFilter)
@@ -886,16 +896,14 @@ export default function SuperAdminPage() {
   const fullyPublishedClassCount = weeklyClassCoverage.filter((coverage) => coverage.publicationState === "fully_published").length;
   const partiallyPublishedClassCount = weeklyClassCoverage.filter((coverage) => coverage.publicationState === "partially_published").length;
   const unpublishedClassCount = weeklyClassCoverage.filter((coverage) => coverage.publicationState === "not_published").length;
-  const publishedClassPlanCount = weeklyClassCoverage.filter((coverage) => coverage.plan?.status === "published").length;
+  const publicationSummary = schoolPublicationSummary(weeklyPlans, classes.map(schoolClass => schoolClass.id), selectedPlanWeekId);
+  const publishedClassPlanCount = publicationSummary.published;
   const parentVisibleClassPlanCount = selectedPlanWeek?.parent_portal_visible ? publishedClassPlanCount : 0;
   const fullyCompletedClassCount = weeklyClassCoverage.filter((coverage) => coverage.completionPercent === 100).length;
-  const requiredTeacherClassCount = weeklyClassCoverage.reduce((total, coverage) => total + coverage.requiredTeachers.length, 0);
   const requiredLessonCount = weeklyClassCoverage.reduce((total, coverage) => total + coverage.requiredLessons, 0);
   const completedLessonTotal = weeklyClassCoverage.reduce((total, coverage) => total + coverage.completedLessons, 0);
   const schoolWeeklyCompletionPercent = lessonCompletionPercent(completedLessonTotal, requiredLessonCount);
-  const schoolWeeklyPublicationPercent = requiredTeacherClassCount > 0
-    ? Math.round((weeklyClassCoverage.reduce((total, coverage) => total + coverage.publishedTeachers.length, 0) / requiredTeacherClassCount) * 100)
-    : 0;
+  const schoolWeeklyPublicationPercent = publicationSummary.percent;
 
   const exceptionalTeacherCandidates = planTrackingRows.filter((row) => row.weeklyPlanId && row.hasContent && !row.overrideAt && row.canPublishExceptionally && row.status === "submitted");
   const teacherExceptionTarget = (row: PlanTrackingRow): ExceptionalTeacherTarget => ({
@@ -922,7 +930,37 @@ export default function SuperAdminPage() {
     } finally { setBusy(false); }
   };
 
-  const bulkPublishCandidates = weeklyClassCoverage.filter((coverage) => coverage.plan && coverage.plan.entries > 0 && coverage.plan.status !== "published");
+  const bulkPublishCandidates = useMemo(() => {
+    const holidayDays = new Set(schoolHolidays.filter(holiday => holiday.week_id === selectedPlanWeekId).map(holiday => holiday.day_of_week));
+    const classesByPlan = new Map(weeklyPlans.filter(plan => plan.weekId === selectedPlanWeekId).map(plan => [plan.id, plan.classId]));
+    const requiredSlots = new Set(effectiveTimetableRequirements.filter(requirement => !holidayDays.has(requirement.dayOfWeek)).map(requirement => `${requirement.classId}:${requirement.teacherId}:${requirement.subjectId}:${requirement.dayOfWeek}:${requirement.periodNumber}`));
+    const eligibleEntries = planEntrySummaries.filter(entry => requiredSlots.has(`${classesByPlan.get(entry.weeklyPlanId)}:${entry.teacherId}:${entry.subjectId}:${entry.dayOfWeek}:${entry.periodNumber}`));
+    return schoolPublicationCandidates(weeklyPlans, selectedPlanWeekId, eligibleEntries, planSubmissions, teacherPublicationOverrides);
+  }, [weeklyPlans, selectedPlanWeekId, planEntrySummaries, planSubmissions, teacherPublicationOverrides, schoolHolidays, effectiveTimetableRequirements]);
+  useEffect(() => {
+    if (!bulkPublishCheckPending || loading || !selectedPlanWeek) return;
+    const timer = window.setTimeout(() => {
+      setBulkPublishCheckPending(false);
+      if (!bulkPublishCandidates.length) {
+        setPublicationNotice({ tone: "info", title: dashboardArabic ? "حالة نشر الخطط" : "Plan publication status", message: publishedClassPlanCount > 0
+          ? (dashboardArabic ? "الخطط المتاحة للنشر منشورة بالفعل، ولا توجد خطط جديدة جاهزة للنشر. الخطط غير المرسلة أو المُعادة للتعديل لا يشملها النشر." : "Available plans are already published. No new plans are ready to publish. Drafts and returned plans are not included.")
+          : (dashboardArabic ? "لا توجد خطط مرسلة وجاهزة للنشر لهذا الأسبوع." : "No submitted plans are ready to publish for this week.") });
+        return;
+      }
+      setBulkPublishScope({ weekId: selectedPlanWeek.id, label: selectedPlanWeek.label, hidden: !selectedPlanWeek.parent_portal_visible, targets: bulkPublishCandidates.map(plan => ({ id: plan.id, label: plan.className })) });
+      setBulkPublishConfirmationOpen(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [bulkPublishCheckPending, loading, selectedPlanWeek, bulkPublishCandidates, dashboardArabic, publishedClassPlanCount]);
+  const requestSchoolPublication = async () => {
+    if (busy || loading || bulkPublishCheckPending || !selectedPlanWeekId) return;
+    setBulkPublishCheckPending(true);
+    // Re-read the dashboard first so a late submission is included even without a manual refresh.
+    if (!await loadDashboard()) {
+      setBulkPublishCheckPending(false);
+      setPublicationNotice({ tone: "error", title: dashboardArabic ? "تعذر فحص الخطط" : "Could not check plans", message: dashboardArabic ? "تعذر تحديث البيانات. لم يتم تنفيذ أي نشر؛ حاول مرة أخرى." : "The latest data could not be loaded. No publication was attempted; please retry." });
+    }
+  };
   const holidaysForSelectedWeek = useMemo(() => schoolHolidays.filter((holiday) => holiday.week_id === selectedHolidayWeekId), [schoolHolidays, selectedHolidayWeekId]);
 
   useEffect(() => {
@@ -1046,29 +1084,41 @@ export default function SuperAdminPage() {
   };
 
   const publishAllSchoolPlans = async () => {
-    if (!selectedPlanWeekId) return;
+    if (!bulkPublishScope || bulkPublishScope.weekId !== selectedPlanWeekId || publicationInFlight.current) return;
+    const scope = bulkPublishScope;
+    publicationInFlight.current = true;
     setBulkPublishConfirmationOpen(false);
     setBusy(true);
     setErrorMessage("");
     setSuccessMessage("");
     try {
       const supabase = getSupabaseBrowserClient();
-      const results = await Promise.all(bulkPublishCandidates.map((coverage) => supabase.rpc("set_weekly_plan_publication_override", {
-        target_plan_id: coverage.plan?.id as string,
-        should_publish: true,
-      })));
-      const failedResults = results.filter((result) => result.error);
-      const publishedCount = results.length - failedResults.length;
-      await loadDashboard();
-      if (failedResults.length > 0) {
-        setErrorMessage(`${publishedCount} plans were published, but ${failedResults.length} plans could not be published. ${failedResults[0].error?.message ?? "Please try those plans again."}`);
-      } else {
-        setSuccessMessage(`${publishedCount} non-empty class plans were approved and published by General Supervisor override. Empty and unstarted classes remain unpublished.`);
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "The school-wide publication action could not be completed.");
+      const result = await publishSchoolTargets(scope.targets, scope.weekId, async id => {
+        const response = await supabase.rpc("set_weekly_plan_publication_override", { target_plan_id: id, should_publish: true });
+        return !response.error && response.data === true;
+      }, async id => {
+        const response = await supabase.from("weekly_plans").select("week_id,status,manual_publication_override").eq("id", id).single();
+        if (response.error) throw response.error;
+        return response.data ? { weekId: String(response.data.week_id), status: String(response.data.status), manualPublicationOverride: Boolean(response.data.manual_publication_override) } : null;
+      });
+      const refreshed = await loadDashboard();
+      const hasProblems = result.failed.length > 0 || result.uncertain.length > 0;
+      const count = result.published.length;
+      const message = dashboardArabic
+        ? `تم التأكد من نشر ${count} خطة فصل في ${scope.label}. ${scope.hidden ? "الأسبوع مخفي عن ولي الأمر؛ سيظهر المحتوى عند إظهاره." : "الخطط متاحة لولي الأمر حسب إعداد إظهار الأسبوع."} قرارات المشرفين ونواقص المعلمين لم تتغير.`
+        : `${count} class plan(s) confirmed published in ${scope.label}. ${scope.hidden ? "The week is hidden from families; content appears when visibility is enabled." : "Plans are available to families according to week visibility."} Supervisor decisions and teacher gaps were preserved.`;
+      setPublicationNotice({ tone: hasProblems ? "error" : "success", title: dashboardArabic ? hasProblems ? "نتيجة النشر — تحتاج مراجعة" : "تم نشر الخطط بنجاح" : hasProblems ? "Publication needs attention" : "Plans published successfully", message,
+        details: [
+          ...result.failed.map(label => dashboardArabic ? `تعذر نشر: ${label}` : `Could not publish: ${label}`),
+          ...result.uncertain.map(label => dashboardArabic ? `تعذر التأكد من النشر: ${label}. حدّث البيانات قبل إعادة المحاولة.` : `Could not verify publication: ${label}. Refresh before retrying.`),
+          ...(!refreshed ? [dashboardArabic ? "تم فحص الحفظ، لكن تعذر تحديث عرض اللوحة. حدّث الصفحة." : "Saved state was checked, but the dashboard could not refresh. Reload the page."] : []),
+        ] });
+      if (!hasProblems) setSuccessMessage(message);
+    } catch {
+      setPublicationNotice({ tone: "error", title: dashboardArabic ? "تعذر تأكيد النشر" : "Publication could not be confirmed", message: dashboardArabic ? "راجع حالة الخطط بعد تحديث الصفحة قبل إعادة المحاولة. لم يتم تغيير قرارات المشرفين." : "Refresh the plans before retrying. Supervisor decisions were not changed." });
     } finally {
       setBusy(false);
+      publicationInFlight.current = false;
     }
   };
 
@@ -1342,7 +1392,7 @@ export default function SuperAdminPage() {
             <section className="super-overview-stats" aria-label="Weekly school progress">
               <article><span>{dashboardArabic ? "إنجاز المعلمين" : "Teacher completion"}</span><strong>{schoolWeeklyCompletionPercent}%</strong><p>{completedLessonTotal} / {requiredLessonCount} {dashboardArabic ? "حصة مكتملة في الفصول المكلفين بها" : "assigned lessons with Classwork"}</p><i style={{ width: `${schoolWeeklyCompletionPercent}%` }} />{overviewTeacherGaps.length > 0 && <button type="button" className="super-overview-gap-button" onClick={() => setOverviewGapView(overviewGapView === "teachers" ? null : "teachers")}>{dashboardArabic ? "عرض نواقص المعلمين" : "View teacher gaps"}</button>}</article>
               <article><span>{dashboardArabic ? "بانتظار المشرف" : "Waiting for supervisor"}</span><strong>{trackingStatusCounts.submitted}</strong><p>{dashboardArabic ? "خطة مرسلة تحتاج مراجعة" : "submitted plans need review"}</p>{overviewSupervisorGaps.length > 0 && <button type="button" className="super-overview-gap-button" onClick={() => setOverviewGapView(overviewGapView === "supervisors" ? null : "supervisors")}>{dashboardArabic ? "عرض الاعتمادات الناقصة" : "View pending approvals"}</button>}</article>
-              <article><span>{dashboardArabic ? "خطط الفصول المنشورة" : "Published class plans"}</span><strong>{publishedClassPlanCount}<small> / {weeklyClassCoverage.length}</small></strong><p>{dashboardArabic ? "منشورة في قاعدة البيانات، حتى لو الأسبوع مخفي" : "Published in the database, even if the week is hidden"}</p><div className="super-overview-visibility-line"><span>{dashboardArabic ? "ظاهرة لأولياء الأمور" : "Visible to families"}</span><b>{parentVisibleClassPlanCount}</b></div></article>
+              <article><span>{dashboardArabic ? "خطط الفصول المنشورة" : "Published class plans"}</span><strong>{publishedClassPlanCount}<small> / {weeklyClassCoverage.length}</small></strong><p>{dashboardArabic ? "منشورة في قاعدة البيانات، حتى لو الأسبوع مخفي" : "Published in the database, even if the week is hidden"}</p><p>{dashboardArabic ? "نسبة نشر الفصول" : "Class publication rate"}: <b>{schoolWeeklyPublicationPercent}%</b></p><div className="super-overview-visibility-line"><span>{dashboardArabic ? "ظاهرة لأولياء الأمور" : "Visible to families"}</span><b>{parentVisibleClassPlanCount}</b></div></article>
               <article className="super-overview-week-control"><span>{dashboardArabic ? "التحكم في الأسبوع" : "Week access"}</span><h3>{dashboardArabic ? `الأسبوع ${selectedPlanWeek?.week_number ?? "—"}` : `Week ${selectedPlanWeek?.week_number ?? "—"}`}</h3><div className="super-overview-week-control-row"><div><b>{dashboardArabic ? "إدخال المعلمين" : "Teacher entry"}</b><small>{dashboardArabic ? "كتابة الخطة وإرسالها" : "Write and submit plans"}</small></div><WeekAccessSwitch checked={selectedPlanWeek?.teacher_entry_enabled ?? false} disabled={busy || loading || !selectedPlanWeek} label={dashboardArabic ? "فتح أو غلق إدخال المعلمين لهذا الأسبوع" : "Toggle teacher entry for this week"} onChange={(next) => { if (selectedPlanWeek) void updateAcademicWeekVisibility(selectedPlanWeek.id, "teacher_entry_enabled", next); }} arabic={dashboardArabic} /></div><div className="super-overview-week-control-row"><div><b>{dashboardArabic ? "منصة ولي الأمر" : "Parent portal"}</b><small>{dashboardArabic ? "إظهار الأسبوع المنشور" : "Show published week"}</small></div><WeekAccessSwitch checked={selectedPlanWeek?.parent_portal_visible ?? false} disabled={busy || loading || !selectedPlanWeek} label={dashboardArabic ? "إظهار أو إخفاء الأسبوع لولي الأمر" : "Toggle parent visibility for this week"} onChange={(next) => { if (selectedPlanWeek) void updateAcademicWeekVisibility(selectedPlanWeek.id, "parent_portal_visible", next); }} arabic={dashboardArabic} /></div></article>
             </section>
             {overviewGapView && <WeeklyGapPanel key={selectedPlanWeekId + overviewGapView + dashboardArabic} kind={overviewGapView} groups={overviewGapView === "teachers" ? teacherGapReport : supervisorGapReport} arabic={dashboardArabic} weekNumber={selectedPlanWeek?.week_number ?? 0} weekRange={selectedPlanWeek ? formatAcademicWeekRange(selectedPlanWeek, dashboardArabic ? "ar-EG" : "en-GB") : ""} logoUrl={basePath + "/school-logo.png"} onClose={() => setOverviewGapView(null)} />}
@@ -1387,16 +1437,16 @@ export default function SuperAdminPage() {
 
           {activeSection === "plans" && <>
             <section className="super-plan-report-summary" aria-label="Weekly publication report">
-              <article><small>Fully published classes</small><strong>{fullyPublishedClassCount}<em> / {weeklyClassCoverage.length}</em></strong><p>Every assigned teacher is visible</p></article>
-              <article><small>Partially published</small><strong>{partiallyPublishedClassCount}</strong><p>Approved teachers are visible; missing teachers stay blank</p></article>
+              <article><small>Fully published classes</small><strong>{fullyPublishedClassCount}<em> / {weeklyClassCoverage.length}</em></strong><p>Every assigned teacher has published content</p></article>
+              <article><small>Partially published</small><strong>{partiallyPublishedClassCount}</strong><p>Published content is saved; missing teachers stay blank</p></article>
               <article><small>Not published</small><strong>{unpublishedClassCount}</strong><p>Includes plans still being written or reviewed</p></article>
               <article><small>100% teacher completion</small><strong>{fullyCompletedClassCount}</strong><p>Every assigned lesson has Classwork in a sent plan</p></article>
               <article className="overall completion"><small>School weekly-plan completion</small><strong>{schoolWeeklyCompletionPercent}%</strong><div><i style={{ width: `${schoolWeeklyCompletionPercent}%` }} /></div><p>Selected week: <b>{selectedPlanWeek?.label || `Week ${selectedPlanWeek?.week_number ?? "—"}`}</b></p></article>
-              <article className="overall publication"><small>School publication rate</small><strong>{schoolWeeklyPublicationPercent}%</strong><div><i style={{ width: `${schoolWeeklyPublicationPercent}%` }} /></div><p>Selected week: <b>{selectedPlanWeek?.label || `Week ${selectedPlanWeek?.week_number ?? "—"}`}</b></p></article>
+              <article className="overall publication"><small>School publication rate</small><strong>{schoolWeeklyPublicationPercent}%</strong><div><i style={{ width: `${schoolWeeklyPublicationPercent}%` }} /></div><p>{publishedClassPlanCount} / {publicationSummary.total} {dashboardArabic ? "فصل منشور في قاعدة البيانات" : "classes published in the database"}</p><p>Selected week: <b>{selectedPlanWeek?.label || `Week ${selectedPlanWeek?.week_number ?? "—"}`}</b></p></article>
             </section>
 
             <section className="teacher-card super-admin-accounts-card super-plan-report-card">
-              <div className="super-admin-toolbar super-plan-report-toolbar"><div><h2>Weekly school publication report</h2><p>Completion is based on sent lessons with Classwork; approval and publication are tracked separately.</p></div><div className="super-plan-report-actions"><Link className="teacher-secondary-button" href="/weekly-plan">Open family plan page</Link><button type="button" className="teacher-primary-button super-bulk-publish-button" disabled={busy || bulkPublishCandidates.length === 0} onClick={() => setBulkPublishConfirmationOpen(true)}>Approve & publish all school plans</button></div></div>
+              <div className="super-admin-toolbar super-plan-report-toolbar"><div><h2>Weekly school publication report</h2><p>Completion is based on sent lessons with Classwork; approval and publication are tracked separately.</p></div><div className="super-plan-report-actions"><Link className="teacher-secondary-button" href="/weekly-plan">Open family plan page</Link><button type="button" className="teacher-primary-button super-bulk-publish-button" disabled={busy || loading || bulkPublishCheckPending || !selectedPlanWeekId} onClick={() => void requestSchoolPublication()}>{dashboardArabic ? bulkPublishCheckPending ? "جارٍ فحص الخطط…" : "اعتماد ونشر جميع الخطط" : bulkPublishCheckPending ? "Checking plans…" : "Approve & publish all school plans"}</button></div></div>
               <div className="super-admin-filters super-plan-report-filters">
                 <label>School week<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label || `Week ${week.week_number}`}</option>)}</select></label>
                 <label>Grade<select value={planGradeFilter} onChange={(event) => setPlanGradeFilter(event.target.value)}><option value="all">All grades</option>{Array.from(new Set(classes.map((schoolClass) => schoolClass.grade))).map((grade) => <option key={grade} value={grade}>Grade {grade}</option>)}</select></label>
@@ -1408,40 +1458,35 @@ export default function SuperAdminPage() {
               <div className="super-admin-table-wrap"><table className="super-admin-table super-plan-report-table"><thead><tr><th>Class</th><th>Teacher completion</th><th>Teachers</th><th>Publication</th><th>Entries</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
                 {filteredClassCoverage.map((coverage) => {
                   const plan = coverage.plan;
-                  const published = coverage.publicationState !== "not_published";
-                  const statusLabel = coverage.publicationState === "fully_published"
-                    ? "Fully published"
-                    : coverage.publicationState === "partially_published"
-                      ? `Partially published · ${coverage.publishedTeachers.length} of ${coverage.requiredTeachers.length} teachers`
-                      : plan ? coverage.completedTeachers.length > 0 ? "Awaiting remaining approvals" : "Draft started" : "Not started";
-                  return <tr key={coverage.classId}><td><strong>Grade {coverage.grade} · {coverage.section}</strong></td><td><div className="super-class-completion"><strong>{coverage.completionPercent}%</strong><div><i style={{ width: `${coverage.completionPercent}%` }} /></div><small>{coverage.completedLessons} of {coverage.requiredLessons} lessons with Classwork</small></div></td><td><details className="super-plan-teacher-details"><summary>View teacher status</summary><div>{coverage.completedTeachers.map((teacher) => <span className="complete" key={teacher.userId}>✓ {teacher.name}</span>)}{coverage.missingTeachers.map((teacher) => <span className="missing" key={teacher.userId}>○ {teacher.name}</span>)}{coverage.requiredTeachers.length === 0 && <span>No assigned teachers</span>}</div></details></td><td><span className={`super-account-status ${published ? "published" : "draft"}`}><i />{statusLabel}</span>{plan?.manualPublicationOverride ? <small className="super-plan-override-note">General Supervisor override</small> : null}</td><td>{plan?.entries ?? 0}</td><td>{plan?.updated ?? "—"}</td><td>{plan ? <div className="super-row-actions"><Link href={`/weekly-plan/?grade=${coverage.grade}&section=${coverage.section}&week=${academicWeeks.find((week) => week.id === selectedPlanWeekId)?.week_number ?? 1}`}>View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit"}</button><button disabled={busy} className={plan.manualPublicationOverride ? "super-plan-delete" : "review"} onClick={() => void setPlanPublicationOverride(plan, !plan.manualPublicationOverride)}>{plan.manualPublicationOverride ? "Remove override" : "Force publish"}</button><button disabled={busy} className="super-plan-delete" onClick={() => void removeWeeklyPlan(plan)}>Delete</button></div> : <span className="super-waiting-registration">Waiting for teachers</span>}</td></tr>;
+                  const statusLabel = classApprovalLabel(coverage.approvalState, dashboardArabic);
+                  return <tr key={coverage.classId}><td><strong>Grade {coverage.grade} · {coverage.section}</strong></td><td><div className="super-class-completion"><strong>{coverage.completionPercent}%</strong><div><i style={{ width: `${coverage.completionPercent}%` }} /></div><small>{coverage.completedLessons} of {coverage.requiredLessons} lessons with Classwork</small></div></td><td><details className="super-plan-teacher-details"><summary>View teacher status</summary><div>{coverage.completedTeachers.map((teacher) => <span className="complete" key={teacher.userId}>✓ {teacher.name}</span>)}{coverage.missingTeachers.map((teacher) => <span className="missing" key={teacher.userId}>○ {teacher.name}</span>)}{coverage.requiredTeachers.length === 0 && <span>No assigned teachers</span>}</div></details></td><td><span className={`super-account-status ${coverage.approvalState === "approved" ? "published" : "draft"}`}><i />{statusLabel}</span><small className="super-tracking-review-note">{plan?.status === "published" ? (dashboardArabic ? "منشورة" : "Published") : (dashboardArabic ? "غير منشورة" : "Not published")}</small>{plan?.status === "published" && <small className="super-tracking-review-note">{selectedPlanWeek?.parent_portal_visible ? (dashboardArabic ? "ظاهرة لولي الأمر" : "Visible to families") : (dashboardArabic ? "مخفية عن ولي الأمر" : "Hidden from families")}</small>}{plan?.manualPublicationOverride ? <small className="super-plan-override-note">General Supervisor override</small> : null}</td><td>{plan?.entries ?? 0}</td><td>{plan?.updated ?? "—"}</td><td>{plan ? <div className="super-row-actions"><Link href={`/weekly-plan/?grade=${coverage.grade}&section=${coverage.section}&week=${academicWeeks.find((week) => week.id === selectedPlanWeekId)?.week_number ?? 1}`}>View</Link><button disabled={busy || editorLoading} className="manage" onClick={() => void openPlanEditor(plan)}>{editorLoading ? "Opening…" : "Edit"}</button><button disabled={busy} className={plan.manualPublicationOverride ? "super-plan-delete" : "review"} onClick={() => void setPlanPublicationOverride(plan, !plan.manualPublicationOverride)}>{plan.manualPublicationOverride ? "Remove override" : "Force publish"}</button><button disabled={busy} className="super-plan-delete" onClick={() => void removeWeeklyPlan(plan)}>Delete</button></div> : <span className="super-waiting-registration">Waiting for teachers</span>}</td></tr>;
                 })}
                 {!loading && filteredClassCoverage.length === 0 && <tr><td className="super-empty" colSpan={7}>No classes match the selected filters.</td></tr>}
               </tbody></table></div>
             </section>
 
             <section className="teacher-card super-admin-accounts-card super-plan-tracking-card">
-              <div className="super-admin-toolbar super-plan-tracking-heading"><div><p className="teacher-kicker">Plan approval route</p><h2>Track every teacher plan</h2><span>Each row reflects that teacher&apos;s own work only; a partially published class never marks every teacher as published.</span></div><label>Route status<select value={planTrackingStatusFilter} onChange={(event) => setPlanTrackingStatusFilter(event.target.value)}><option value="all">All route statuses</option><option value="not_started">Not started</option><option value="draft">Draft — not sent</option><option value="submitted">Waiting for supervisor</option><option value="changes_requested">Returned for changes</option><option value="approved_waiting">Approved — publication pending</option><option value="published">This teacher&apos;s plan is public</option></select></label></div>
+              <div className="super-admin-toolbar super-plan-tracking-heading"><div><p className="teacher-kicker">Plan approval route</p><h2>Track every teacher plan</h2><span>Each row reflects that teacher&apos;s own work only; a partially published class never marks every teacher as published.</span></div><label>Route status<select value={planTrackingStatusFilter} onChange={(event) => setPlanTrackingStatusFilter(event.target.value)}><option value="all">All route statuses</option><option value="not_started">Not started</option><option value="draft">Draft — not sent</option><option value="submitted">Waiting for supervisor</option><option value="changes_requested">Returned for changes</option><option value="approved_waiting">Approved — publication pending</option><option value="published">Approved and published</option></select></label></div>
               <div className="super-plan-tracking-counts" aria-label="Teacher plan route summary">
                 <button type="button" className={planTrackingStatusFilter === "not_started" ? "active not-started" : "not-started"} onClick={() => setPlanTrackingStatusFilter("not_started")}><strong>{trackingStatusCounts.not_started}</strong><span>Not started</span></button>
                 <button type="button" className={planTrackingStatusFilter === "draft" ? "active draft" : "draft"} onClick={() => setPlanTrackingStatusFilter("draft")}><strong>{trackingStatusCounts.draft}</strong><span>Drafts not sent</span></button>
                 <button type="button" className={planTrackingStatusFilter === "submitted" ? "active submitted" : "submitted"} onClick={() => setPlanTrackingStatusFilter("submitted")}><strong>{trackingStatusCounts.submitted}</strong><span>Waiting for supervisor</span></button>
                 <button type="button" className={planTrackingStatusFilter === "changes_requested" ? "active changes" : "changes"} onClick={() => setPlanTrackingStatusFilter("changes_requested")}><strong>{trackingStatusCounts.changes_requested}</strong><span>Returned for changes</span></button>
                 <button type="button" className={planTrackingStatusFilter === "approved_waiting" ? "active approved" : "approved"} onClick={() => setPlanTrackingStatusFilter("approved_waiting")}><strong>{trackingStatusCounts.approved_waiting}</strong><span>Approved, publication pending</span></button>
-                <button type="button" className={planTrackingStatusFilter === "published" ? "active published" : "published"} onClick={() => setPlanTrackingStatusFilter("published")}><strong>{trackingStatusCounts.published}</strong><span>Teacher plans public</span></button>
+                <button type="button" className={planTrackingStatusFilter === "published" ? "active published" : "published"} onClick={() => setPlanTrackingStatusFilter("published")}><strong>{trackingStatusCounts.published}</strong><span>Approved and published</span></button>
                 {planTrackingStatusFilter !== "all" && <button type="button" className="clear" onClick={() => setPlanTrackingStatusFilter("all")}><strong>×</strong><span>Show all</span></button>}
               </div>
               <div className="super-teacher-exception-toolbar"><button type="button" className="teacher-primary-button" disabled={busy || !exceptionalTeacherCandidates.length} onClick={() => setExceptionalTargets(exceptionalTeacherCandidates.map(teacherExceptionTarget))}>{dashboardArabic ? "نشر كل الخطط غير المعتمدة استثنائيًا" : "Publish all unapproved plans exceptionally"} ({exceptionalTeacherCandidates.length})</button><span>{dashboardArabic ? "الأسبوع المختار · جميع الفصول · الخطط المرسلة للمشرف فقط · متاح حتى مع غلق الأسبوع" : "Selected week · all classes · submitted plans only · available even when the week is closed"}</span></div>
               <div className="super-admin-table-wrap"><table className="super-admin-table super-plan-tracking-table"><thead><tr><th>Teacher</th><th>Class & subjects</th><th>Responsible supervisor</th><th>Current stage</th><th>Sent / waiting</th><th>Plan route</th></tr></thead><tbody>
                 {filteredPlanTrackingRows.map((row) => {
-                  const stageLabel = row.overrideAt ? selectedPlanWeek?.parent_portal_visible ? (dashboardArabic ? "منشورة استثنائيًا بواسطة المشرف العام" : "Exceptionally published by the General Supervisor") : (dashboardArabic ? "منشورة استثنائيًا — الأسبوع مخفي عن أولياء الأمور" : "Exceptionally published — week hidden from families") : row.status === "not_started" ? "Not started"
+                  const stageLabel = row.overrideAt ? (dashboardArabic ? "منشورة استثنائيًا بواسطة المشرف العام" : "Exceptionally published by the General Supervisor") : row.status === "not_started" ? "Not started"
                     : row.status === "draft" ? "Draft — not sent"
                       : row.status === "submitted" ? `Waiting for ${row.supervisorName}`
                         : row.status === "changes_requested" ? "Returned for changes"
-                          : row.status === "approved_waiting" ? "Approved — publication pending"
-                            : "This teacher's plan is visible to families";
+                          : row.status === "approved_waiting" ? (dashboardArabic ? "معتمدة — بانتظار النشر" : "Approved — publication pending")
+                            : (dashboardArabic ? "معتمدة" : "Approved");
                   const sent = row.submittedAt ? formatDateTime(row.submittedAt) : "Not sent";
-                  return <tr key={row.key}><td><div className="super-account-name"><span>{initials(row.teacher.name)}</span><div><strong>{row.teacher.name}</strong><small>{row.department}</small></div></div></td><td><strong>Grade {row.grade} · {row.section}</strong></td><td><strong>{row.supervisorName}</strong></td><td><span className={`super-tracking-status ${row.status}`}><i />{stageLabel}</span>{!row.weekComplete && ["approved_waiting", "published"].includes(row.status) && <small className="super-tracking-review-note">{dashboardArabic ? "بعض حصص المعلم في هذا الأسبوع ما زالت فارغة" : "Some of this teacher's weekly periods are still blank"}</small>}{row.reviewNote && <small className="super-tracking-review-note">Supervisor note: {row.reviewNote}</small>}</td><td><strong>{sent}</strong>{row.status === "submitted" && <small className="super-tracking-wait">{waitingDuration(row.submittedAt)}</small>}</td><td><details className="super-plan-route"><summary>View route</summary><ol><li className={row.status !== "not_started" ? "done" : "current"}><i />Plan started</li><li className={(row.overrideAt ? Boolean(row.submittedAt) : ["submitted", "changes_requested", "approved_waiting", "published"].includes(row.status)) ? "done" : row.status === "draft" ? "current" : ""}><i />Sent to supervisor</li><li className={!row.overrideAt && ["approved_waiting", "published"].includes(row.status) ? "done" : ["submitted", "changes_requested"].includes(row.status) ? "current" : ""}><i />{row.overrideAt ? (dashboardArabic ? "قرار المشرف محفوظ" : "Supervisor decision preserved") : (dashboardArabic ? "قرار المشرف" : "Supervisor decision")}{row.reviewedAt ? <small>{formatDateTime(row.reviewedAt)}</small> : null}</li><li className={row.status === "published" ? "done" : row.status === "approved_waiting" ? "current" : ""}><i />Published for families</li>{row.overrideAt && <li className="done"><i />{dashboardArabic ? "نشر استثنائي بواسطة المشرف العام" : "Exceptional publication by the General Supervisor"}<small>{formatDateTime(row.overrideAt)}</small><small>{accounts.find((account) => account.userId === row.overrideBy)?.name ?? (dashboardArabic ? "المشرف العام" : "General Supervisor")}</small></li>}</ol></details>{row.overrideAt ? <small className="super-teacher-exception-note">{dashboardArabic ? "منشورة استثنائيًا" : "Exceptionally published"} · {formatDateTime(row.overrideAt)}</small> : <button type="button" className="super-teacher-exception-action" disabled={busy || !row.weeklyPlanId || !row.hasContent || !row.canPublishExceptionally || row.status === "published"} onClick={() => setExceptionalTargets([teacherExceptionTarget(row)])}>{dashboardArabic ? "نشر استثنائي" : "Publish exceptionally"}</button>}</td></tr>;
+                  return <tr key={row.key}><td><div className="super-account-name"><span>{initials(row.teacher.name)}</span><div><strong>{row.teacher.name}</strong><small>{row.department}</small></div></div></td><td><strong>Grade {row.grade} · {row.section}</strong></td><td><strong>{row.supervisorName}</strong></td><td><span className={`super-tracking-status ${row.status}`}><i />{stageLabel}</span>{row.isPublished && <small className="super-tracking-review-note">{dashboardArabic ? "منشورة" : "Published"}</small>}{row.isPublished && <small className="super-tracking-review-note">{selectedPlanWeek?.parent_portal_visible ? (dashboardArabic ? "ظاهرة لولي الأمر" : "Visible to families") : (dashboardArabic ? "مخفية عن ولي الأمر" : "Hidden from families")}</small>}{!row.weekComplete && ["approved_waiting", "published"].includes(row.status) && <small className="super-tracking-review-note">{dashboardArabic ? "بعض حصص المعلم في هذا الأسبوع ما زالت فارغة" : "Some of this teacher's weekly periods are still blank"}</small>}{row.reviewNote && <small className="super-tracking-review-note">Supervisor note: {row.reviewNote}</small>}</td><td><strong>{sent}</strong>{row.status === "submitted" && <small className="super-tracking-wait">{waitingDuration(row.submittedAt)}</small>}</td><td><details className="super-plan-route"><summary>View route</summary><ol><li className={row.status !== "not_started" ? "done" : "current"}><i />Plan started</li><li className={(row.overrideAt ? Boolean(row.submittedAt) : ["submitted", "changes_requested", "approved_waiting", "published"].includes(row.status)) ? "done" : row.status === "draft" ? "current" : ""}><i />Sent to supervisor</li><li className={!row.overrideAt && ["approved_waiting", "published"].includes(row.status) ? "done" : ["submitted", "changes_requested"].includes(row.status) ? "current" : ""}><i />{row.overrideAt ? (dashboardArabic ? "قرار المشرف محفوظ" : "Supervisor decision preserved") : (dashboardArabic ? "قرار المشرف" : "Supervisor decision")}{row.reviewedAt ? <small>{formatDateTime(row.reviewedAt)}</small> : null}</li><li className={row.isPublished ? "done" : row.status === "approved_waiting" ? "current" : ""}><i />{dashboardArabic ? "تم النشر في قاعدة البيانات" : "Published in database"}</li>{row.overrideAt && <li className="done"><i />{dashboardArabic ? "نشر استثنائي بواسطة المشرف العام" : "Exceptional publication by the General Supervisor"}<small>{formatDateTime(row.overrideAt)}</small><small>{accounts.find((account) => account.userId === row.overrideBy)?.name ?? (dashboardArabic ? "المشرف العام" : "General Supervisor")}</small></li>}</ol></details>{row.overrideAt ? <small className="super-teacher-exception-note">{dashboardArabic ? "منشورة استثنائيًا" : "Exceptionally published"} · {formatDateTime(row.overrideAt)}</small> : <button type="button" className="super-teacher-exception-action" disabled={busy || !row.weeklyPlanId || !row.hasContent || !row.canPublishExceptionally || row.status === "published"} onClick={() => setExceptionalTargets([teacherExceptionTarget(row)])}>{dashboardArabic ? "نشر استثنائي" : "Publish exceptionally"}</button>}</td></tr>;
                 })}
                 {!loading && filteredPlanTrackingRows.length === 0 && <tr><td className="super-empty" colSpan={6}>No teacher plans match the selected route filters.</td></tr>}
               </tbody></table></div>
@@ -1527,7 +1572,8 @@ export default function SuperAdminPage() {
       )}
 
       {exceptionalTargets && <TeacherPublicationDialog arabic={dashboardArabic} targets={exceptionalTargets} busy={busy} onCancel={() => setExceptionalTargets(null)} onConfirm={() => void confirmTeacherExceptionalPublication()} />}
-      {bulkPublishConfirmationOpen && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setBulkPublishConfirmationOpen(false)}><section className="weekly-send-confirmation super-bulk-publish-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="bulk-school-publish-title"><span aria-hidden="true">SA</span><h3 id="bulk-school-publish-title">Approve and publish the whole school week?</h3><p>This General Supervisor override will publish every non-empty class plan in <strong>{academicWeeks.find((week) => week.id === selectedPlanWeekId)?.label ?? "the selected week"}</strong>. Empty or unstarted classes remain unpublished, and the teacher-completion report remains unchanged so missing teachers stay visible.</p><div className="super-bulk-publish-summary"><strong>{bulkPublishCandidates.length}<small>plans ready to force publish</small></strong><strong>{unpublishedClassCount}<small>classes currently not published</small></strong><strong>{weeklyClassCoverage.filter((coverage) => coverage.completionPercent < 100).length}<small>classes below 100% teacher completion</small></strong></div><div><button type="button" className="teacher-secondary-button" onClick={() => setBulkPublishConfirmationOpen(false)}>Cancel</button><button type="button" className="teacher-primary-button" disabled={busy || bulkPublishCandidates.length === 0} onClick={() => void publishAllSchoolPlans()}>Yes, approve and publish</button></div></section></div>}
+      {bulkPublishConfirmationOpen && bulkPublishScope && <div className="weekly-send-confirmation-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && setBulkPublishConfirmationOpen(false)}><section className="weekly-send-confirmation super-bulk-publish-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="bulk-school-publish-title"><span aria-hidden="true">SA</span><h3 id="bulk-school-publish-title">{dashboardArabic ? "تأكيد نشر جميع الخطط الجاهزة؟" : "Publish all ready plans?"}</h3><p><strong>{bulkPublishScope.label}</strong> — {dashboardArabic ? "سيتم نشر الخطط المرسلة الجاهزة فقط، بما فيها الخطط المتأخرة داخل فصل منشور. المسودات ونواقص المعلمين وقرارات المشرفين تبقى كما هي." : "Only ready, submitted plans will be published, including late submissions in published classes. Drafts, teacher gaps and supervisor decisions are preserved."}</p><div className="super-bulk-publish-summary"><strong>{bulkPublishScope.targets.length}<small>{dashboardArabic ? "فصول بها محتوى جديد للنشر" : "classes with new content to publish"}</small></strong></div><p>{bulkPublishScope.hidden ? (dashboardArabic ? "الأسبوع مخفي عن ولي الأمر؛ النشر لا يفتح إظهاره تلقائيًا." : "The week is hidden from families. Publishing will not enable its visibility.") : (dashboardArabic ? "الأسبوع ظاهر لأولياء الأمور." : "The week is visible to families.")}</p><div><button type="button" className="teacher-secondary-button" onClick={() => setBulkPublishConfirmationOpen(false)}>{dashboardArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={busy || bulkPublishScope.weekId !== selectedPlanWeekId} onClick={() => void publishAllSchoolPlans()}>{dashboardArabic ? "تأكيد النشر" : "Confirm publication"}</button></div></section></div>}
+      {publicationNotice && <SchoolPublicationDialog notice={publicationNotice} onClose={() => setPublicationNotice(null)} />}
 
       {editingPlan && (
         <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !busy && setEditingPlan(null)}>
