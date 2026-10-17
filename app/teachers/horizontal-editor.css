@@ -1,5 +1,4 @@
-/* Account-specific layout, enabled only by the verified profile in page.tsx.
-   No timetable, parent paper, save logic, or other staff layout is changed. */
+/* Optional editor-only presentation. No timetable, parent paper or save logic changes. */
 .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-days { display:grid; grid-template-columns:minmax(0,1fr); gap:20px; overflow:visible; }
 .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-day { min-width:0; width:100%; padding:16px; box-sizing:border-box; }
 .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-day > header { display:flex; justify-content:space-between; min-height:56px; padding:12px 18px; }
