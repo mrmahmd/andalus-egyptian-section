@@ -13,7 +13,7 @@ import { readStaffWeek, rememberStaffWeek, resolveStaffWeek } from "../../lib/st
 import { copyLessonDraft, editorLessonProgress, type CopyFields } from "../../lib/weekly-editor-tools";
 import { EditorProgressTools, LessonCopyDialog, lessonLabel } from "./weekly-editor-tools";
 import "./weekly-editor-tools.css";
-import { hasHorizontalTeacherEditor, readTeacherEditorLayout, rememberTeacherEditorLayout, type TeacherEditorLayout } from "../../lib/teacher-editor-layout";
+import { hasHorizontalTeacherEditor, createEditorLayoutPreference, type TeacherEditorLayout, type EditorLayoutSyncState } from "../../lib/teacher-editor-layout";
 import "./horizontal-editor.css";
 import "./lesson-period-label.css";
 import EditorLayoutPicker from "./editor-layout-picker";
@@ -276,8 +276,8 @@ export default function TeachersDashboardPage() {
   const [workingOnBehalf, setWorkingOnBehalf] = useState(false);
   const [isFaridTeacher, setIsFaridTeacher] = useState(false);
   const [horizontalEditor, setHorizontalEditor] = useState(false);
-  const editorLayoutPreference = useRef<{ staffId: string; layout: TeacherEditorLayout } | null>(null);
-  const [editorLayoutSessionOnly, setEditorLayoutSessionOnly] = useState(false);
+  const editorLayoutPreference = useRef<ReturnType<typeof createEditorLayoutPreference> | null>(null);
+  const [editorLayoutSyncState, setEditorLayoutSyncState] = useState<EditorLayoutSyncState>("local");
   const [teacherName, setTeacherName] = useState("Teacher");
   const [departmentName, setDepartmentName] = useState("Teacher Department");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -350,11 +350,19 @@ export default function TeachersDashboardPage() {
     rememberStaffWeek(() => window.localStorage, profileId, weekId);
   }, [profileId]);
 
+  const getEditorLayoutPreference = useCallback(() => {
+    if (!editorLayoutPreference.current) editorLayoutPreference.current = createEditorLayoutPreference({
+      auth: () => getSupabaseBrowserClient().auth,
+      storage: () => window.localStorage,
+      onChange: ({ layout, syncState }) => { setHorizontalEditor(layout === "rows"); setEditorLayoutSyncState(syncState); },
+    });
+    return editorLayoutPreference.current;
+  }, []);
+
+  useEffect(() => () => { editorLayoutPreference.current?.dispose(); }, []);
+
   const chooseEditorLayout = (layout: TeacherEditorLayout) => {
-    if (!profileId) return;
-    editorLayoutPreference.current = { staffId: profileId, layout };
-    setHorizontalEditor(layout === "rows");
-    setEditorLayoutSessionOnly(!rememberTeacherEditorLayout(() => window.localStorage, profileId, layout));
+    if (profileId) void getEditorLayoutPreference().choose(layout);
   };
 
   const openWeeklyEditor = useCallback(() => {
@@ -453,11 +461,7 @@ export default function TeachersDashboardPage() {
       }
       setIsFaridTeacher(profile.role === "teacher" && profile.username === "mrmahmd");
       const defaultLayout = hasHorizontalTeacherEditor(profile) ? "rows" : "columns";
-      const previousLayout = editorLayoutPreference.current;
-      const editorLayout = readTeacherEditorLayout(() => window.localStorage, targetUserId, previousLayout?.staffId === targetUserId ? previousLayout.layout : defaultLayout);
-      editorLayoutPreference.current = { staffId: targetUserId, layout: editorLayout };
-      setHorizontalEditor(editorLayout === "rows");
-      if (previousLayout?.staffId !== targetUserId) setEditorLayoutSessionOnly(false);
+      getEditorLayoutPreference().initialize({ staffId: targetUserId, user: userData.user, defaultLayout, delegated: Boolean(delegatedStaffId()) });
 
       const departmentTeachersPromise = supervisorAccount ? supabase.rpc("get_my_department_teachers") : Promise.resolve({ data: [], error: null });
       const [assignmentsResult, weeksResult, slotsResult, entriesResult, mySubmissionsResult, reviewsResult, departmentTeachersResult, classesResult, subjectsResult, accessResult, teacherAccessResult, holidaysResult, personalTimetableResult] = await Promise.all([
@@ -606,7 +610,7 @@ export default function TeachersDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [basePath]);
+  }, [basePath, getEditorLayoutPreference]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => { void loadTeacherDashboard(); }, 0);
@@ -2015,7 +2019,7 @@ export default function TeachersDashboardPage() {
       {weeklyBuilderOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !saving && closeWeeklyEditor()}><section className={`teacher-editor-modal weekly-builder-modal weekly-editor-refresh ${horizontalEditor ? "weekly-editor-horizontal" : ""} ${weeklyBuilderReadOnly ? "is-read-only" : ""}`} role="dialog" aria-modal="true" aria-labelledby="weekly-builder-title">
         <div className="teacher-modal-heading weekly-editor-heading"><div><h2 id="weekly-builder-title">{weeklyBuilderReadOnly ? dashboardArabic ? "معاينة الخطة الأسبوعية" : "Weekly plan preview" : publishedEditPlanId ? dashboardArabic ? approvedEditPublished ? "تعديل الخطة المنشورة" : "تعديل الخطة المعتمدة" : approvedEditPublished ? "Edit published plan" : "Edit approved plan" : dashboardArabic ? "إعداد الخطة الأسبوعية" : "Build the whole week"}</h2><div className="weekly-editor-heading-details"><span className="weekly-editor-week-badge">{dashboardArabic ? `الأسبوع ${selectedWeek.week_number}` : `Week ${selectedWeek.week_number}`}</span><span className="weekly-editor-date-badge"><bdi dir="ltr">{academicWeekRange(selectedWeek, dashboardArabic)}</bdi></span><span className="weekly-editor-class-name">{dashboardArabic ? `الصف ${selectedClass.grade} · الشعبة ${selectedClass.section}` : `Grade ${selectedClass.grade} · Class ${selectedClass.section}`}</span></div></div><button disabled={saving} aria-label={dashboardArabic ? "إغلاق محرر الخطة" : "Close weekly builder"} onClick={() => closeWeeklyEditor()}>×</button></div>
         <div className="teacher-editor-context">{workingOnBehalf && <strong>{dashboardArabic ? `نيابةً عن ${teacherName} — حفظ يدوي فقط` : `On behalf of ${teacherName} — manual save only`}</strong>}<span>{weeklyBuilderReadOnly ? dashboardArabic ? "وضع المعاينة فقط" : "Preview-only mode" : publishedEditPlanId ? dashboardArabic ? "تعديل خطة معتمدة — حفظ يدوي فقط" : "Approved edit — manual save only" : dashboardArabic ? "حفظ واحد لخطة الأسبوع كاملة" : "One save for the whole week"}</span><i />{weeklyBuilderReadOnly ? dashboardArabic ? "يمكنك مشاهدة الخطة، ولا يمكن تعديلها أو حفظها في هذا الوضع." : "You can view the plan, but it cannot be edited or saved in this mode." : publishedEditPlanId ? dashboardArabic ? "التغييرات لا تُحفظ تلقائيًا؛ اضغط حفظ التعديل بعد المراجعة." : "Changes are not saved automatically. Review and save explicitly." : dashboardArabic ? "تُرتب المدخلات تلقائيًا حسب حصص جدولك." : "Entries are placed according to your timetable slots."}{!workingOnBehalf && !weeklyBuilderReadOnly && !publishedEditPlanId && <b className={`teacher-autosave-state ${autoSaveState}`}>{autoSaveState === "saving" ? dashboardArabic ? "جارٍ حفظ المسودة…" : "Saving draft…" : autoSaveState === "saved" ? dashboardArabic ? "تم حفظ المسودة تلقائيًا" : "Draft saved automatically" : dashboardArabic ? "الحفظ التلقائي مُفعّل" : "Auto-save is on"}</b>}</div>
-        <EditorLayoutPicker value={horizontalEditor ? "rows" : "columns"} arabic={dashboardArabic} sessionOnly={editorLayoutSessionOnly} onChange={chooseEditorLayout} />
+        <EditorLayoutPicker value={horizontalEditor ? "rows" : "columns"} arabic={dashboardArabic} syncState={editorLayoutSyncState} onChange={chooseEditorLayout} />
         <form onSubmit={(event) => { event.preventDefault(); if (!weeklyBuilderReadOnly) { if (publishedEditPlanId) setPublishedEditConfirmationOpen(true); else confirmAndSendWholeWeek(); } }}>
           {builderFeedback && <div className={`weekly-builder-feedback ${builderFeedback.tone}`} role="status">{builderFeedback.text}</div>}
           {builderStatus !== "new" && <div className={`weekly-builder-review-state ${builderStatus}`}><strong>{dashboardArabic ? builderStatus === "approved" ? isSupervisor ? "تم الاعتماد تلقائيًا" : "تم الاعتماد" : builderStatus === "submitted" ? "في انتظار اعتماد المشرف" : builderStatus === "changes_requested" ? "مطلوب إجراء تعديلات" : "تم حفظ المسودة" : builderStatus === "approved" ? isSupervisor ? "Approved automatically" : "Approved" : builderStatus === "submitted" ? "Waiting for supervisor approval" : builderStatus === "changes_requested" ? "Changes requested" : "Draft saved"}</strong><span>{dashboardArabic ? builderStatus === "approved" ? isSupervisor ? "تم اعتماد خطتك التعليمية تلقائيًا. تظهر خطة الفصل بعد انتهاء مراجعة الخطط المرسلة، وتظهر حصص غير المرسلين بعبارة Plan not published." : "تم اعتماد الجزء الخاص بك. تظهر خطة الفصل بعد انتهاء مراجعة الخطط المرسلة، وتظهر حصص غير المرسلين بعبارة Plan not published." : builderStatus === "submitted" ? "أُرسلت الخطة وأصبحت مقفلة حتى يراجعها المشرف أو تسحبها للتعديل." : builderStatus === "changes_requested" ? "راجع ملاحظة المشرف، وعدّل الخطة، ثم أرسلها مرة أخرى." : "عملك محفوظ كمسودة خاصة ولا يظهر لأولياء الأمور. أرسله للمشرف بعد اكتماله." : builderStatus === "approved" ? isSupervisor ? "Your teaching plan is approved automatically. The class plan is visible when no submitted plan is still waiting for review; missing teachers appear as Plan not published." : "Your part is approved. The class plan is visible when no submitted plan is still waiting for review; missing teachers appear as Plan not published." : builderStatus === "submitted" ? "This plan has been sent and is locked until the supervisor reviews it or you withdraw it." : builderStatus === "changes_requested" ? "Review the supervisor note, update the plan, then send it again." : "Your work is private and is not visible to families. Send it to the supervisor when it is complete."}</span></div>}

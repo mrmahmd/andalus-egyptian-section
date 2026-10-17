@@ -13,8 +13,8 @@ test('layout is derived from the effective loaded profile and is applied only to
   const source=await readFile(new URL('../app/teachers/page.tsx',import.meta.url),'utf8');
   assert.match(source,/\.eq\("user_id", targetUserId\)/);
   assert.match(source,/hasHorizontalTeacherEditor\(profile\) \? "rows" : "columns"/);
-  assert.match(source,/readTeacherEditorLayout\(\(\) => window.localStorage, targetUserId/);
-  assert.match(source,/setHorizontalEditor\(editorLayout === "rows"\)/);
+  assert.match(source,/getEditorLayoutPreference\(\)\.initialize\(\{ staffId: targetUserId, user: userData.user, defaultLayout, delegated: Boolean\(delegatedStaffId\(\)\)/);
+  assert.match(source,/setHorizontalEditor\(layout === "rows"\)/);
   assert.match(source,/weekly-editor-refresh \$\{horizontalEditor \? "weekly-editor-horizontal" : ""\}/);
   assert.equal((source.match(/weekly-editor-horizontal/g)||[]).length,1);
   // Same lesson nodes, same save/copy handlers, same read-only and exam restrictions.
@@ -81,11 +81,11 @@ test('blocked, unavailable or corrupt preference storage never prevents editing'
 
 test('layout switching touches presentation/preferences only; it never saves, resets or rehydrates lesson drafts',async()=>{
   const source=await readFile(new URL('../app/teachers/page.tsx',import.meta.url),'utf8');
-  const handler=source.slice(source.indexOf('const chooseEditorLayout ='),source.indexOf('const openWeeklyEditor ='));
+  const handler=source.slice(source.indexOf('const getEditorLayoutPreference ='),source.indexOf('const openWeeklyEditor ='));
   assert.match(handler,/setHorizontalEditor\(layout === "rows"\)/);
-  assert.match(handler,/rememberTeacherEditorLayout\(\(\) => window.localStorage, profileId, layout\)/);
+  assert.match(handler,/getEditorLayoutPreference\(\)\.choose\(layout\)/);
   assert.doesNotMatch(handler,/setSlotDrafts|saveWholeWeek|\.rpc\(|\.from\(|openWeeklyEditor|setWeeklyBuilder/);
   assert.match(source,/<EditorLayoutPicker value=\{horizontalEditor \? "rows" : "columns"\}/);
-  assert.match(source,/previousLayout\?\.staffId === targetUserId \? previousLayout.layout : defaultLayout/);
+  assert.match(source,/auth: \(\) => getSupabaseBrowserClient\(\)\.auth/);
   assert.match(source,/\}, \[profileId, selectedClassId, selectedWeekId, selectedClassSlots, weeklyBuilderOpen, savedParentPreview, selectedWeekStartsOn\]\)/);
 });

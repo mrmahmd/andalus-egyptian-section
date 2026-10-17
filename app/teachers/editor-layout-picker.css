@@ -4,6 +4,7 @@
 .teacher-editor-layout-options label { position:relative; display:flex; align-items:center; gap:7px; min-width:0; min-height:38px; padding:6px 10px; border:1px solid #d2deeb; border-radius:9px; background:#fff; color:#37546e; cursor:pointer; transition:background .15s,border-color .15s,box-shadow .15s; }
 .teacher-editor-layout-options label.selected { border-color:#098ba0; background:#e3f6f7; color:#0b4c67; box-shadow:0 2px 8px #12677d12; }
 .teacher-editor-layout-options label:focus-within { outline:3px solid #c1328e; outline-offset:3px; }
+.teacher-editor-layout-options label:has(input:disabled) { cursor:wait; opacity:.75; }
 .teacher-editor-layout-options input { position:absolute; width:1px; height:1px; opacity:0; }
 .teacher-editor-layout-options strong { display:block; font-size:14px; font-weight:800; line-height:1.4; white-space:nowrap; }
 .teacher-editor-layout-options .editor-layout-description { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
@@ -12,6 +13,7 @@
 .editor-layout-icon i { border:1px solid currentColor; border-radius:3px; background:#a9dce6; }
 .editor-layout-check { flex:0 0 14px; margin-inline-start:2px; color:#077f88; font-size:16px; font-weight:900; }
 .teacher-editor-layout-picker > p { margin:0; color:#4d657d; font-size:11px; font-weight:650; line-height:1.6; }
+.editor-layout-retry { margin-inline-start:7px; border:0; padding:3px 5px; background:transparent; color:#075e81; font:inherit; font-weight:800; text-decoration:underline; cursor:pointer; }
 @media(max-width:420px) { .teacher-editor-layout-picker { gap:6px; padding-inline:8px; }.teacher-editor-layout-options { gap:6px; }.teacher-editor-layout-options label { gap:5px; padding-inline:7px; }.teacher-editor-layout-options strong { font-size:13px; }.editor-layout-icon { flex-basis:18px; width:18px; height:18px; } }
 @media(max-width:360px) { .teacher-editor-layout-options { flex-wrap:wrap; }.teacher-editor-layout-options label { gap:4px; padding-inline:6px; }.teacher-editor-layout-options .editor-layout-icon { display:none; } }
 @media(prefers-reduced-motion:reduce) { .teacher-editor-layout-options label { transition:none; } }
