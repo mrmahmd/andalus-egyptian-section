@@ -1,0 +1,11 @@
+.week8-copy-preview { margin-block: 16px; padding: 16px; border: 1px solid #a6d7da; border-radius: 16px; background: #f1fbfa; color: #143a60; }
+.week8-copy-preview h4 { margin: 0 0 10px; font-size: 1.15rem; }
+.week8-copy-preview > p { font-weight: 650; line-height: 1.7; }
+.week8-copy-preview article { margin-block: 12px; padding: 14px; background: white; border: 1px solid #c7dbe9; border-radius: 12px; min-width: 0; }
+.week8-copy-preview article.merged { border-inline-start: 5px solid #bd3186; background: #fff9fd; }
+.week8-copy-preview article > strong, .week8-copy-preview article > small { display: block; line-height: 1.7; overflow-wrap: anywhere; }
+.week8-copy-preview article > small { color: #49667c; font-weight: 650; }
+.week8-copy-preview details { margin-top: 10px; }
+.week8-copy-preview summary { cursor: pointer; font-weight: 750; color: #087387; }
+.week8-copy-preview details > div { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; padding-top: 6px; }
+.weekly-copy-dialog .week8-merge-action { background: #f3e7f3; color: #713064; border-color: #dcb5d3; }

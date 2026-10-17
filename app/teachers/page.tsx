@@ -15,6 +15,8 @@ import { EditorProgressTools, LessonCopyDialog, lessonLabel } from "./weekly-edi
 import "./weekly-editor-tools.css";
 import { hasHorizontalTeacherEditor } from "../../lib/teacher-editor-layout";
 import "./horizontal-editor.css";
+import Week8CopyPreview, { type Week8CopyPreviewData } from "./week8-copy-preview";
+import "./week8-copy-preview.css";
 import FaridQuizzesPanel from "./farid-quizzes-panel";
 import SupervisorReviewQueue from "./supervisor-review-queue";
 import { summarizeTeacherCompletion, reviewSelectedSubmissions } from "../../lib/supervisor-review";
@@ -324,6 +326,7 @@ export default function TeachersDashboardPage() {
   const [copyTargetClassId, setCopyTargetClassId] = useState("");
   const [copyFeedback, setCopyFeedback] = useState("");
   const [copyConflict, setCopyConflict] = useState<CopyConflict | null>(null);
+  const [copyMergePreview, setCopyMergePreview] = useState<Week8CopyPreviewData | null>(null);
   const [parentPreviewOpen, setParentPreviewOpen] = useState(false);
   const [savedParentPreview, setSavedParentPreview] = useState(false);
   const [parentPreviewLoading, setParentPreviewLoading] = useState(false);
@@ -1433,6 +1436,7 @@ export default function TeachersDashboardPage() {
   };
 
   const openCopyPlanDialog = (plan: WeeklyPlanRow) => {
+    setCopyMergePreview(null);
     setCopySourcePlan(plan);
     setCopyTargetClassId("");
     setCopyFeedback("");
@@ -1442,6 +1446,7 @@ export default function TeachersDashboardPage() {
 
   const closeCopyPlanDialog = () => {
     if (saving) return;
+    setCopyMergePreview(null);
     setCopyDialogOpen(false);
     setCopySourcePlan(null);
     setCopyTargetClassId("");
@@ -1481,23 +1486,32 @@ export default function TeachersDashboardPage() {
     } finally { setSaving(false); }
   };
 
-  const copyPlanToOtherClasses = async () => {
+  const copyPlanToOtherClasses = async (mergeAction?: "preview" | "confirm") => {
     if (!copySourcePlan || !copyTargetClassId) return;
     const target = copyTargetClasses.find((item) => item.classId === copyTargetClassId);
     if (!target) return;
-    if (!(await verifyTeacherWeekAccess(copySourcePlan.weekId, false))) {
-      setCopyFeedback(dashboardArabic ? "الأسبوع مغلق للتحرير؛ لا يمكن إنشاء مسودة منسوخة." : "This week is closed; a copied draft cannot be created.");
-      return;
-    }
+    if (mergeAction === "confirm" && !copyMergePreview) return;
     setSaving(true);
     setCopyFeedback("");
     setCopyConflict(null);
     try {
-      const { data, error } = await getStaffWorkspaceClient().rpc("copy_my_weekly_plan", {
-        source_plan_id: copySourcePlan.planId, target_class_id: target.classId,
-      });
+      if (!(await verifyTeacherWeekAccess(copySourcePlan.weekId, false))) {
+        setCopyMergePreview(null);
+        setCopyFeedback(dashboardArabic ? "الأسبوع مغلق للتحرير؛ لا يمكن إنشاء مسودة منسوخة." : "This week is closed; a copied draft cannot be created.");
+        return;
+      }
+      const client = getStaffWorkspaceClient();
+      const payload = { source_plan_id: copySourcePlan.planId, target_class_id: target.classId };
+      const { data, error } = mergeAction
+        ? await client.rpc("copy_week8_plan_with_merge", { ...payload, confirmation_token: mergeAction === "confirm" ? copyMergePreview!.token : null })
+        : await client.rpc("copy_my_weekly_plan", payload);
       if (error) {
         const messages: Record<string, [string, string]> = {
+          COPY_WEEK8_HOLIDAY_ONLY: ["خيار الدمج مخصص للأسبوع الثامن مع الإجازة فقط.", "Holiday merging is available only in Week 8."],
+          COPY_SOURCE_HOLIDAY_CONTENT: ["توجد كتابة أصلية في يوم الإجازة. راجعها أولًا؛ لم يتم حذفها أو نسخ أي شيء.", "The source has writing on a holiday. Review it first; nothing was deleted or copied."],
+          COPY_MERGE_DAY_UNAVAILABLE: ["لا توجد حصة لنفس المادة في نفس اليوم بالفصل المستهدف؛ لا يمكن دمجها بأمان. لم يتم النسخ.", "The target has no lesson of the same subject on a required day. A safe same-day merge is not possible; nothing was copied."],
+          COPY_MERGE_PROGRAMME_MISMATCH: ["لا يمكن دمج AL وOL في حصة واحدة. راجع توزيع البرنامجين؛ لم يتم النسخ.", "AL and OL cannot be merged into one lesson. Review the programme distribution; nothing was copied."],
+          COPY_PREVIEW_STALE: ["تغيرت الخطة أو الجدول منذ المعاينة. اعرض معاينة جديدة قبل التأكيد؛ لم يتم النسخ.", "The plan or timetable changed after preview. Generate a fresh preview; nothing was copied."],
           COPY_EMPTY_SOURCE: ["اكتب واحفظ حصة واحدة على الأقل قبل النسخ.", "Write and save at least one lesson before copying."],
           COPY_CLOSED_WEEK: ["الأسبوع مغلق للتحرير؛ لم يتم النسخ.", "This week is closed; nothing was copied."],
           COPY_ACCESS_DENIED: ["لا تملك صلاحية نسخ هذه الخطة أو الكتابة في الفصل المختار.", "You cannot copy this plan or write in the selected class."],
@@ -1507,11 +1521,22 @@ export default function TeachersDashboardPage() {
           COPY_TARGET_OCCUPIED: ["توجد حصة محفوظة في أحد المواضع المطلوبة؛ لم يتم استبدالها أو نسخ أي شيء.", "A required slot contains saved work. Nothing was replaced or copied."],
         };
         const known = messages[error.message];
+        setCopyMergePreview(null);
         const detail = error.details ? ` (${error.details})` : "";
         throw new Error(known ? known[dashboardArabic ? 0 : 1] + detail : dashboardArabic ? "تعذر نسخ الخطة. لم تُحفظ نسخة جزئية؛ حاول مرة أخرى." : "The plan could not be copied. No partial copy was saved; please try again.");
       }
       if (data?.status === "conflict") {
+        setCopyMergePreview(null);
         setCopyConflict({ targetPlanId: String(data.target_plan_id), targetLabel: dashboardArabic ? `الصف ${target.grade} · ${target.section}` : `Grade ${target.grade} · ${target.section}` });
+        return;
+      }
+      if (mergeAction === "preview" && data?.status === "preview" && data.token && Array.isArray(data.mappings)) {
+        setCopyMergePreview(data as Week8CopyPreviewData);
+        return;
+      }
+      if (data?.status === "normal_copy_available") {
+        setCopyMergePreview(null);
+        setCopyFeedback(dashboardArabic ? "الحصص المتاحة تكفي دون دمج. استخدم زر النسخ العادي أدناه." : "There are enough slots without merging. Use the normal copy button below.");
         return;
       }
       if (data?.status !== "copied" || !data.target_plan_id || !(data.copied_lessons > 0)) throw new Error(dashboardArabic ? "لم تؤكد قاعدة البيانات اكتمال النسخ." : "The database did not confirm the copy.");
@@ -1523,6 +1548,7 @@ export default function TeachersDashboardPage() {
         : `All your written subjects were copied to Grade ${target.grade} · ${target.section} as a draft using its timetable. Review before submitting.${emptySlots ? ` ${emptySlots} extra slots remain empty.` : ""}`;
       await loadTeacherDashboard();
       setCopyDialogOpen(false);
+      setCopyMergePreview(null);
       setCopySourcePlan(null);
       setCopyTargetClassId("");
       setCopyConflict(null);
@@ -1997,13 +2023,18 @@ export default function TeachersDashboardPage() {
         <section className="weekly-copy-dialog" style={{ maxHeight: "calc(100dvh - 40px)", overflowY: "auto" }} role="dialog" aria-modal="true" aria-labelledby="weekly-copy-dialog-title" dir={dashboardArabic ? "rtl" : "ltr"}>
           <div className="weekly-copy-dialog-heading"><span aria-hidden="true">CP</span><div><small>{copySourcePlan.week} · {copySourcePlan.className}</small><h3 id="weekly-copy-dialog-title">{dashboardArabic ? "أين تريد نسخ الخطة بالكامل؟" : "Where do you want to copy your full plan?"}</h3></div></div>
           <p>{dashboardArabic ? "سيتم نسخ محتوى جميع موادك المكتوبة: عمل الحصة والواجب وملاحظات كلاسيرا، وتوزيع كل مادة على حصصها حسب جدول الفصل المستهدف، حتى لو اختلف اليوم أو رقم الحصة." : "All your written subjects' Classwork, Homework and Classera notes will be copied. Each subject follows the target class timetable, even when the day or period differs."}</p>
-          <div className="weekly-copy-dialog-fields" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}><label>{dashboardArabic ? "الفصل المستهدف" : "Target class"}<select value={copyTargetClassId} onChange={(event) => { setCopyTargetClassId(event.target.value); setCopyFeedback(""); setCopyConflict(null); }} disabled={saving}><option value="">{dashboardArabic ? "اختر الفصل" : "Select class"}</option>{copyTargetClasses.filter((target) => target.lessonCount > 0).map((target) => <option key={target.classId} value={target.classId}>{dashboardArabic ? `الصف ${target.grade} · ${target.section} — ${target.lessonCount} حصص` : `Grade ${target.grade} · ${target.section} — ${target.lessonCount} lessons`}</option>)}</select></label></div>
+          <div className="weekly-copy-dialog-fields" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}><label>{dashboardArabic ? "الفصل المستهدف" : "Target class"}<select value={copyTargetClassId} onChange={(event) => { setCopyTargetClassId(event.target.value); setCopyMergePreview(null); setCopyFeedback(""); setCopyConflict(null); }} disabled={saving}><option value="">{dashboardArabic ? "اختر الفصل" : "Select class"}</option>{copyTargetClasses.filter((target) => target.lessonCount > 0).map((target) => <option key={target.classId} value={target.classId}>{dashboardArabic ? `الصف ${target.grade} · ${target.section} — ${target.lessonCount} حصص` : `Grade ${target.grade} · ${target.section} — ${target.lessonCount} lessons`}</option>)}</select></label></div>
           {copySourceAssignments.length === 0 && <p className="weekly-copy-dialog-feedback info">{dashboardArabic ? "اكتب واحفظ حصة واحدة على الأقل قبل نسخ الخطة." : "Write and save at least one lesson before copying."}</p>}
           {copySourceAssignments.length > 0 && !copyTargetClasses.some((target) => target.lessonCount > 0) && <p className="weekly-copy-dialog-feedback info">{dashboardArabic ? "لا يوجد فصل آخر في الصف نفسه له حصص مسندة لك." : "No other class in the same grade has lessons assigned to you."}</p>}
           {copyFeedback && <p className="weekly-copy-dialog-feedback error" role="alert">{copyFeedback}</p>}
           {copyConflict && <div className="weekly-copy-dialog-conflict" role="alert"><strong>{dashboardArabic ? `توجد لك خطة محفوظة في ${copyConflict.targetLabel}` : `You already have a saved plan in ${copyConflict.targetLabel}`}</strong><p>{dashboardArabic ? "لم يتم نسخ أو استبدال أي محتوى. يمكنك معاينة الخطة الحالية أو اختيار فصل آخر." : "Nothing was copied or replaced. Preview the existing plan or choose another class."}</p><button type="button" className="teacher-secondary-button continue" disabled={saving} onClick={() => void openExistingCopyTarget()}>{dashboardArabic ? "معاينة الخطة الحالية" : "Preview existing plan"}</button></div>}
           <div className="weekly-copy-dialog-note">{dashboardArabic ? "النسخة الجديدة مسودة تحتاج المراجعة والإرسال للاعتماد. لا تُستبدل أي خطة مكتوبة أو مرسلة أو معتمدة. الإنجليزي يحتفظ باختيار AL أو OL مع المحتوى، مع تفضيل نفس اليوم ثم الحصة المتاحة التالية. الإعلانات والاختبارات وكلمات الإملاء المنفصلة لا يشملها نسخ الحصص." : "The copy is a draft that needs review and submission. Existing written, submitted or approved work is never replaced. English keeps its AL/OL choice, preferring the same day then the next available lesson. Separate announcements, quizzes and dictation words are not copied."}</div>
-          <div className="weekly-copy-dialog-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={closeCopyPlanDialog}>{dashboardArabic ? "إلغاء" : "Cancel"}</button><button type="button" className="teacher-primary-button" disabled={saving || !copySourceAssignments.length || !copyTargetClassId || Boolean(copyConflict)} onClick={() => void copyPlanToOtherClasses()}>{saving ? dashboardArabic ? "جارٍ النسخ…" : "Copying…" : dashboardArabic ? "نسخ الخطة بالكامل وفتح المحرر" : "Copy full plan and open editor"}</button></div>
+          {academicWeeks.find((week) => week.id === copySourcePlan.weekId)?.week_number === 8 && schoolHolidays.some((holiday) => holiday.week_id === copySourcePlan.weekId) && <>
+            <p className="weekly-copy-dialog-feedback info">{dashboardArabic ? "الأسبوع الثامن يتضمن إجازة. لو الحصص المستهدفة أقل، يمكنك معاينة دمج حصص نفس المادة في نفس اليوم دون فقد المحتوى، ثم تأكيد النسخ كمسودة." : "Week 8 includes a holiday. If fewer target slots are available, preview merging lessons of the same subject and day without losing content, then confirm a draft copy."}</p>
+            <button type="button" className="teacher-secondary-button week8-merge-action" disabled={saving || !copySourceAssignments.length || !copyTargetClassId || Boolean(copyConflict)} onClick={() => void copyPlanToOtherClasses("preview")}>{saving ? dashboardArabic ? "جارٍ التحقق…" : "Checking…" : dashboardArabic ? "معاينة النسخ مع الدمج — الأسبوع الثامن" : "Preview copy with merging — Week 8"}</button>
+          </>}
+          {copyMergePreview && <Week8CopyPreview preview={copyMergePreview} arabic={dashboardArabic} />}
+          <div className="weekly-copy-dialog-actions"><button type="button" className="teacher-secondary-button" disabled={saving} onClick={closeCopyPlanDialog}>{dashboardArabic ? "إلغاء" : "Cancel"}</button>{copyMergePreview ? <button type="button" className="teacher-primary-button" disabled={saving} onClick={() => void copyPlanToOtherClasses("confirm")}>{saving ? dashboardArabic ? "جارٍ حفظ النسخة…" : "Saving copy…" : dashboardArabic ? "أوافق على التوزيع — انسخ كمسودة وافتح المحرر" : "Confirm distribution — copy as draft and open editor"}</button> : <button type="button" className="teacher-primary-button" disabled={saving || !copySourceAssignments.length || !copyTargetClassId || Boolean(copyConflict)} onClick={() => void copyPlanToOtherClasses()}>{saving ? dashboardArabic ? "جارٍ النسخ…" : "Copying…" : dashboardArabic ? "نسخ الخطة بالكامل وفتح المحرر" : "Copy full plan and open editor"}</button>}{copyMergePreview && <button type="button" className="teacher-secondary-button" disabled={saving} onClick={() => setCopyMergePreview(null)}>{dashboardArabic ? "العودة للنسخ العادي" : "Return to normal copy"}</button>}</div>
         </section>
       </div>}
       {parentPreviewOpen && selectedClass && selectedWeek && <div className="teacher-modal-backdrop parent-preview-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeParentPreview()}><section className="teacher-parent-preview" dir="ltr" role="dialog" aria-modal="true" aria-labelledby="parent-preview-title"><div className="teacher-modal-heading"><div><p>{savedParentPreview ? "Saved plan — read-only preview" : "Preview only — nothing has been saved or sent"}</p><h2 id="parent-preview-title">Parent weekly-plan preview</h2></div><button aria-label="Close parent plan preview" onClick={() => closeParentPreview()}>×</button></div><div className="parent-preview-intro">{savedParentPreview ? "Your saved lessons are shown in their timetable position. This private preview does not publish the plan; other teachers’ work is not shown." : "Your current writing is shown in its real timetable position. Other subjects are intentionally blank because this is only your private preview."}</div>{parentPreviewLoading || (savedParentPreview && !builderHydrated) ? <p className="parent-preview-loading">Loading the class timetable…</p> : <section className="parent-preview-paper"><div className="parent-preview-paper-header"><img src={`${basePath}/school-logo.png`} alt="AlAndalus Private Schools" /><div><strong>ALANDALUS PRIVATE SCHOOLS</strong><span>The Egyptian Section</span><h3>WEEKLY STUDY PLAN</h3></div></div><div className="parent-preview-meta"><span><small>Class</small><strong>Grade {selectedClass.grade} · Class {selectedClass.section}</strong></span><span><small>Week No.</small><strong>{selectedWeek.week_number}</strong></span><span><small>Date</small><strong>{academicWeekRange(selectedWeek)}</strong></span></div>{departmentName === "English Department" && parseDictationWords(dictationWords).length > 0 && <section className="parent-dictation-block"><h3>Vocabulary for Dictation on {dayNames[Number(dictationDay)]}</h3><table><tbody>{chunkWords(parseDictationWords(dictationWords)).map((row, rowIndex) => <tr key={rowIndex}>{row.map((word) => <td key={word}>{word}</td>)}</tr>)}</tbody></table></section>}<div className="table-wrap"><table className="weekly-table parent-preview-table"><colgroup><col className="day-column" /><col className="course-column" /><col className="classwork-column" /><col className="homework-column" /><col className="classera-column" /></colgroup><thead><tr><th>Day</th><th>Course</th><th>Classwork</th><th>Homework</th><th>Classera Notes</th></tr></thead>{dayNames.map((day, dayIndex) => { const daySlots = parentPreviewSlots.filter((slot) => slot.day_of_week === dayIndex); return daySlots.length > 0 ? <tbody className="weekly-day-group" key={day}>{daySlots.map((slot, index) => { const ownSlot = selectedClassSlots.find((teacherSlot) => teacherSlot.id === slot.id); const draft = ownSlot ? slotDraftFor(ownSlot) : null; return <tr key={slot.id} className={index === 0 ? "new-day" : ""}>{index === 0 && <td className="day-cell" rowSpan={daySlots.length}>{day}</td>}<td className="course-cell">{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week, selectedClass.grade) ? "Examination" : slot.subject}</td><td className={isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week, selectedClass.grade) ? "october-exam-cell" : draft?.classwork.trim() ? "preview-written" : "preview-empty"}>{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week, selectedClass.grade) ? octoberExamText : ownSlot ? previewClasswork(ownSlot) || "—" : "—"}</td><td className={draft?.homework.trim() ? "preview-written" : "preview-empty"}>{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week, selectedClass.grade) ? "—" : ownSlot ? draft?.homework.trim() || "—" : "—"}</td><td className={draft?.classeraNotes.trim() ? "preview-written" : "preview-empty"}>{isOctoberExam(selectedWeek.week_number, slot.period_number, slot.day_of_week, selectedClass.grade) ? "—" : ownSlot ? draft?.classeraNotes.trim() || "—" : "—"}</td></tr>; })}</tbody> : null; })}</table>{parentPreviewSlots.length === 0 && <p className="parent-preview-loading">No timetable lessons are available for this class yet.</p>}</div></section>}<div className="teacher-editor-footer parent-preview-footer"><span>This preview does not submit, approve, or publish the weekly plan.</span><div><button type="button" className="teacher-primary-button" onClick={() => closeParentPreview()}>{savedParentPreview ? "Close preview" : "Return to editor"}</button></div></div></section></div>}
