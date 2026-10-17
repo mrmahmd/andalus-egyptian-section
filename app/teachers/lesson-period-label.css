@@ -1,0 +1,12 @@
+/* Presentation only: a high-contrast period label in both editor layouts. */
+@media screen {
+  .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh .weekly-builder-day article > header > span:first-child {
+    display:inline-flex; align-items:center; justify-content:center;
+    flex:0 0 auto; width:auto; max-width:100%; min-height:38px;
+    margin:0; padding:4px 12px; box-sizing:border-box;
+    border:1px solid #bed2e5; border-radius:10px;
+    background:#eaf5fd; color:#113c65;
+    font-size:20px; font-weight:900; line-height:1.5;
+    font-variant-numeric:tabular-nums; letter-spacing:normal; white-space:nowrap;
+  }
+}

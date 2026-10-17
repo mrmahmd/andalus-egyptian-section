@@ -43,6 +43,18 @@ test('horizontal day title and lesson count stay centered together, without chan
   assert.match(css,/header > small \{ flex:0 0 auto; margin:0; width:auto;/);
 });
 
+test('period labels are larger and high contrast in both editor layouts, scoped away from the parent paper',async()=>{
+  const css=await readFile(new URL('../app/teachers/lesson-period-label.css',import.meta.url),'utf8');
+  assert.match(css,/@media screen/);
+  assert.match(css,/\.teacher-portal:not\(\.super-admin-portal\) \.weekly-editor-refresh \.weekly-builder-day article > header > span:first-child/);
+  assert.match(css,/font-size:20px/);assert.match(css,/font-weight:900/);
+  assert.match(css,/background:#eaf5fd; color:#113c65/);
+  assert.match(css,/white-space:nowrap/);assert.match(css,/min-height:38px/);
+  assert.doesNotMatch(css,/weekly-editor-horizontal|plan-paper|weekly-table/);
+  const page=await readFile(new URL('../app/teachers/page.tsx',import.meta.url),'utf8');
+  assert.match(page,/import "\.\/lesson-period-label.css"/);
+});
+
 test('each teacher independently chooses either layout and the choice survives reload',()=>{
   const data=new Map();const storage=()=>({getItem:key=>data.get(key)??null,setItem:(key,value)=>data.set(key,value)});
   assert.equal(readTeacherEditorLayout(storage,'teacher-a','columns'),'columns');

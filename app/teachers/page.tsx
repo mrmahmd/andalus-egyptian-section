@@ -15,6 +15,7 @@ import { EditorProgressTools, LessonCopyDialog, lessonLabel } from "./weekly-edi
 import "./weekly-editor-tools.css";
 import { hasHorizontalTeacherEditor, readTeacherEditorLayout, rememberTeacherEditorLayout, type TeacherEditorLayout } from "../../lib/teacher-editor-layout";
 import "./horizontal-editor.css";
+import "./lesson-period-label.css";
 import EditorLayoutPicker from "./editor-layout-picker";
 import "./editor-layout-picker.css";
 import Week8CopyPreview, { type Week8CopyPreviewData } from "./week8-copy-preview";
