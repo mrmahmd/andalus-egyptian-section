@@ -1,7 +1,9 @@
 /* Optional editor-only presentation. No timetable, parent paper or save logic changes. */
 .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-days { display:grid; grid-template-columns:minmax(0,1fr); gap:20px; overflow:visible; }
 .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-day { min-width:0; width:100%; padding:16px; box-sizing:border-box; }
-.teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-day > header { display:flex; justify-content:space-between; min-height:56px; padding:12px 18px; }
+.teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-day > header { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:12px; min-height:56px; padding:12px 18px; text-align:center; }
+.teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-day > header > strong,
+.teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-day > header > small { flex:0 0 auto; margin:0; width:auto; }
 .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-day article { display:grid; grid-template-columns:minmax(170px,.7fr) minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr); gap:12px 16px; padding:16px; align-items:stretch; }
 .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-day article > header { grid-column:1; grid-row:1; min-height:72px; padding:10px; }
 .teacher-portal:not(.super-admin-portal) .weekly-editor-refresh.weekly-editor-horizontal .weekly-builder-day article > .lesson-copy-button { grid-column:1; grid-row:2; width:100%; margin:0; font-size:13px; }

@@ -34,6 +34,15 @@ test('every horizontal layout CSS selector is editor-scoped; desktop lesson fiel
   assert.match(css,/@media\(max-width:900px\)/);
 });
 
+test('horizontal day title and lesson count stay centered together, without changing column view',async()=>{
+  const css=await readFile(new URL('../app/teachers/horizontal-editor.css',import.meta.url),'utf8');
+  const rule=css.match(/\.weekly-editor-refresh\.weekly-editor-horizontal \.weekly-builder-day > header \{([^}]+)\}/)?.[1];
+  assert.ok(rule);assert.match(rule,/flex-direction:row/);assert.match(rule,/align-items:center/);
+  assert.match(rule,/justify-content:center/);assert.match(rule,/gap:12px/);assert.match(rule,/text-align:center/);
+  assert.doesNotMatch(rule,/space-between/);
+  assert.match(css,/header > small \{ flex:0 0 auto; margin:0; width:auto;/);
+});
+
 test('each teacher independently chooses either layout and the choice survives reload',()=>{
   const data=new Map();const storage=()=>({getItem:key=>data.get(key)??null,setItem:(key,value)=>data.set(key,value)});
   assert.equal(readTeacherEditorLayout(storage,'teacher-a','columns'),'columns');
