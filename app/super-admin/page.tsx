@@ -807,7 +807,8 @@ export default function SuperAdminPage() {
     });
 
     const teacherClassRequirements = new Map<string, TimetableRequirement[]>();
-    effectiveTimetableRequirements.forEach((requirement) => {
+    const holidayDaysForTracking = new Set(schoolHolidays.filter((holiday) => holiday.week_id === selectedPlanWeekId).map((holiday) => holiday.day_of_week));
+    effectiveTimetableRequirements.filter((requirement) => !holidayDaysForTracking.has(requirement.dayOfWeek)).forEach((requirement) => {
       const key = `${requirement.classId}:${requirement.teacherId}`;
       const rows = teacherClassRequirements.get(key) ?? [];
       rows.push(requirement);

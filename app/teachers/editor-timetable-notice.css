@@ -1,0 +1,6 @@
+.weekly-editor-refresh .teacher-timetable-ready.not-required { background:#e7f5fb; color:#126681; border-color:#b7dce9; }
+.weekly-editor-refresh .editor-timetable-notice { margin:16px 0; padding:18px 20px; border:1px solid #b7dce9; border-inline-start:5px solid #168ba2; border-radius:14px; background:linear-gradient(120deg,#eef9fc,#f6f9ff); color:#154e6e; line-height:1.85; }
+.weekly-editor-refresh .editor-timetable-notice strong { display:block; font-size:18px; font-weight:850; }
+.weekly-editor-refresh .editor-timetable-notice p { margin:7px 0 0; font-size:14px; font-weight:650; }
+.weekly-editor-refresh .editor-timetable-notice.needs-link { border-color:#efd2ac; border-inline-start-color:#ba7721; background:#fff8ef; color:#805014; }
+@media(max-width:480px) { .weekly-editor-refresh .editor-timetable-notice { padding:14px; }.weekly-editor-refresh .editor-timetable-notice strong { font-size:16px; } }
