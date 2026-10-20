@@ -10,7 +10,6 @@
 .teacher-portal .teaching-week-content p { margin:7px 0 0; font-size:14px; font-weight:650; line-height:1.9; }
 .teacher-portal .teaching-week-counts { display:flex; flex-wrap:wrap; gap:8px; margin-top:13px; }
 .teacher-portal .teaching-week-counts span { padding:5px 11px; border-radius:9px; background:#ffffffb8; font-size:12px; font-weight:800; }
-.teacher-portal .teaching-week-content .teaching-week-publication-note { font-size:12px; opacity:.85; }
 .teacher-portal .teaching-week-actions { display:flex; flex-wrap:wrap; gap:7px; }
 .teacher-portal .teaching-week-actions button { padding:9px 13px; min-height:42px; border:1px solid #bfd3e5; border-radius:10px; background:#ffffffd9; color:#155374; font:inherit; font-size:12px; font-weight:800; cursor:pointer; }
 .teacher-portal .teaching-week-actions button:disabled { opacity:.6; cursor:wait; }

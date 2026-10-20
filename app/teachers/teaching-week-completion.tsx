@@ -15,7 +15,6 @@ export function TeachingWeekCompletionCard({ summary, arabic, weekNumber, busy, 
       <div role="status" aria-live="polite"><h3>{error ? arabic ? "تعذر التحقق من حالة الخطط" : "Plan status could not be verified" : copy?.title ?? (arabic ? "جارٍ التحقق من خططك…" : "Checking your plans…")}</h3>
         <p>{error ? arabic ? "حاول تحديث الحالة. لم يتم تغيير أي خطة أو كتابة محفوظة." : "Refresh the status and try again. No plans or saved writing were changed." : copy?.detail}</p></div>
       {summary && !error && summary.lessons > 0 && <div className="teaching-week-counts"><span>{arabic ? `الفصول المطلوبة: ${summary.classes}` : `Required classes: ${summary.classes}`}</span><span>{arabic ? `حصص مكتملة: ${summary.lessons - summary.missing} / ${summary.lessons}` : `Complete lessons: ${summary.lessons - summary.missing} / ${summary.lessons}`}</span></div>}
-      {success && <p className="teaching-week-publication-note">{arabic ? "الاعتماد لا يعني النشر لولي الأمر؛ النشر وإظهار الأسبوع لهما تحكم مستقل." : "Approval does not mean family publication; publication and week visibility are controlled separately."}</p>}
     </div>
     <div className="teaching-week-actions"><button type="button" disabled={busy} onClick={onRefresh}>{busy ? arabic ? "جارٍ التحديث…" : "Refreshing…" : arabic ? "تحديث الحالة" : "Refresh status"}</button>{summary && !error && summary.lessons > 0 && <button type="button" onClick={onOpenPlans}>{arabic ? "عرض خططي" : "View my plans"}</button>}</div>
   </section>;

@@ -61,13 +61,13 @@ const source=await readFile(new URL('../app/teachers/teaching-week-completion.ts
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
 function loadComponent(react=React,fetcher=fetchTeachingWeek){const module={exports:{}};new Function('require','module','exports',compiled)(id=>id==='react'?react:id==='../../lib/supabase/staff-workspace'?{getStaffWorkspaceClient:()=>({})}:id==='../../lib/teacher-week-completion'?{fetchTeachingWeek:fetcher,summarizeTeachingWeek,teachingWeekMessage}:require(id),module,module.exports);return module.exports;}
 const Card=loadComponent().TeachingWeekCompletionCard;
-for(const arabic of [true,false])test('actual card is translated, accessible, and distinguishes review from publication: '+arabic,()=>{
+for(const arabic of [true,false])test('actual card is translated, accessible, and omits the unnecessary publication note: '+arabic,()=>{
  for(const state of ['none','action','returned','submitted','partial','approved']){
   const summary={...summarizeTeachingWeek(requirements,snapshot()),state};const html=renderToStaticMarkup(React.createElement(Card,{summary,arabic,weekNumber:8,busy:false,error:false,onRefresh(){},onOpenPlans(){}}));
   assert.match(html,/role="status"/);assert.match(html,arabic?/dir="rtl"/:/dir="ltr"/);assert.match(html,/type="button"/);assert.doesNotMatch(html,/type="submit"/);
   assert.ok(html.includes(teachingWeekMessage(summary,arabic).title));
-  if(['submitted','partial','approved'].includes(state))assert.match(html,arabic?/الاعتماد لا يعني النشر/:/Approval does not mean family publication/);
-  else assert.doesNotMatch(html,arabic?/لا يوجد إجراء مطلوب منك/:/No action is needed/);
+  assert.doesNotMatch(html,/الاعتماد لا يعني النشر|Approval does not mean family publication|teaching-week-publication-note/);
+  if(!['submitted','partial','approved'].includes(state))assert.doesNotMatch(html,arabic?/لا يوجد إجراء مطلوب منك/:/No action is needed/);
  }
  const error=renderToStaticMarkup(React.createElement(Card,{summary:summarizeTeachingWeek(requirements,snapshot(['approved','approved','approved'])),arabic,weekNumber:8,busy:false,error:true,onRefresh(){},onOpenPlans(){}}));
  assert.match(error,arabic?/تعذر التحقق/:/could not be verified/);assert.doesNotMatch(error,arabic?/شكرًا لإنجازك/:/Thank you/);
