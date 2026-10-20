@@ -1,0 +1,18 @@
+.teacher-portal .teaching-week-completion { display:flex; align-items:flex-start; gap:18px; padding:23px; border:1px solid #c8deed; border-inline-start:5px solid #1385aa; border-radius:20px; color:#183f60; background:linear-gradient(115deg,#eef9ff,#f6f7ff); box-shadow:0 7px 23px #183e6210; }
+.teacher-portal .teaching-week-completion.approved { border-color:#afdbc8; border-inline-start-color:#10976f; background:linear-gradient(115deg,#e7f8f0,#f7fcfa); color:#125e48; }
+.teacher-portal .teaching-week-completion.partial { border-color:#d5c9e8; border-inline-start-color:#8657ac; background:linear-gradient(115deg,#f2edfc,#f8f7ff); }
+.teacher-portal .teaching-week-completion.action,.teacher-portal .teaching-week-completion.returned { border-color:#efcfaa; border-inline-start-color:#c78938; background:linear-gradient(115deg,#fff7ea,#fffcf5); color:#795321; }
+.teacher-portal .teaching-week-completion.unverified { background:#f5f7fa; border-color:#d4dce7; border-inline-start-color:#8598aa; }
+.teacher-portal .teaching-week-icon { flex:0 0 45px; display:grid; place-items:center; height:45px; border-radius:14px; background:#ffffffb8; color:inherit; font-size:27px; font-weight:850; }
+.teacher-portal .teaching-week-content { min-width:0; flex:1; }
+.teacher-portal .teaching-week-content small { display:block; margin-bottom:6px; font-size:13px; font-weight:800; }
+.teacher-portal .teaching-week-content h3 { margin:0; font-size:clamp(18px,2vw,24px); font-weight:850; line-height:1.7; }
+.teacher-portal .teaching-week-content p { margin:7px 0 0; font-size:14px; font-weight:650; line-height:1.9; }
+.teacher-portal .teaching-week-counts { display:flex; flex-wrap:wrap; gap:8px; margin-top:13px; }
+.teacher-portal .teaching-week-counts span { padding:5px 11px; border-radius:9px; background:#ffffffb8; font-size:12px; font-weight:800; }
+.teacher-portal .teaching-week-content .teaching-week-publication-note { font-size:12px; opacity:.85; }
+.teacher-portal .teaching-week-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.teacher-portal .teaching-week-actions button { padding:9px 13px; min-height:42px; border:1px solid #bfd3e5; border-radius:10px; background:#ffffffd9; color:#155374; font:inherit; font-size:12px; font-weight:800; cursor:pointer; }
+.teacher-portal .teaching-week-actions button:disabled { opacity:.6; cursor:wait; }
+.teacher-portal .teaching-week-actions button:focus-visible { outline:3px solid #b42b8c; outline-offset:3px; }
+@media(max-width:650px) { .teacher-portal .teaching-week-completion { flex-wrap:wrap; gap:12px; padding:16px; }.teacher-portal .teaching-week-actions { width:100%; }.teacher-portal .teaching-week-icon { flex-basis:35px; height:35px; font-size:22px; }.teacher-portal .teaching-week-content { flex-basis:calc(100% - 50px); } }
