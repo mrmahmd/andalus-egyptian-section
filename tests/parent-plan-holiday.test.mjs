@@ -44,6 +44,7 @@ test('holiday typography and alignment are scoped, print-safe and independent of
  const css=await readFile(new URL('../app/weekly-plan/plan-holiday.css',import.meta.url),'utf8');
  assert.match(css,/text-align:center!important/);assert.match(css,/vertical-align:middle/);
  assert.match(css,/font-family:"Outfit"[\s\S]*?!important/);assert.match(css,/font-weight:800/);
+ assert.match(css,/\.plan-page \.plan-paper \.parent-plan-reader \.parent-holiday-label/,'Outrank the global Arabic UI font rule');
  assert.match(css,/@media print[\s\S]*?parent-holiday-cell/);assert.match(css,/print-color-adjust:exact/);
  assert.doesNotMatch(css,/@page|\.paper-meta|\.plan-brand|table-layout|\.weekly-table td \{/);
 });
