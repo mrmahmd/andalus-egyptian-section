@@ -10,6 +10,7 @@ export function PlanHolidayLabel({ title }: { title: string }) {
 
 export function PlanHolidayRow({ title, day }: { title: string; day: string }) {
   return <tr className="new-day parent-holiday-row" aria-label={`${day} school holiday`}>
-    <td colSpan={5} className="parent-holiday-cell"><PlanHolidayLabel title={title} /></td>
+    <td className="day-cell">{day}</td>
+    <td colSpan={4} className="parent-holiday-cell"><PlanHolidayLabel title={title} /></td>
   </tr>;
 }

@@ -34,7 +34,8 @@ export default function ParentPlanReader({ days, grade, weekNumber, arabic, chil
     {children}
     <div className="parent-reader-cards" aria-label="Weekly lessons" dir="ltr">
       {days.map((item) => <section key={item.day} data-reader-day={item.day} className={`parent-reader-card-day reader-day-${parentReaderDays.indexOf(item.day as typeof parentReaderDays[number])}`}>
-        {item.holiday ? <div className="parent-holiday-card" aria-label={`${item.day} school holiday`}><PlanHolidayLabel title={item.holiday.title} /></div> : <><h3>{item.day}</h3>
+        <h3>{item.day}</h3>
+        {item.holiday ? <div className="parent-holiday-card" aria-label={`${item.day} school holiday`}><PlanHolidayLabel title={item.holiday.title} /></div> : <>
         {item.lessons.map((lesson) => {
           const exam = isOctoberExam(weekNumber, lesson.period_number, lesson.day_of_week, grade);
           return <article className={`parent-reader-lesson ${exam ? "is-exam" : lesson.classwork === "Plan not published" ? "is-unpublished" : ""}`} key={`${item.day}-${lesson.period_number}`}>
