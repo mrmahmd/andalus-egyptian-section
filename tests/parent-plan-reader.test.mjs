@@ -6,6 +6,9 @@ import ts from 'typescript';
 import * as helpers from '../lib/parent-plan-reader.ts';
 import * as exams from '../lib/october-exam.ts';
 const require=createRequire(import.meta.url);
+const holidaySource=await readFile(new URL('../app/weekly-plan/plan-holiday.tsx',import.meta.url),'utf8');
+const holidayModule={exports:{}};
+new Function('require','module','exports',ts.transpileModule(holidaySource.replace('import "./plan-holiday.css";',''),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText)(require,holidayModule,holidayModule.exports);
 const source=await readFile(new URL('../app/weekly-plan/parent-plan-reader.tsx',import.meta.url),'utf8');
 const css=await readFile(new URL('../app/weekly-plan/parent-plan-reader.css',import.meta.url),'utf8');
 const approvedTableMarkup="<table className=\"weekly-table\"><colgroup><col className=\"day-column\" /><col className=\"course-column\" /><col className=\"classwork-column\" /><col className=\"homework-column\" /><col className=\"classera-column\" /></colgroup><thead><tr><th>Day</th><th>Course</th><th>Classwork</th><th>Homework</th><th>Classera Notes</th></tr></thead>{days.map(({ day, lessons }) => <tbody className=\"weekly-day-group\" key={day}>{lessons.map((lesson, lessonIndex) => <tr key={`${day}-${lesson.period_number}`} className={lessonIndex === 0 ? \"new-day\" : \"\"}>{lessonIndex === 0 && <td className=\"day-cell\" rowSpan={lessons.length}>{day}</td>}<td className=\"course-cell\">{lesson.course}</td><td className={isOctoberExam(selectedPlan.weekNumber, lesson.period_number, lesson.day_of_week, selectedPlan.grade) ? \"october-exam-cell\" : lesson.classwork === \"Plan not published\" ? \"unpublished-plan\" : \"\"}>{lesson.classwork || \"—\"}</td><td>{lesson.homework || \"—\"}</td><td>{lesson.notes || \"—\"}</td></tr>)}</tbody>)}</table>";
@@ -15,7 +18,7 @@ function harness(props={}){
   const states=[];let cursor=0;const effects=[];
   const react={...require('react'),useState(initial){const i=cursor++;if(!(i in states))states[i]=initial;return[states[i],value=>{states[i]=value;}];},useEffect(fn){effects.push(fn);}};
   const module={exports:{}};
-  new Function('require','module','exports',compiled)(name=>name==='react'?react:name==='../../lib/parent-plan-reader'?helpers:name==='../../lib/october-exam'?exams:require(name),module,module.exports);
+  new Function('require','module','exports',compiled)(name=>name==='react'?react:name==='../../lib/parent-plan-reader'?helpers:name==='../../lib/october-exam'?exams:name==='./plan-holiday'?holidayModule.exports:require(name),module,module.exports);
   const child=require('react').createElement('table',{'data-original':'approved'},'All five days');
   const p={days,grade:4,weekNumber:6,arabic:false,children:child,...props};
   return{props:p,child,effects,render(){cursor=0;return module.exports.default(p);}};
@@ -98,7 +101,11 @@ test('print never applies day filters, size changes or mobile card layout; origi
   assert.match(page,/<tbody className="weekly-day-group" data-reader-day=\{day\}/);
   assert.match(page,/rowSpan=\{lessons.length\}/);
   assert.match(page,/<colgroup><col className="day-column"/);
-  assert.equal(page.match(/<table className="weekly-table">.*?<\/table>/s)[0].replace(' data-reader-day={day}',''),approvedTableMarkup);
+  const regularTable=page.match(/<table className="weekly-table">.*?<\/table>/s)[0]
+    .replace(' data-reader-day={day}','')
+    .replace('({ day, lessons, holiday })','({ day, lessons })')
+    .replace('holiday ? <PlanHolidayRow title={holiday.title} day={day} /> : lessons.map(', 'lessons.map(');
+  assert.equal(regularTable,approvedTableMarkup, 'Every non-holiday row keeps its approved markup');
   const print=css.slice(css.indexOf('@media print'));
   assert.match(print,/parent-reader-controls.*parent-reader-cards.*display:none!important/s);
   assert.doesNotMatch(print,/font-size|weekly-table|data-reader-day|table-wrap/);

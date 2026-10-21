@@ -4,9 +4,10 @@ import { useEffect, useState, type ReactNode } from "react";
 import { isOctoberExam } from "../../lib/october-exam";
 import { parentReaderDays, readParentReaderSize, rememberParentReaderSize, selectedReaderDay, type ParentReaderSize } from "../../lib/parent-plan-reader";
 import "./parent-plan-reader.css";
+import { PlanHolidayLabel } from "./plan-holiday";
 
 type ReaderLesson = { day_of_week: number; period_number: number; course: string; classwork: string; homework: string; notes: string };
-export type ReaderDay = { day: string; lessons: ReaderLesson[] };
+export type ReaderDay = { day: string; lessons: ReaderLesson[]; holiday?: { title: string } | null };
 const arabicDays = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
 
 /** The approved full-week table is passed unchanged as children and always remains in the DOM. */
@@ -33,7 +34,7 @@ export default function ParentPlanReader({ days, grade, weekNumber, arabic, chil
     {children}
     <div className="parent-reader-cards" aria-label="Weekly lessons" dir="ltr">
       {days.map((item) => <section key={item.day} data-reader-day={item.day} className={`parent-reader-card-day reader-day-${parentReaderDays.indexOf(item.day as typeof parentReaderDays[number])}`}>
-        <h3>{item.day}</h3>
+        {item.holiday ? <div className="parent-holiday-card" aria-label={`${item.day} school holiday`}><PlanHolidayLabel title={item.holiday.title} /></div> : <><h3>{item.day}</h3>
         {item.lessons.map((lesson) => {
           const exam = isOctoberExam(weekNumber, lesson.period_number, lesson.day_of_week, grade);
           return <article className={`parent-reader-lesson ${exam ? "is-exam" : lesson.classwork === "Plan not published" ? "is-unpublished" : ""}`} key={`${item.day}-${lesson.period_number}`}>
@@ -42,7 +43,7 @@ export default function ParentPlanReader({ days, grade, weekNumber, arabic, chil
             <div className="reader-field reader-homework"><h4>Homework</h4><p>{lesson.homework || "—"}</p></div>
             <div className="reader-field reader-notes"><h4>Classera Notes</h4><p>{lesson.notes || "—"}</p></div>
           </article>;
-        })}
+        })}</>}
       </section>)}
     </div>
   </div>;

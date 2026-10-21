@@ -1,0 +1,15 @@
+import "./plan-holiday.css";
+
+export function holidayDisplayTitle(title: string) {
+  return /^long\s+weekend$/i.test(title.trim()) ? "Long weekend" : title.trim();
+}
+
+export function PlanHolidayLabel({ title }: { title: string }) {
+  return <span className="parent-holiday-label" dir="ltr">{holidayDisplayTitle(title)}</span>;
+}
+
+export function PlanHolidayRow({ title, day }: { title: string; day: string }) {
+  return <tr className="new-day parent-holiday-row" aria-label={`${day} school holiday`}>
+    <td colSpan={5} className="parent-holiday-cell"><PlanHolidayLabel title={title} /></td>
+  </tr>;
+}
