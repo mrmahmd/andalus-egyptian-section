@@ -2046,13 +2046,13 @@ body.arabic-ui .super-own-password-fields label, body.arabic-ui .super-own-passw
   .parent-selector-summary > div { justify-content: center; text-align: center; }
   .plan-directory .week-library-tools { justify-content: flex-start; }
 }
-.plan-directory .week-library-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.plan-directory .week-library-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .plan-directory .week-library-item {
   --week-accent: #1265a5; --week-tint: #edf6ff; --week-border: #c4def4;
-  position: relative; min-width: 0; min-height: 238px; padding: 22px 18px 18px;
-  grid-template-columns: 56px minmax(0, 1fr); grid-template-rows: auto 1fr auto;
-  gap: 18px 13px; align-items: start; border: 1px solid var(--week-border);
-  border-top: 5px solid var(--week-accent); border-radius: 20px;
+  position: relative; min-width: 0; min-height: 0; padding: 14px;
+  grid-template-columns: 40px minmax(0, 1fr); grid-template-rows: auto auto auto;
+  gap: 8px 10px; align-items: start; border: 1px solid var(--week-border);
+  border-top: 4px solid var(--week-accent); border-radius: 16px;
   background: radial-gradient(circle at 0 0, #ffffffb3, transparent 65%), var(--week-tint);
   box-shadow: 0 7px 20px rgba(18, 54, 92, .07);
 }
@@ -2060,14 +2060,14 @@ body.arabic-ui .super-own-password-fields label, body.arabic-ui .super-own-passw
 .plan-directory .week-library-item:nth-child(3n) { --week-accent: #804294; --week-tint: #f7effb; --week-border: #e2cdec; }
 .plan-directory .week-library-item:not(.upcoming):hover,
 .plan-directory .week-library-item:focus-within { transform: translateY(-4px); border-color: var(--week-accent); box-shadow: 0 15px 30px rgba(18, 54, 92, .14); }
-.plan-directory .week-number { width: 56px; height: 56px; border-radius: 16px; background: var(--week-accent); font-size: 22px; box-shadow: 0 5px 12px rgba(18, 54, 92, .13); }
-.plan-directory .week-details { min-width: 0; gap: 8px; align-self: center; }
-.plan-directory .week-details strong { font-size: 22px; line-height: 1.4; }
-.plan-directory .week-details small { color: #4a607a; font-size: 15px; font-weight: 700; line-height: 1.8; }
-.plan-directory .week-status { grid-column: 1 / -1; align-self: start; padding: 8px 14px; border: 1px solid #b7dfcd; border-radius: 30px; background: #fff; color: #146443; font-size: 16px; line-height: 1.5; }
+.plan-directory .week-number { width: 40px; height: 40px; border-radius: 12px; align-self: center; background: var(--week-accent); font-size: 17px; box-shadow: 0 3px 8px rgba(18, 54, 92, .10); }
+.plan-directory .week-details { min-width: 0; gap: 3px; align-self: center; }
+.plan-directory .week-details strong { font-size: 18px; line-height: 1.4; }
+.plan-directory .week-details small { color: #4a607a; font-size: 13px; font-weight: 700; line-height: 1.6; overflow-wrap: anywhere; }
+.plan-directory .week-status { grid-column: 2; align-self: start; padding: 3px 9px; border: 1px solid #b7dfcd; border-radius: 20px; background: #fff; color: #146443; font-size: 12px; line-height: 1.5; }
 .plan-directory .week-status::before { content: "✓"; display: inline-block; margin-inline-end: 7px; font-weight: 900; }
-.plan-directory .week-actions { grid-column: 1 / -1; align-self: end; flex-wrap: wrap; gap: 9px; }
-.plan-directory .week-actions button { flex: 1 1 110px; min-height: 48px; padding: 10px 12px; font-size: 14px; line-height: 1.5; transition: background .2s ease, box-shadow .2s ease; }
+.plan-directory .week-actions { grid-column: 1 / -1; align-self: end; flex-wrap: wrap; gap: 8px; }
+.plan-directory .week-actions button { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 7px 9px; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; transition: background .2s ease, box-shadow .2s ease; }
 .plan-directory .week-view-button { background: var(--week-accent); }
 .plan-directory .week-download-button { border-color: var(--week-accent); background: linear-gradient(135deg, #153b68, var(--week-accent)); color: #fff; box-shadow: 0 4px 10px rgba(18, 54, 92, .12); }
 .plan-directory .week-actions button:hover { box-shadow: 0 4px 10px rgba(18, 54, 92, .14); }
@@ -2081,8 +2081,8 @@ body.arabic-ui .super-own-password-fields label, body.arabic-ui .super-own-passw
 .plan-directory .plan-directory-heading > p { font-size: 15px; line-height: 1.8; }
 @media (max-width: 1050px) { .plan-directory .week-library-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) {
-  .plan-directory .week-library-list { grid-template-columns: 1fr; gap: 16px; }
-  .plan-directory .week-library-item { min-height: 220px; padding: 20px 16px 16px; }
+  .plan-directory .week-library-list { grid-template-columns: 1fr; gap: 10px; }
+  .plan-directory .week-library-item { min-height: 0; padding: 12px; }
   .plan-directory .week-library-heading h2 { font-size: 23px; line-height: 1.5; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2182,17 +2182,18 @@ body:not(.arabic-ui) .plan-directory-hero,
 body:not(.arabic-ui) .plan-directory-hero * { font-family: "Manrope", "Segoe UI", sans-serif; }
 body:not(.arabic-ui) .plan-directory { font-weight: 700; line-height: 1.65; }
 body:not(.arabic-ui) .plan-directory .parent-selector-heading h2 { font-size: clamp(28px, 3vw, 32px); font-weight: 800; line-height: 1.4; letter-spacing: -.025em; }
-body:not(.arabic-ui) .plan-directory .week-library-heading h2,
-body:not(.arabic-ui) .plan-directory .week-details strong { font-size: 22px; font-weight: 800; line-height: 1.5; letter-spacing: -.015em; }
+body:not(.arabic-ui) .plan-directory .week-library-heading h2 { font-size: 22px; font-weight: 800; line-height: 1.5; letter-spacing: -.015em; }
+body:not(.arabic-ui) .plan-directory .week-details strong { font-size: 18px; font-weight: 800; line-height: 1.4; letter-spacing: -.015em; }
 body:not(.arabic-ui) .plan-directory .parent-selector-description,
-body:not(.arabic-ui) .plan-directory .week-details small,
 body:not(.arabic-ui) .plan-directory .week-library-heading p { font-size: 16px; font-weight: 700; line-height: 1.75; color: #344d69; }
+body:not(.arabic-ui) .plan-directory .week-details small { font-size: 13px; font-weight: 700; line-height: 1.6; color: #344d69; }
 body:not(.arabic-ui) .plan-directory .parent-selector-label,
 body:not(.arabic-ui) .plan-directory .parent-selector-fields select,
 body:not(.arabic-ui) .plan-directory button { font-size: 16px; font-weight: 700; line-height: 1.5; }
 body:not(.arabic-ui) .plan-directory .parent-selector-summary strong { font-size: 18px; font-weight: 800; }
 body:not(.arabic-ui) .plan-directory .parent-selector-summary > div > span { font-size: 16px; font-weight: 700; }
-body:not(.arabic-ui) .plan-directory .week-status { font-size: 16px; font-weight: 700; }
+body:not(.arabic-ui) .plan-directory .week-status { font-size: 12px; font-weight: 700; }
+body:not(.arabic-ui) .plan-directory .week-actions button { font-size: 13px; }
 body:not(.arabic-ui) .plan-directory .week-number,
 body:not(.arabic-ui) .plan-directory .parent-library-count { font-weight: 800; }
 body:not(.arabic-ui) .plan-directory .eyebrow { font-weight: 700; letter-spacing: .08em; }

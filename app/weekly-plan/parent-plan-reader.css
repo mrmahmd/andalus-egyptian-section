@@ -1,6 +1,25 @@
 /* Screen-only reading aids. The original table and print typography remain authoritative. */
 .parent-plan-reader .parent-reader-cards { display:none; }
 @media screen {
+  .parent-plan-reader { --reader-table-text-size:14.5px; --reader-card-text-size:16px; }
+  /* Latin glyphs use Jakarta; Arabic glyphs fall back to Alexandria in either UI language.
+     Keep these overrides screen-only, including their specificity against the Arabic shell. */
+  .plan-page .plan-paper .parent-plan-reader .weekly-table td,
+  .plan-page .plan-paper .parent-plan-reader .weekly-table th,
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-card-day > h3,
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson > header,
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson > header strong,
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson h4,
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson p { font-family:"Plus Jakarta Sans","Alexandria","Cairo",sans-serif!important; }
+  .plan-paper .parent-plan-reader .weekly-table td { font-size:var(--reader-table-text-size)!important; font-weight:700; line-height:1.85; }
+  .plan-paper .parent-plan-reader .weekly-table th { font-size:11px; font-weight:800; letter-spacing:.055em; line-height:1.6; }
+  .plan-paper .parent-plan-reader .weekly-table .day-cell { font-weight:800; letter-spacing:0; }
+  .plan-paper .parent-plan-reader .weekly-table .course-cell { color:#123d73; font-weight:800; }
+  .plan-paper .parent-plan-reader .weekly-table td.october-exam-cell { font-size:max(var(--reader-table-text-size),17px)!important; font-weight:800; }
+  /* Count from the end because only the first lesson row contains the rowspan Day cell. */
+  .plan-paper .parent-plan-reader .weekly-table tr:not(.parent-holiday-row) td:nth-last-child(3):not(.october-exam-cell):not(.unpublished-plan) { color:#183c64; }
+  .plan-paper .parent-plan-reader .weekly-table tr:not(.parent-holiday-row) td:nth-last-child(2) { color:#743775; }
+  .plan-paper .parent-plan-reader .weekly-table tr:not(.parent-holiday-row) td:last-child { color:#116579; }
   .parent-reader-controls { display:grid; gap:12px; padding:16px; margin-top:20px; border:1px solid #c6dfeb; border-radius:16px; background:linear-gradient(110deg,#edf8fa,#f6f0fa); color:#163c64; font-family:"Alexandria","Cairo",sans-serif; }
   .parent-plan-reader .parent-reader-controls[dir="rtl"], .parent-plan-reader .parent-reader-controls[dir="rtl"] * { direction:rtl; font-family:"Alexandria","Cairo",sans-serif!important; }
   .parent-plan-reader .parent-reader-controls[dir="rtl"] > p { text-align:right; }
@@ -11,8 +30,8 @@
   .parent-reader-size-controls > span { font-size:13px; font-weight:800; margin-inline-end:4px; }
   .parent-reader-controls button:focus-visible { outline:3px solid #805096; outline-offset:3px; }
   .parent-reader-controls > p { margin:0; font-size:12px; font-weight:600; line-height:1.7; color:#506784; }
-  .parent-plan-reader[data-reader-size="large"] .weekly-table td { font-size:14.5px!important; }
-  .parent-plan-reader[data-reader-size="larger"] .weekly-table td { font-size:16.5px!important; }
+  .parent-plan-reader[data-reader-size="large"] { --reader-table-text-size:16px; --reader-card-text-size:18px; }
+  .parent-plan-reader[data-reader-size="larger"] { --reader-table-text-size:18px; --reader-card-text-size:20px; }
   .parent-plan-reader[data-reader-day="Sunday"] [data-reader-day]:not([data-reader-day="Sunday"]),
   .parent-plan-reader[data-reader-day="Monday"] [data-reader-day]:not([data-reader-day="Monday"]),
   .parent-plan-reader[data-reader-day="Tuesday"] [data-reader-day]:not([data-reader-day="Tuesday"]),
@@ -31,20 +50,22 @@
   .parent-reader-card-day.reader-day-2 { --reader-accent:#7253a6; --reader-tint:#faf8fd; }
   .parent-reader-card-day.reader-day-3 { --reader-accent:#b13b7a; --reader-tint:#fff8fb; }
   .parent-reader-card-day.reader-day-4 { --reader-accent:#d16942; --reader-tint:#fff9f6; }
-  .parent-reader-card-day > h3 { margin:0; padding:13px 15px; border-radius:12px; color:#fff; background:var(--reader-accent); font-family:"Alexandria",sans-serif; font-size:17px; font-weight:800; }
+  .parent-reader-card-day > h3 { margin:0; padding:13px 15px; border-radius:12px; color:#fff; background:var(--reader-accent); font-family:"Alexandria",sans-serif; font-size:19px; font-weight:800; }
   .parent-reader-lesson { min-width:0; border:1px solid #cedee9; border-inline-start:4px solid var(--reader-accent); border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 4px 12px #173e6009; }
-  .parent-reader-lesson > header { padding:12px 14px; background:var(--reader-tint); border-bottom:1px solid #dbe6ed; color:#143e65; font-family:"Alexandria",sans-serif; font-weight:800; font-size:16px; overflow-wrap:anywhere; }
+  .parent-reader-lesson > header { padding:12px 14px; background:var(--reader-tint); border-bottom:1px solid #dbe6ed; color:#143e65; font-family:"Alexandria",sans-serif; font-weight:800; font-size:18px; overflow-wrap:anywhere; }
   .parent-reader-lesson .reader-field { padding:12px 14px; border-bottom:1px solid #e1eaf1; }
   .parent-reader-lesson .reader-field:last-child { border-bottom:0; }
-  .parent-reader-lesson h4 { margin:0 0 7px; color:#11768e; font-family:"Alexandria",sans-serif; font-size:12px; font-weight:800; }
+  .parent-reader-lesson h4 { margin:0 0 7px; color:#183c64; font-family:"Alexandria",sans-serif; font-size:13px; font-weight:800; }
   .parent-reader-lesson .reader-homework h4 { color:#7d347f; }
-  .parent-reader-lesson .reader-notes h4 { color:#b83172; }
-  .parent-reader-lesson p { margin:0; font-family:"Alexandria","Cairo",sans-serif; font-size:15px; font-weight:650; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; unicode-bidi:plaintext; }
-  .parent-plan-reader[data-reader-size="large"] .parent-reader-lesson p { font-size:17px; }
-  .parent-plan-reader[data-reader-size="larger"] .parent-reader-lesson p { font-size:19px; }
+  .parent-reader-lesson .reader-notes h4 { color:#116579; }
+  .parent-reader-lesson p { margin:0; font-family:"Alexandria","Cairo",sans-serif; font-size:var(--reader-card-text-size); font-weight:700; line-height:1.85; white-space:pre-wrap; overflow-wrap:anywhere; unicode-bidi:plaintext; }
+  .parent-reader-lesson .reader-classwork p { color:#183c64; }
+  .parent-reader-lesson .reader-homework p { color:#743775; }
+  .parent-reader-lesson .reader-notes p { color:#116579; }
   .parent-reader-lesson.is-exam .reader-classwork { background:#edf7fc; color:#9b287e; }
   .parent-reader-lesson.is-exam .reader-classwork p { font-weight:800; text-align:center; color:#9b287e; }
   .parent-reader-lesson.is-unpublished .reader-classwork { background:#fff3f7; color:#8a4562; }
+  .parent-reader-lesson.is-unpublished .reader-classwork p { color:#8a4562; }
 }
 @media print {
   .parent-plan-reader .parent-reader-controls, .parent-plan-reader .parent-reader-cards { display:none!important; }
