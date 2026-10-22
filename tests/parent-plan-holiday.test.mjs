@@ -23,7 +23,7 @@ test('holiday keeps a visible day cell and merges only the other four columns',(
 const page=await readFile(new URL('../app/weekly-plan/page.tsx',import.meta.url),'utf8');
 const markup=page.match(/<table className="weekly-table">.*?<\/table>/s)[0];
 // Production JSX references are injected as globals into the compiled render function.
-const renderTable=load('import {PlanHolidayRow} from "./plan-holiday"; import {isOctoberExam} from "../../lib/october-exam"; export default function Table({days,selectedPlan}) {return ('+markup+');}',{'./plan-holiday':holiday,'../../lib/october-exam':{isOctoberExam}}).default;
+const renderTable=load('import {PlanHolidayRow} from "./plan-holiday"; import {isOctoberExam} from "../../lib/october-exam"; import {parentPlanTextScript} from "../../lib/parent-plan-reader"; export default function Table({days,selectedPlan}) {return ('+markup+');}',{'./plan-holiday':holiday,'../../lib/october-exam':{isOctoberExam},'../../lib/parent-plan-reader':readerHelpers}).default;
 test('actual public table ignores holiday lesson placeholders but keeps the next day timetable and text unchanged',()=>{
  const days=[{day:'Sunday',holiday:{title:'Long Weekend'},lessons:[{day_of_week:0,period_number:0,course:'Long Weekend',classwork:'No classes today.',homework:'—',notes:'School-wide holiday'}]},{day:'Monday',holiday:null,lessons:[{day_of_week:1,period_number:1,course:'English',classwork:'Keep this lesson',homework:'Keep homework',notes:'Keep Classera'}]}];
  const before=structuredClone(days);

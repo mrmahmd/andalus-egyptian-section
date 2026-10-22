@@ -103,6 +103,7 @@ test('print never applies day filters, size changes or mobile card layout; origi
   assert.match(page,/<colgroup><col className="day-column"/);
   const regularTable=page.match(/<table className="weekly-table">.*?<\/table>/s)[0]
     .replace(' data-reader-day={day}','')
+    .replace(/ data-plan-script=\{parentPlanTextScript\(lesson\.(classwork|homework|notes)\)\}/g,'')
     .replace('({ day, lessons, holiday })','({ day, lessons })')
     .replace('holiday ? <PlanHolidayRow title={holiday.title} day={day} /> : lessons.map(', 'lessons.map(');
   assert.equal(regularTable,approvedTableMarkup, 'Every non-holiday row keeps its approved markup');

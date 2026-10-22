@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { parentPlanTextScript } from '../lib/parent-plan-reader.ts';
 const require = createRequire(import.meta.url);
 const nextRequire = createRequire(require.resolve('next/package.json'));
 const postcss = nextRequire('postcss');
@@ -63,4 +64,23 @@ test('lesson text stays bold on desktop and mobile', () => {
     root.walkRules(rule => { if (rule.selector === selector) rules.push(rule); });
     assert.equal(rules[0].nodes.find(n => n.prop === 'font-weight').value, '700');
   }
+});
+
+test('Latin size is independent of Arabic for all three reading settings', () => {
+  for (const [size, table, card] of [['normal',17.5,18], ['large',19,20], ['larger',21,22]]) {
+    const selector=size==='normal'?'.parent-plan-reader':`.parent-plan-reader[data-reader-size="${size}"]`;
+    const rules=[];root.walkRules(rule=>{if(rule.selector===selector)rules.push(rule);});
+    assert.equal(rules[0].nodes.find(n=>n.prop==='--reader-table-latin-size').value,`${table}px`);
+    assert.equal(rules[0].nodes.find(n=>n.prop==='--reader-card-latin-size').value,`${card}px`);
+  }
+  assert.match(css,/p\[data-plan-script="latin"\] \{ font-size:var\(--reader-card-latin-size\)/);
+  assert.match(css,/td\[data-plan-script="latin"\] \{ font-size:var\(--reader-table-latin-size\)!important/);
+  assert.match(css,/font-family:"Outfit","Alexandria","Cairo",sans-serif!important/);
+});
+
+test('language detection protects Arabic, mixed scripts, empty cells and numeric placeholders', () => {
+  for (const text of ['AL - Unit 3 - page 34\n+ activity book','Watch a video on Classera','Écrivez la réponse']) assert.equal(parentPlanTextScript(text),'latin');
+  for (const text of ['حل تدريبات حرف العين','درس الله تعالى الواحد ص 62','حفظ كتاب اللّٰه']) assert.equal(parentPlanTextScript(text),'arabic');
+  for (const text of ['راجع Classera ص 35','Unit 3 — درس جديد']) assert.equal(parentPlanTextScript(text),'mixed');
+  for (const text of ['',null,undefined,'—','123 / 34','✅']) assert.equal(parentPlanTextScript(text),'neutral');
 });

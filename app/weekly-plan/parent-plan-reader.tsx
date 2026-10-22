@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { isOctoberExam } from "../../lib/october-exam";
-import { parentReaderDays, readParentReaderSize, rememberParentReaderSize, selectedReaderDay, type ParentReaderSize } from "../../lib/parent-plan-reader";
+import { parentPlanTextScript, parentReaderDays, readParentReaderSize, rememberParentReaderSize, selectedReaderDay, type ParentReaderSize } from "../../lib/parent-plan-reader";
 import "./parent-plan-reader.css";
 import { PlanHolidayLabel } from "./plan-holiday";
 
@@ -40,9 +40,9 @@ export default function ParentPlanReader({ days, grade, weekNumber, arabic, chil
           const exam = isOctoberExam(weekNumber, lesson.period_number, lesson.day_of_week, grade);
           return <article className={`parent-reader-lesson ${exam ? "is-exam" : lesson.classwork === "Plan not published" ? "is-unpublished" : ""}`} key={`${item.day}-${lesson.period_number}`}>
             <header><strong>{lesson.course}</strong></header>
-            <div className="reader-field reader-classwork"><h4>Classwork</h4><p>{lesson.classwork || "—"}</p></div>
-            <div className="reader-field reader-homework"><h4>Homework</h4><p>{lesson.homework || "—"}</p></div>
-            <div className="reader-field reader-notes"><h4>Classera Notes</h4><p>{lesson.notes || "—"}</p></div>
+            <div className="reader-field reader-classwork"><h4>Classwork</h4><p data-plan-script={parentPlanTextScript(lesson.classwork)}>{lesson.classwork || "—"}</p></div>
+            <div className="reader-field reader-homework"><h4>Homework</h4><p data-plan-script={parentPlanTextScript(lesson.homework)}>{lesson.homework || "—"}</p></div>
+            <div className="reader-field reader-notes"><h4>Classera Notes</h4><p data-plan-script={parentPlanTextScript(lesson.notes)}>{lesson.notes || "—"}</p></div>
           </article>;
         })}</>}
       </section>)}

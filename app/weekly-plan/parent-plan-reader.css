@@ -1,7 +1,7 @@
 /* Screen-only reading aids. The original table and print typography remain authoritative. */
 .parent-plan-reader .parent-reader-cards { display:none; }
 @media screen {
-  .parent-plan-reader { --reader-table-text-size:14.5px; --reader-card-text-size:16px; }
+  .parent-plan-reader { --reader-table-text-size:14.5px; --reader-card-text-size:16px; --reader-table-latin-size:17.5px; --reader-card-latin-size:18px; }
   /* Latin glyphs use Jakarta; Arabic glyphs fall back to Alexandria in either UI language.
      Keep these overrides screen-only, including their specificity against the Arabic shell. */
   .plan-page .plan-paper .parent-plan-reader .weekly-table td,
@@ -11,8 +11,19 @@
   .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson > header strong,
   .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson h4,
   .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson p { font-family:"Plus Jakarta Sans","Alexandria","Cairo",sans-serif!important; }
+  /* Optical balance: Latin letters need a larger setting than Alexandria's Arabic glyphs.
+     The data attribute is derived from content, never from the surrounding UI language. */
+  .plan-page .plan-paper .parent-plan-reader .weekly-table [data-plan-script="latin"],
+  .plan-page .plan-paper .parent-plan-reader .weekly-table :is(.day-cell,.course-cell,th),
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-card-day > h3,
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson > header,
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson > header strong,
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson h4,
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson p[data-plan-script="latin"] { font-family:"Outfit","Alexandria","Cairo",sans-serif!important; }
+  .plan-page .plan-paper .parent-plan-reader .weekly-table td[data-plan-script="latin"] { font-size:var(--reader-table-latin-size)!important; line-height:1.65; letter-spacing:.005em; }
+  .plan-page .plan-paper .parent-plan-reader .weekly-table :is(.day-cell,.course-cell) { font-size:max(16px,var(--reader-table-text-size))!important; }
   .plan-paper .parent-plan-reader .weekly-table td { font-size:var(--reader-table-text-size)!important; font-weight:700; line-height:1.85; }
-  .plan-paper .parent-plan-reader .weekly-table th { font-size:11px; font-weight:800; letter-spacing:.055em; line-height:1.6; }
+  .plan-paper .parent-plan-reader .weekly-table th { font-size:12px; font-weight:800; letter-spacing:.055em; line-height:1.6; }
   .plan-paper .parent-plan-reader .weekly-table .day-cell { font-weight:800; letter-spacing:0; }
   .plan-paper .parent-plan-reader .weekly-table .course-cell { color:#123d73; font-weight:800; }
   .plan-paper .parent-plan-reader .weekly-table td.october-exam-cell { font-size:max(var(--reader-table-text-size),17px)!important; font-weight:800; }
@@ -30,8 +41,8 @@
   .parent-reader-size-controls > span { font-size:13px; font-weight:800; margin-inline-end:4px; }
   .parent-reader-controls button:focus-visible { outline:3px solid #805096; outline-offset:3px; }
   .parent-reader-controls > p { margin:0; font-size:12px; font-weight:600; line-height:1.7; color:#506784; }
-  .parent-plan-reader[data-reader-size="large"] { --reader-table-text-size:16px; --reader-card-text-size:18px; }
-  .parent-plan-reader[data-reader-size="larger"] { --reader-table-text-size:18px; --reader-card-text-size:20px; }
+  .parent-plan-reader[data-reader-size="large"] { --reader-table-text-size:16px; --reader-card-text-size:18px; --reader-table-latin-size:19px; --reader-card-latin-size:20px; }
+  .parent-plan-reader[data-reader-size="larger"] { --reader-table-text-size:18px; --reader-card-text-size:20px; --reader-table-latin-size:21px; --reader-card-latin-size:22px; }
   .parent-plan-reader[data-reader-day="Sunday"] [data-reader-day]:not([data-reader-day="Sunday"]),
   .parent-plan-reader[data-reader-day="Monday"] [data-reader-day]:not([data-reader-day="Monday"]),
   .parent-plan-reader[data-reader-day="Tuesday"] [data-reader-day]:not([data-reader-day="Tuesday"]),
@@ -59,6 +70,7 @@
   .parent-reader-lesson .reader-homework h4 { color:#7d347f; }
   .parent-reader-lesson .reader-notes h4 { color:#116579; }
   .parent-reader-lesson p { margin:0; font-family:"Alexandria","Cairo",sans-serif; font-size:var(--reader-card-text-size); font-weight:700; line-height:1.85; white-space:pre-wrap; overflow-wrap:anywhere; unicode-bidi:plaintext; }
+  .plan-page .plan-paper .parent-plan-reader .parent-reader-lesson p[data-plan-script="latin"] { font-size:var(--reader-card-latin-size); line-height:1.7; letter-spacing:.005em; }
   .parent-reader-lesson .reader-classwork p { color:#183c64; }
   .parent-reader-lesson .reader-homework p { color:#743775; }
   .parent-reader-lesson .reader-notes p { color:#116579; }
