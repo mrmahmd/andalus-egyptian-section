@@ -14,7 +14,7 @@ const holiday=load(source.replace('import "./plan-holiday.css";',''));
 test('holiday keeps a visible day cell and merges only the other four columns',()=>{
  for(const title of ['Long Weekend','Long weekend',' long  weekend ']){
   const html=renderToStaticMarkup(React.createElement(holiday.PlanHolidayRow,{title,day:'Sunday'}));
-  assert.equal((html.match(/<td/g)||[]).length,2);assert.match(html,/colSpan="4"/);assert.match(html,/<td class="day-cell">Sunday<\/td>/);assert.match(html,/>Long weekend<\/span>/);
+  assert.equal((html.match(/<td/g)||[]).length,2);assert.match(html,/colSpan="4"/);assert.match(html,/<td class="day-cell" aria-label="Sunday">Sun<\/td>/);assert.match(html,/>Long weekend<\/span>/);
   assert.doesNotMatch(html,/No classes today|School-wide holiday|Homework|Classera|rowSpan|colSpan="5"/);
   assert.match(html,/aria-label="Sunday school holiday"/);
  }
@@ -28,8 +28,8 @@ test('actual public table ignores holiday lesson placeholders but keeps the next
  const days=[{day:'Sunday',holiday:{title:'Long Weekend'},lessons:[{day_of_week:0,period_number:0,course:'Long Weekend',classwork:'No classes today.',homework:'—',notes:'School-wide holiday'}]},{day:'Monday',holiday:null,lessons:[{day_of_week:1,period_number:1,course:'English',classwork:'Keep this lesson',homework:'Keep homework',notes:'Keep Classera'}]}];
  const before=structuredClone(days);
  const html=renderToStaticMarkup(React.createElement(renderTable,{days,selectedPlan:{weekNumber:8,grade:5}}));
- assert.match(html,/colSpan="4"/);assert.match(html,/<td class="day-cell">Sunday<\/td>/);assert.equal((html.match(/Long weekend/g)||[]).length,1);
- assert.doesNotMatch(html,/No classes today|School-wide holiday/);assert.match(html,/>Monday<\/td>/);assert.match(html,/Keep this lesson/);assert.match(html,/Keep homework/);assert.match(html,/Keep Classera/);assert.deepEqual(days,before);
+ assert.match(html,/colSpan="4"/);assert.match(html,/<td class="day-cell" aria-label="Sunday">Sun<\/td>/);assert.equal((html.match(/Long weekend/g)||[]).length,1);
+ assert.doesNotMatch(html,/No classes today|School-wide holiday/);assert.match(html,/>Mon<\/td>/);assert.match(html,/Keep this lesson/);assert.match(html,/Keep homework/);assert.match(html,/Keep Classera/);assert.deepEqual(days,before);
 });
 test('mobile holiday is one banner rather than Course/Classwork/Homework/Notes fields; normal cards are untouched',async()=>{
  const reader=await readFile(new URL('../app/weekly-plan/parent-plan-reader.tsx',import.meta.url),'utf8');
