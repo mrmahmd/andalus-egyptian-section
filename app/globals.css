@@ -653,6 +653,8 @@ button, select, input { font: inherit; }
   .weekly-table tr { break-inside: avoid !important; page-break-inside: avoid !important; }
   .weekly-table th { padding: 7px 5px; font-size: 9.5px; }
   .weekly-table td { padding: 3px 5px; line-height: 1.3; }
+  /* iOS Safari may print in portrait; keep long weekdays inside the Day column. */
+  .weekly-table td.day-cell { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
   .weekly-table td:not(.day-cell):not(.course-cell) { font-size: 11px; font-weight: 700; line-height: 1.32; }
 }
 
