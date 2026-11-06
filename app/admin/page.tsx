@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 type PlanEntry = {
@@ -22,7 +22,8 @@ type PublishedPlan = {
   section: string;
   week: string;
   weekNumber: number;
-  entries: PlanEntry[];
+  entryCount: number;
+  entries: PlanEntry[] | null;
 };
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
@@ -45,6 +46,8 @@ export default function AdminDashboardPage() {
   const [sectionFilter, setSectionFilter] = useState("all");
   const [weekFilter, setWeekFilter] = useState("all");
   const [expandedPlanId, setExpandedPlanId] = useState("");
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const detailRequest = useRef(0);
   const [canManagePlanAccess, setCanManagePlanAccess] = useState(false);
   const [weeklyPlanCreationOpen, setWeeklyPlanCreationOpen] = useState(true);
   const [teacherPlanAccess, setTeacherPlanAccess] = useState<Record<string, boolean>>({});
@@ -53,6 +56,9 @@ export default function AdminDashboardPage() {
   const loadPublishedReport = useCallback(async () => {
     setLoading(true);
     setMessage("");
+    ++detailRequest.current;
+    setExpandedPlanId("");
+    setDetailsLoading(false);
     try {
       const supabase = getSupabaseBrowserClient();
       const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -80,7 +86,7 @@ export default function AdminDashboardPage() {
 
       const { data, error } = await supabase
         .from("weekly_plans")
-        .select("id, updated_at, school_classes(grade, section), academic_weeks(label, week_number), plan_entries(id, day_of_week, period_number, classwork, homework, classera_notes, subjects(name_en), profiles!plan_entries_teacher_id_fkey(display_name))")
+        .select("id, updated_at, school_classes(grade, section), academic_weeks(label, week_number), plan_entries(count)")
         .eq("status", "published")
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -105,7 +111,8 @@ export default function AdminDashboardPage() {
           section: schoolClass?.section ?? "",
           week: week?.label ?? "Academic week",
           weekNumber: Number(week?.week_number ?? 0),
-          entries: ((plan.plan_entries ?? []) as PlanEntry[]).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number),
+          entryCount: Number(one(plan.plan_entries as {count: number}[] | null)?.count ?? 0),
+          entries: null,
         } satisfies PublishedPlan;
       });
       setPlans(mappedPlans);
@@ -126,7 +133,27 @@ export default function AdminDashboardPage() {
     && (sectionFilter === "all" || plan.section === sectionFilter)
     && (weekFilter === "all" || String(plan.weekNumber) === weekFilter),
   ), [plans, gradeFilter, sectionFilter, weekFilter]);
-  const publishedEntries = filteredPlans.reduce((total, plan) => total + plan.entries.length, 0);
+  const publishedEntries = filteredPlans.reduce((total, plan) => total + plan.entryCount, 0);
+
+  const openPlanReport = async (planId: string) => {
+    const request = ++detailRequest.current;
+    if (expandedPlanId === planId) { setExpandedPlanId(""); setDetailsLoading(false); return; }
+    setExpandedPlanId(planId);
+    setDetailsLoading(true);
+    setMessage("");
+    try {
+      const { data, error } = await getSupabaseBrowserClient().from("weekly_plans")
+        .select("id, plan_entries(id, day_of_week, period_number, classwork, homework, classera_notes, subjects(name_en), profiles!plan_entries_teacher_id_fkey(display_name))")
+        .eq("id", planId).eq("status", "published").maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error("This published plan is no longer available.");
+      if (request !== detailRequest.current) return;
+      const entries = ((data.plan_entries ?? []) as PlanEntry[]).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number);
+      setPlans(current => current.map(plan => plan.id === planId ? { ...plan, entries, entryCount: entries.length } : plan));
+    } catch (error) {
+      if (request === detailRequest.current) { setExpandedPlanId(""); setMessage(error instanceof Error ? error.message : "The plan report could not be loaded. Please try again."); }
+    } finally { if (request === detailRequest.current) setDetailsLoading(false); }
+  };
 
   const signOut = async () => {
     await getSupabaseBrowserClient().auth.signOut();
@@ -163,7 +190,7 @@ export default function AdminDashboardPage() {
           {canManagePlanAccess && <section className="teacher-card admin-access-control-card"><div><h2>Weekly-plan creation access</h2><p>Open or close plan creation for all teachers, or control an individual teacher.</p></div><button type="button" className="teacher-primary-button" onClick={() => void updatePlanAccess(!weeklyPlanCreationOpen)}>{weeklyPlanCreationOpen ? "Close creation" : "Open creation"}</button><div className="super-teacher-access-list">{teacherNames.map((teacher) => { const isOpen = teacherPlanAccess[teacher.id] ?? weeklyPlanCreationOpen; return <label key={teacher.id}><span>{teacher.name}</span><input type="checkbox" checked={isOpen} onChange={(event) => void updateTeacherAccess(teacher.id, event.target.checked)} /><b>{isOpen ? "Open" : "Closed"}</b></label>; })}</div></section>}
 
           <section className="teacher-card admin-plans-card admin-report-card"><div className="admin-plan-toolbar"><div><h2>Full published-plan directory</h2><p>{loading ? "Loading live reports…" : `${filteredPlans.length} published plans shown`}</p></div><div className="admin-filters"><label>Grade<select value={gradeFilter} onChange={(event) => setGradeFilter(event.target.value)}><option value="all">All Grades</option>{grades.map((grade) => <option key={grade} value={grade}>Grade {grade}</option>)}</select></label><label>Class<select value={sectionFilter} onChange={(event) => setSectionFilter(event.target.value)}><option value="all">All Classes</option>{sections.map((section) => <option key={section} value={section}>Class {section}</option>)}</select></label><label>Week<select value={weekFilter} onChange={(event) => setWeekFilter(event.target.value)}><option value="all">All Weeks</option>{weeks.map(([weekNumber, label]) => <option key={weekNumber} value={weekNumber}>{label}</option>)}</select></label></div></div>
-            <div className="admin-plan-table-wrap"><table className="admin-plan-table"><thead><tr><th>Week</th><th>Class</th><th>Published lessons</th><th>Last updated</th><th>Report</th></tr></thead><tbody>{filteredPlans.map((plan) => <><tr key={plan.id}><td><strong>{plan.week}</strong></td><td><span className="admin-class-badge">Grade {plan.grade} · {plan.section}</span></td><td>{plan.entries.length}</td><td>{formatDate(plan.updated_at)}</td><td><button className="edit" onClick={() => setExpandedPlanId((current) => current === plan.id ? "" : plan.id)}>{expandedPlanId === plan.id ? "Close report" : "View full report"}</button></td></tr>{expandedPlanId === plan.id && <tr className="admin-report-details" key={`${plan.id}-details`}><td colSpan={5}><table><thead><tr><th>Day</th><th>Period</th><th>Subject & teacher</th><th>Classwork</th><th>Homework</th><th>Classera notes</th></tr></thead><tbody>{plan.entries.map((entry) => { const subject = one(entry.subjects); const teacher = one(entry.profiles); return <tr key={entry.id}><td>{dayNames[entry.day_of_week] ?? "School day"}</td><td>{entry.period_number}</td><td><strong>{subject?.name_en ?? "Subject"}</strong><small>{teacher?.display_name ?? "Teacher"}</small></td><td>{entry.classwork || "—"}</td><td>{entry.homework || "—"}</td><td>{entry.classera_notes || "—"}</td></tr>; })}</tbody></table></td></tr>}</>)}{!loading && filteredPlans.length === 0 && <tr><td className="admin-empty" colSpan={5}>No published plans match these filters yet.</td></tr>}</tbody></table></div>
+            <div className="admin-plan-table-wrap"><table className="admin-plan-table"><thead><tr><th>Week</th><th>Class</th><th>Published lessons</th><th>Last updated</th><th>Report</th></tr></thead><tbody>{filteredPlans.map((plan) => <><tr key={plan.id}><td><strong>{plan.week}</strong></td><td><span className="admin-class-badge">Grade {plan.grade} · {plan.section}</span></td><td>{plan.entryCount}</td><td>{formatDate(plan.updated_at)}</td><td><button className="edit" onClick={() => void openPlanReport(plan.id)}>{expandedPlanId === plan.id ? "Close report" : "View full report"}</button></td></tr>{expandedPlanId === plan.id && <tr className="admin-report-details" key={`${plan.id}-details`}><td colSpan={5}><table><thead><tr><th>Day</th><th>Period</th><th>Subject & teacher</th><th>Classwork</th><th>Homework</th><th>Classera notes</th></tr></thead><tbody>{detailsLoading && <tr><td colSpan={6} role="status">Loading the selected plan…</td></tr>}{!detailsLoading && (plan.entries ?? []).map((entry) => { const subject = one(entry.subjects); const teacher = one(entry.profiles); return <tr key={entry.id}><td>{dayNames[entry.day_of_week] ?? "School day"}</td><td>{entry.period_number}</td><td><strong>{subject?.name_en ?? "Subject"}</strong><small>{teacher?.display_name ?? "Teacher"}</small></td><td>{entry.classwork || "—"}</td><td>{entry.homework || "—"}</td><td>{entry.classera_notes || "—"}</td></tr>; })}</tbody></table></td></tr>}</>)}{!loading && filteredPlans.length === 0 && <tr><td className="admin-empty" colSpan={5}>No published plans match these filters yet.</td></tr>}</tbody></table></div>
           </section>
         </div>
       </section>

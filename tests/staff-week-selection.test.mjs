@@ -49,7 +49,7 @@ test('actual workspace uses one week state for all pages and keeps closed select
   assert.match(source,/const selectedWeekId = dashboardWeekId;/);
   assert.doesNotMatch(source,/setSelectedReviewWeekId|setSelectedWeekId/);
   assert.match(source,/onChange=\{\(event\) => selectWorkspaceWeek\(event\.target\.value\)\}/);
-  assert.match(source,/week\.id === dashboardWeekId \|\| week\.teacher_entry_enabled/);
+  assert.match(source,/const dashboardWeeks = academicWeeks;/,'Past closed weeks remain available even when only one week is loaded');
   assert.match(source,/if \(!await verifySupervisorWeekAccess\(selectedReviewWeekId\)\)/);
   assert.match(source,/if \(!\(await verifyTeacherWeekAccess\(selectedWeek\.id\)\)\)/);
 });

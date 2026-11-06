@@ -3,6 +3,7 @@ import { gradeEightHistoricalCounterpart } from "../../lib/grade-eight-timetable
 import { isOctoberExam } from "../../lib/october-exam";
 
 import Link from "next/link";
+import { readDashboardPages } from "../../lib/dashboard-loading";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StaffLanguagePreference } from "../language-switcher";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
@@ -274,6 +275,9 @@ export default function SuperAdminPage() {
   const [academicWeeks, setAcademicWeeks] = useState<AcademicWeekOption[]>([]);
   const [schoolHolidays, setSchoolHolidays] = useState<SchoolHoliday[]>([]);
   const [selectedPlanWeekId, setSelectedPlanWeekId] = useState("");
+  const reportWeek = useRef("");
+  const dashboardRequest = useRef(0);
+  const [loadedReportWeek, setLoadedReportWeek] = useState("");
   const [planGradeFilter, setPlanGradeFilter] = useState("all");
   const [planSectionFilter, setPlanSectionFilter] = useState("all");
   const [planDepartmentFilter, setPlanDepartmentFilter] = useState("all");
@@ -320,7 +324,10 @@ export default function SuperAdminPage() {
   const [localPreview, setLocalPreview] = useState(false);
 
   const loadDashboard = useCallback(async () => {
+    const request = ++dashboardRequest.current;
+    const requestedWeekId = reportWeek.current;
     setLoading(true);
+    setLoadedReportWeek("");
     setErrorMessage("");
     try {
       const supabase = getSupabaseBrowserClient();
@@ -347,39 +354,23 @@ export default function SuperAdminPage() {
       setIsFaridSuperAdmin(ownerProfile.username === "mohamed.farid");
       if (ownerProfile.username !== "mohamed.farid") setActiveSection((current) => current === "announcements" ? "overview" : current);
 
-      // A school term contains more rows than the Data API's single-response limit.
-      // Read every page before deriving route and report states from plan content.
+      const weeksPromise = Promise.resolve(supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current, teacher_entry_enabled, parent_portal_visible").order("week_number"));
+      const scopedWeekPromise = weeksPromise.then(result => {
+        if (result.error) throw result.error;
+        const weeks = (result.data ?? []) as AcademicWeekOption[];
+        return weeks.find(week => week.id === requestedWeekId)?.id || weeks.find(week => week.is_current)?.id || weeks[0]?.id || "";
+      });
       const loadSubmissionRows = async () => {
-        const pageSize = 500;
-        let offset = 0;
-        let rows: NonNullable<Awaited<ReturnType<typeof loadSubmissionPage>>["data"]> = [];
-        while (true) {
-          const result = await loadSubmissionPage(offset);
-          if (result.error) throw result.error;
-          const page = result.data ?? [];
-          rows = rows.concat(page);
-          if (page.length < pageSize) return rows;
-          offset += pageSize;
-        }
+        const weekId = await scopedWeekPromise;
+        return readDashboardPages((from, to) => supabase.from("plan_submissions")
+          .select("id, weekly_plan_id, teacher_id, subject_id, status, review_note, submitted_at, reviewed_at, updated_at, subjects(name_en), weekly_plans!inner(week_id)")
+          .eq("weekly_plans.week_id", weekId).order("id").range(from, to));
       };
-      const loadSubmissionPage = (offset: number) => supabase.from("plan_submissions")
-        .select("id, weekly_plan_id, teacher_id, subject_id, status, review_note, submitted_at, reviewed_at, updated_at, subjects(name_en)")
-        .order("id").range(offset, offset + 499);
-      const loadEntryPage = (offset: number) => supabase.from("plan_entries")
-        .select("id, weekly_plan_id, teacher_id, subject_id, day_of_week, period_number, classwork, homework, classera_notes")
-        .order("id").range(offset, offset + 499);
       const loadEntryRows = async () => {
-        const pageSize = 500;
-        let offset = 0;
-        let rows: NonNullable<Awaited<ReturnType<typeof loadEntryPage>>["data"]> = [];
-        while (true) {
-          const result = await loadEntryPage(offset);
-          if (result.error) throw result.error;
-          const page = result.data ?? [];
-          rows = rows.concat(page);
-          if (page.length < pageSize) return rows;
-          offset += pageSize;
-        }
+        const weekId = await scopedWeekPromise;
+        return readDashboardPages((from, to) => supabase.from("plan_entries")
+          .select("id, weekly_plan_id, teacher_id, subject_id, day_of_week, period_number, classwork, homework, classera_notes, weekly_plans!inner(week_id)")
+          .eq("weekly_plans.week_id", weekId).order("id").range(from, to));
       };
 
       const [directoryResult, requestsResult, profilesResult, assignmentsResult, subjectsResult, classesResult, plansResult, accessResult, teacherAccessResult, weeksResult, holidaysResult, timetableResult, submissionRows, entryRows, supervisorLinksResult, teacherOverridesResult] = await Promise.all([
@@ -392,7 +383,7 @@ export default function SuperAdminPage() {
         supabase.from("weekly_plans").select("id, class_id, week_id, class_teacher_name, status, manual_publication_override, updated_at, school_classes(grade, section), academic_weeks(week_number, label), plan_entries(count)").order("updated_at", { ascending: false }),
         supabase.from("weekly_plan_access_control").select("is_open").eq("id", 1).maybeSingle(),
         supabase.from("weekly_plan_teacher_access").select("teacher_id, is_open"),
-        supabase.from("academic_weeks").select("id, week_number, label, starts_on, ends_on, is_current, teacher_entry_enabled, parent_portal_visible").order("week_number"),
+        weeksPromise,
         supabase.from("weekly_plan_holidays").select("id, week_id, day_of_week, title, note").order("day_of_week"),
         supabase.from("timetable_slots").select("class_id, teacher_id, subject_id, day_of_week, period_number, requires_weekly_plan_submission, subjects(name_en)").eq("requires_weekly_plan_submission", true),
         loadSubmissionRows(),
@@ -401,6 +392,8 @@ export default function SuperAdminPage() {
         supabase.from("teacher_plan_publication_overrides").select("weekly_plan_id,teacher_id,published_by,published_at"),
       ]);
 
+      const scopedWeekId = await scopedWeekPromise;
+      if (request !== dashboardRequest.current) return false;
       const firstError = [directoryResult.error, requestsResult.error, profilesResult.error, assignmentsResult.error, subjectsResult.error, classesResult.error, plansResult.error, weeksResult.error, holidaysResult.error, timetableResult.error, supervisorLinksResult.error, teacherOverridesResult.error].find(Boolean);
       if (firstError) throw firstError;
 
@@ -507,7 +500,8 @@ export default function SuperAdminPage() {
       const loadedWeeks = (weeksResult.data ?? []) as AcademicWeekOption[];
       setAcademicWeeks(loadedWeeks);
       setSchoolHolidays((holidaysResult.data ?? []) as SchoolHoliday[]);
-      setSelectedPlanWeekId((value) => value || loadedWeeks.find((week) => week.is_current)?.id || loadedWeeks[0]?.id || "");
+      reportWeek.current = scopedWeekId;
+      setSelectedPlanWeekId(reportWeek.current);
       setSelectedHolidayWeekId((value) => value || loadedWeeks.find((week) => week.is_current)?.id || loadedWeeks[0]?.id || "");
       setWeeklyPlans((plansResult.data ?? []).map((plan) => {
         const schoolClass = singleRelation(plan.school_classes as { grade: number; section: string } | { grade: number; section: string }[] | null);
@@ -526,14 +520,27 @@ export default function SuperAdminPage() {
           updated: formatDate(plan.updated_at),
         };
       }));
+      setLoadedReportWeek(scopedWeekId);
       return true;
     } catch (error) {
+      if (request !== dashboardRequest.current) return false;
       setErrorMessage(error instanceof Error ? error.message : "The real school account directory could not be loaded.");
       return false;
     } finally {
-      setLoading(false);
+      if (request === dashboardRequest.current) setLoading(false);
     }
   }, [basePath]);
+
+  const selectPlanWeek = (weekId: string) => {
+    if (reportWeek.current === weekId) return;
+    reportWeek.current = weekId;
+    setSelectedPlanWeekId(weekId);
+    setPlanSubmissions([]);
+    setPlanEntrySummaries([]);
+    setLoadedReportWeek("");
+    setOverviewGapView(null);
+    if (!localPreview) void loadDashboard();
+  };
 
   useEffect(() => {
     queueMicrotask(() => setDashboardArabic(window.localStorage.getItem("andalus-language") === "ar"));
@@ -913,7 +920,7 @@ export default function SuperAdminPage() {
     stage: row.status.replaceAll("_", " "), lessonCount: planEntrySummaries.filter((entry) => entry.weeklyPlanId === row.weeklyPlanId && entry.teacherId === row.teacher.userId && entry.hasContent).length,
   });
   const confirmTeacherExceptionalPublication = async () => {
-    if (!exceptionalTargets?.length) return;
+    if (!exceptionalTargets?.length || loading || loadedReportWeek !== selectedPlanWeekId) return;
     const confirmedTargets = exceptionalTargets;
     setBusy(true); setErrorMessage(""); setSuccessMessage("");
     try {
@@ -1388,7 +1395,7 @@ export default function SuperAdminPage() {
           {activeSection === "overview" && <div className="super-overview" dir={dashboardArabic ? "rtl" : "ltr"}>
             <section className="super-overview-hero">
               <div><span>{dashboardArabic ? "متابعة حية للمدرسة" : "Live school overview"}</span><h2>{dashboardArabic ? "كل ما تحتاج متابعته، في مكان واحد" : "Everything that needs your attention"}</h2><p>{dashboardArabic ? "اختر الأسبوع لعرض إنجاز المعلمين، اعتماد المشرفين، وحالة النشر دون تغيير أي خطة." : "Choose a week to see teacher completion, supervisor approvals and publication status without changing any plan."}</p></div>
-              <label>{dashboardArabic ? "الأسبوع الدراسي" : "School week"}<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : week.label} · {formatAcademicWeekRange(week, dashboardArabic ? "ar-EG" : "en-GB")}</option>)}</select></label>
+              <label>{dashboardArabic ? "الأسبوع الدراسي" : "School week"}<select value={selectedPlanWeekId} disabled={loading || busy} onChange={(event) => selectPlanWeek(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{dashboardArabic ? `الأسبوع ${week.week_number}` : week.label} · {formatAcademicWeekRange(week, dashboardArabic ? "ar-EG" : "en-GB")}</option>)}</select></label>
             </section>
             <section className="super-overview-stats" aria-label="Weekly school progress">
               <article><span>{dashboardArabic ? "إنجاز المعلمين" : "Teacher completion"}</span><strong>{schoolWeeklyCompletionPercent}%</strong><p>{completedLessonTotal} / {requiredLessonCount} {dashboardArabic ? "حصة مكتملة في الفصول المكلفين بها" : "assigned lessons with Classwork"}</p><i style={{ width: `${schoolWeeklyCompletionPercent}%` }} />{overviewTeacherGaps.length > 0 && <button type="button" className="super-overview-gap-button" onClick={() => setOverviewGapView(overviewGapView === "teachers" ? null : "teachers")}>{dashboardArabic ? "عرض نواقص المعلمين" : "View teacher gaps"}</button>}</article>
@@ -1449,7 +1456,7 @@ export default function SuperAdminPage() {
             <section className="teacher-card super-admin-accounts-card super-plan-report-card">
               <div className="super-admin-toolbar super-plan-report-toolbar"><div><h2>Weekly school publication report</h2><p>Completion is based on sent lessons with Classwork; approval and publication are tracked separately.</p></div><div className="super-plan-report-actions"><Link className="teacher-secondary-button" href="/weekly-plan">Open family plan page</Link><button type="button" className="teacher-primary-button super-bulk-publish-button" disabled={busy || loading || bulkPublishCheckPending || !selectedPlanWeekId} onClick={() => void requestSchoolPublication()}>{dashboardArabic ? bulkPublishCheckPending ? "جارٍ فحص الخطط…" : "اعتماد ونشر جميع الخطط" : bulkPublishCheckPending ? "Checking plans…" : "Approve & publish all school plans"}</button></div></div>
               <div className="super-admin-filters super-plan-report-filters">
-                <label>School week<select value={selectedPlanWeekId} onChange={(event) => setSelectedPlanWeekId(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label || `Week ${week.week_number}`}</option>)}</select></label>
+                <label>School week<select value={selectedPlanWeekId} disabled={loading || busy} onChange={(event) => selectPlanWeek(event.target.value)}>{academicWeeks.map((week) => <option key={week.id} value={week.id}>{week.label || `Week ${week.week_number}`}</option>)}</select></label>
                 <label>Grade<select value={planGradeFilter} onChange={(event) => setPlanGradeFilter(event.target.value)}><option value="all">All grades</option>{Array.from(new Set(classes.map((schoolClass) => schoolClass.grade))).map((grade) => <option key={grade} value={grade}>Grade {grade}</option>)}</select></label>
                 <label>Section<select value={planSectionFilter} onChange={(event) => setPlanSectionFilter(event.target.value)}><option value="all">All sections</option>{Array.from(new Set(classes.map((schoolClass) => schoolClass.section))).sort().map((section) => <option key={section} value={section}>Section {section}</option>)}</select></label>
                 <label>Department<select value={planDepartmentFilter} onChange={(event) => setPlanDepartmentFilter(event.target.value)}><option value="all">All departments</option>{planDepartments.map((department) => <option key={department} value={department}>{department}</option>)}</select></label>
