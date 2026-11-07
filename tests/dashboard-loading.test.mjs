@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import ts from 'typescript';
-import {createClient} from '@supabase/supabase-js';
+import {AuthApiError, AuthRetryableFetchError, AuthSessionMissingError, createClient, isAuthSessionMissingError} from '@supabase/supabase-js';
 import {readDashboardPages} from '../lib/dashboard-loading.ts';
+import {readSchoolDashboardDirectory} from '../lib/school-dashboard-directory.ts';
 import {resolveStaffWeek,readStaffWeek,rememberStaffWeek} from '../lib/staff-week-selection.ts';
 
 // Execute the actual loaders, extracted with the TypeScript AST, against the real
@@ -26,7 +27,7 @@ const entry=(id,week,teacher='teacher')=>({id,weekly_plan_id:'plan-'+week,timeta
 const submission=(week)=>({id:'submission-'+week,weekly_plan_id:'plan-'+week,teacher_id:'teacher',subject_id:'English',status:'submitted',submitted_at:'2026-11-01',updated_at:'2026-11-01',subjects:{name_en:'English'},weekly_plans:{class_id:'class',week_id:week,school_classes:{grade:5,section:'A'},academic_weeks:{label:week}}});
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
 function fixture({role='super_admin',entries=[entry('current','w1'),entry('old','w2')],beforeReply}={}) {
-  const requests=[],states={},refs={dashboardRequest:{current:0},reportWeek:{current:'w1'},workspaceWeek:{current:{staffId:'teacher',weekId:'w1'}},detailRequest:{current:0}};
+  const requests=[],states={},refs={dashboardRequest:{current:0},dashboardDirectory:{current:null},reportWeek:{current:'w1'},workspaceWeek:{current:{staffId:'teacher',weekId:'w1'}},detailRequest:{current:0}};
   const client=createClient('https://dashboard-fixture.supabase.co','synthetic-key',{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},global:{fetch:async(input,init)=>{
     const url=new URL(input),table=url.pathname.split('/').pop();requests.push({url,method:init.method??'GET',body:init.body?JSON.parse(init.body):null});
     if(beforeReply)await beforeReply(url);
@@ -44,7 +45,8 @@ function fixture({role='super_admin',entries=[entry('current','w1'),entry('old',
   }}});
   client.auth.getUser=async()=>({data:{user:{id:'teacher'}},error:null});
   client.auth.signOut=async()=>{throw Error('Unexpected sign-out');};
-  const bindings={...refs,basePath:'',getSupabaseBrowserClient:()=>client,getStaffWorkspaceClient:()=>client,delegatedStaffId:()=>'',readDashboardPages,resolveStaffWeek,readStaffWeek,rememberStaffWeek,hasHorizontalTeacherEditor:()=>false,getEditorLayoutPreference:()=>({initialize(){}}),singleRelation:value=>Array.isArray(value)?value[0]:value,one:value=>Array.isArray(value)?value[0]:value,formatDate:value=>value,dayNames:['Sunday','Monday','Tuesday','Wednesday','Thursday'],hasMeaningfulPlanContent:e=>[e.classwork,e.homework,e.classera_notes].some(v=>String(v??'').trim()),window:{location:{assign(){throw Error('Unexpected navigation');},replace(){throw Error('Unexpected navigation');}},localStorage:{getItem(){return null;},setItem(){}}}};
+  const bindings={...refs,basePath:'',getSupabaseBrowserClient:()=>client,getStaffWorkspaceClient:()=>client,delegatedStaffId:()=>'',readDashboardPages,readSchoolDashboardDirectory,resolveStaffWeek,readStaffWeek,rememberStaffWeek,hasHorizontalTeacherEditor:()=>false,getEditorLayoutPreference:()=>({initialize(){}}),singleRelation:value=>Array.isArray(value)?value[0]:value,one:value=>Array.isArray(value)?value[0]:value,formatDate:value=>value,dayNames:['Sunday','Monday','Tuesday','Wednesday','Thursday'],hasMeaningfulPlanContent:e=>[e.classwork,e.homework,e.classera_notes].some(v=>String(v??'').trim()),window:{location:{assign(){throw Error('Unexpected navigation');},replace(){throw Error('Unexpected navigation');}},localStorage:{getItem(){return null;},setItem(){}}}};
+  bindings.isAuthSessionMissingError=isAuthSessionMissingError;
   const scope=new Proxy(bindings,{has:(target,key)=>typeof key==='string'&&(key in target||key in states||/^set[A-Z]/.test(key)),get:(target,key)=>{
     if(typeof key==='string'&&/^set[A-Z]/.test(key))return value=>{const name=key[3].toLowerCase()+key.slice(4);states[name]=typeof value==='function'?value(states[name]):value;};
     return key in states?states[key]:target[key];
@@ -81,6 +83,54 @@ test('a late school-week response cannot replace the newly selected report or ma
   assert.equal(f.states.selectedPlanWeekId,'w2');assert.equal(f.states.loadedReportWeek,'w2');assert.equal(f.states.planEntrySummaries[0].weeklyPlanId,'plan-w2');assert.equal(f.states.loading,false);
 });
 
+test('week navigation skips ten directory reads but refreshes week data and checks the current admin',async()=>{
+  const f=fixture(),load=await loader('app/super-admin/page.tsx','loadDashboard',f.scope);
+  let authChecks=0;f.client.auth.getUser=async()=>{authChecks++;return{data:{user:{id:'teacher'}},error:null};};
+  assert.equal(await load(),true);
+  const fullCount=f.requests.length,originalSnapshot=f.refs.dashboardDirectory.current;
+  assert.equal(f.states.weeklyPlans.length,1);
+  assert.equal(f.states.weeklyPlans[0].entries,1,'Count only the complete selected-week lessons already fetched');
+  f.requests.length=0;f.refs.reportWeek.current='w2';
+  assert.equal(await load('week'),true);
+  assert.equal(authChecks,2);
+  assert.equal(f.requests.length,fullCount-10);
+  assert.equal(f.refs.dashboardDirectory.current,originalSnapshot,'Switches must not extend the cache lifetime');
+  const tables=f.requests.map(r=>r.url.pathname.split('/').pop());
+  assert.ok(!tables.includes('staff_directory'));assert.ok(!tables.includes('teacher_assignments'));
+  assert.ok(tables.includes('academic_weeks'));assert.ok(tables.includes('weekly_plan_holidays'));
+  assert.equal(tables.filter(t=>t==='profiles').length,1,'Verify the active Super Admin on every switch');
+  assert.equal(f.states.weeklyPlans[0].weekId,'w2');assert.equal(f.states.weeklyPlans[0].entries,1);
+  for(const request of f.requests.filter(r=>r.url.pathname.endsWith('/weekly_plans'))) {
+    assert.equal(request.url.searchParams.get('week_id'),'eq.w2');
+    assert.doesNotMatch(request.url.searchParams.get('select'),/plan_entries\(count\)/);
+  }
+  const overrides=f.requests.find(r=>r.url.pathname.endsWith('/teacher_plan_publication_overrides'));
+  assert.equal(overrides.url.searchParams.get('weekly_plans.week_id'),'eq.w2');
+  assert.ok(f.requests.every(r=>r.method==='GET'));
+  f.requests.length=0;assert.equal(await load(),true);
+  assert.ok(f.requests.some(r=>r.url.pathname.endsWith('/teacher_assignments')),'A printable report/full refresh must see current assignments');
+});
+
+test('week directory reuse expires and cannot cross account identities',async()=>{
+  const f=fixture(),load=await loader('app/super-admin/page.tsx','loadDashboard',f.scope);
+  await load();f.refs.dashboardDirectory.current.loadedAt=Date.now()-61_000;f.requests.length=0;
+  await load('week');assert.ok(f.requests.some(r=>r.url.pathname.endsWith('/staff_directory')));
+  f.refs.dashboardDirectory.current.userId='another-admin';f.requests.length=0;
+  await load('week');assert.ok(f.requests.some(r=>r.url.pathname.endsWith('/staff_directory')));
+});
+
+test('a failed second page cannot produce verified week totals or replace the last complete snapshot',async()=>{
+  let fail=false;
+  const entries=Array.from({length:501},(_,i)=>entry('row-'+i,'w1'));
+  const f=fixture({entries,beforeReply:async url=>{if(fail&&url.pathname.endsWith('/plan_entries')&&url.searchParams.get('offset')==='500')throw Error('Lesson page unavailable');}});
+  const load=await loader('app/super-admin/page.tsx','loadDashboard',f.scope);
+  assert.equal(await load(),true);assert.equal(f.states.weeklyPlans[0].entries,501);
+  const previous=f.states.planEntrySummaries;fail=true;
+  assert.equal(await load('week'),false);assert.equal(f.states.loadedReportWeek,'');
+  assert.equal(f.states.planEntrySummaries,previous);assert.equal(f.states.loading,false);
+  assert.match(f.states.errorMessage,/Lesson page unavailable/);
+});
+
 test('teacher loader retains identity filtering, reads selected history only, and makes no plan writes',async()=>{
   const f=fixture({role:'teacher',entries:[entry('current','w1'),entry('old','w2'),entry('other-teacher','w1','someone-else')]});
   const load=await loader('app/teachers/page.tsx','loadTeacherDashboard',f.scope);
@@ -88,6 +138,34 @@ test('teacher loader retains identity filtering, reads selected history only, an
   assert.equal(f.requests.filter(r=>r.url.pathname.endsWith('/academic_weeks')).length,1);
   for(const r of f.requests.filter(r=>['plan_entries','plan_submissions'].some(t=>r.url.pathname.endsWith(t)))){assert.equal(r.url.searchParams.get('teacher_id'),'eq.teacher');assert.equal(r.url.searchParams.get('weekly_plans.week_id'),'eq.w1');}
   f.refs.workspaceWeek.current.weekId='w2';await load();assert.equal(f.states.entries[0].id,'old');assert.equal(f.states.dashboardWeekId,'w2');assert.equal(f.states.mySubmissions[0].weekId,'w2');assert.ok(f.requests.every(r=>r.method==='GET'));
+});
+
+test('a missing or expired session on entry goes to staff sign-in before attempting to read any weeks',async()=>{
+  for(const error of [new AuthSessionMissingError(),new AuthApiError('Session ended',403,'session_not_found')]){
+    const f=fixture({role:'teacher'}),destinations=[];
+    f.refs.workspaceWeek.current={staffId:'',weekId:''};
+    f.scope.window.location.replace=url=>destinations.push(url);
+    f.client.auth.getUser=async()=>({data:{user:null},error});
+    const load=await loader('app/teachers/page.tsx','loadTeacherDashboard',f.scope);
+    await load();
+    assert.deepEqual(destinations,['/teachers/login/']);
+    assert.deepEqual(f.requests,[]);
+    assert.equal(f.states.loading,false);
+  }
+});
+
+test('a transient auth failure allows retry and an ended session in an open workspace leaves it in place',async()=>{
+  const f=fixture({role:'teacher'}),destinations=[];
+  f.scope.window.location.replace=url=>destinations.push(url);
+  const load=await loader('app/teachers/page.tsx','loadTeacherDashboard',f.scope);
+  f.client.auth.getUser=async()=>({data:{user:null},error:new AuthRetryableFetchError('Offline',0)});
+  await load();assert.equal(f.states.workspaceAuthIssue,'connection');assert.deepEqual(f.requests,[]);
+  f.client.auth.getUser=async()=>({data:{user:{id:'teacher'}},error:null});
+  await load();assert.equal(f.states.workspaceAuthIssue,null);assert.equal(f.states.academicWeeks.length,2);
+  const loadedWeeks=f.states.academicWeeks;
+  f.client.auth.getUser=async()=>({data:{user:null},error:new AuthSessionMissingError()});
+  await load();assert.equal(f.states.workspaceAuthIssue,'session');assert.equal(f.states.academicWeeks,loadedWeeks);
+  assert.deepEqual(destinations,[]);
 });
 
 test('supervisor uses the existing secured review RPC with a week filter, preserving its authority boundary',async()=>{

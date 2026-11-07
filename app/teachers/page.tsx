@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { readDashboardPages } from "../../lib/dashboard-loading";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StaffLanguagePreference } from "../language-switcher";
@@ -337,6 +338,7 @@ export default function TeachersDashboardPage() {
   const [selectedDepartmentTeacherId, setSelectedDepartmentTeacherId] = useState("");
   const [departmentAssignmentDraft, setDepartmentAssignmentDraft] = useState({ classId: "", subjectId: "" });
   const [loading, setLoading] = useState(true);
+  const [workspaceAuthIssue, setWorkspaceAuthIssue] = useState<"session" | "connection" | null>(null);
   const [saving, setSaving] = useState(false);
   const editorSaveInProgress = useRef(false);
   const approvedLessonSnapshot = useRef<Record<string, ApprovedLessonSnapshot>>({});
@@ -476,10 +478,22 @@ export default function TeachersDashboardPage() {
     const request = ++dashboardRequest.current;
     setLoading(true);
     setMessage("");
+    setWorkspaceAuthIssue(null);
     try {
       const supabase = getStaffWorkspaceClient();
       const { data: userData, error: userError } = await getSupabaseBrowserClient().auth.getUser();
-      if (userError) throw userError;
+      if (request !== dashboardRequest.current) return;
+      if (userError) {
+        const sessionEnded = isAuthSessionMissingError(userError) || [
+          "session_expired", "session_not_found", "refresh_token_not_found", "refresh_token_already_used",
+        ].includes(userError.code ?? "");
+        if (sessionEnded && !workspaceWeek.current.staffId) {
+          window.location.replace(`${basePath}/teachers/login/`);
+        } else {
+          setWorkspaceAuthIssue(sessionEnded ? "session" : "connection");
+        }
+        return;
+      }
       if (!userData.user) {
         window.location.replace(`${basePath}/teachers/login/`);
         return;
@@ -1970,6 +1984,13 @@ export default function TeachersDashboardPage() {
           <div className="teacher-page-heading"><div><p className="teacher-kicker">{dashboardWeek ? dashboardArabic ? `الأسبوع ${dashboardWeek.week_number} · ${academicWeekRange(dashboardWeek, true)}` : `Week ${dashboardWeek.week_number} · ${academicWeekRange(dashboardWeek)}` : dashboardArabic ? "مساحة العمل" : "Staff workspace"}</p><h1>{activeNav === "Overview" ? dashboardArabic ? `أهلًا، ${teacherName}` : `Welcome, ${teacherName}.` : navLabel(activeNav)}</h1><span>{activeNav === "Overview" ? dashboardArabic ? isSupervisor ? "خطط معلميك، خطتك، وحصصك أمامك في صفحة واحدة." : "تابع خططك وحصصك وما يحتاج منك إجراء هذا الأسبوع." : isSupervisor ? "Review your teachers' plans, write your own, and follow your lessons in one place." : "See the plans and lessons needing your attention this week." : dashboardArabic ? "اختر الإجراء المناسب وتابع حالته بوضوح." : "Choose the next action and follow its status clearly."}</span></div><div className="teacher-heading-actions"><button type="button" className="teacher-primary-button" disabled={saving || !weeklyPlanCreationOpen || !dashboardWeek?.teacher_entry_enabled} aria-busy={loading} onClick={() => void openWeeklyBuilder(dashboardWeekId)}><span>＋</span> {loading ? dashboardArabic ? "جارٍ تحميل البيانات…" : "Loading teacher data…" : !profileId ? dashboardArabic ? "تعذر تحميل حالة الأسبوع" : "Week access unavailable" : weeklyPlanCreationOpen && dashboardWeek?.teacher_entry_enabled ? dashboardArabic ? isSupervisor ? "إعداد خطتي التعليمية" : "إعداد خطة الأسبوع" : isSupervisor ? "Write my teaching plan" : "Create weekly plan" : !weeklyPlanCreationOpen ? dashboardArabic ? "كتابة الخطط مغلقة لحسابك" : "Plan writing closed for your account" : dashboardArabic ? "الأسبوع مغلق للتحرير" : "Week closed for editing"}</button><button type="button" className="teacher-secondary-button" disabled={loading || saving || !profileId} onClick={() => void recheckAccessNow()}>{dashboardArabic ? "تحديث حالة الأسبوع" : "Refresh week access"}</button></div></div>
 
           {message && <p className={`super-admin-live-message ${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
+          {workspaceAuthIssue && <div className="super-admin-live-message error" role="alert">
+            <p>{workspaceAuthIssue === "session"
+              ? (dashboardArabic ? "انتهت جلسة الدخول. سجّل الدخول من جديد ثم أعد المحاولة هنا." : "Your session ended. Sign in again, then retry here.")
+              : (dashboardArabic ? "تعذر التحقق من جلسة الدخول. أعد المحاولة لتحميل الأسابيع." : "We couldn't verify your session. Retry to load your school weeks.")}</p>
+            {workspaceAuthIssue === "session" && <Link className="teacher-secondary-button" href="/teachers/login/" target="_blank" rel="noopener">{dashboardArabic ? "تسجيل الدخول" : "Sign in"}</Link>}
+            <button type="button" className="teacher-secondary-button" onClick={() => void loadTeacherDashboard()}>{dashboardArabic ? "إعادة المحاولة" : "Retry"}</button>
+          </div>}
 
           {activeNav === "Quizzes" && isFaridTeacher && <FaridQuizzesPanel weeks={academicWeeks} assignments={assignments} teacherId={profileId} initialWeekId={dashboardWeekId} readOnly={workingOnBehalf} arabic={dashboardArabic} />}
 

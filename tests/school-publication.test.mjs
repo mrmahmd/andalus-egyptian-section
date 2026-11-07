@@ -65,11 +65,18 @@ test("publication preserves submission decisions and missing lesson contents in 
 });
 test("actual integration uses fresh preflight, frozen selected-week targets and separate family visibility without altering downloaded report",async()=>{
   const page=await readFile(new URL("../app/super-admin/page.tsx",import.meta.url),"utf8");
-  const report=source=>source.slice(source.indexOf("    if (!reportPending || loading || !selectedPlanWeek)"),source.indexOf("  const openAchievementReport"));
+  const report=source=>{
+    // Only the verified-week guard/dependency changed; freeze all report math.
+    const normalized=source.replaceAll('loading || loadedReportWeek !== selectedPlanWeekId || !selectedPlanWeek','loading || !selectedPlanWeek')
+      .replace('loading, loadedReportWeek, planEntrySummaries','loading, planEntrySummaries');
+    return normalized.slice(normalized.indexOf("    if (!reportPending || loading || !selectedPlanWeek)"),normalized.indexOf("  const openAchievementReport"));
+  };
   // Frozen after comparing against the pre-change report; works in shallow CI checkouts too.
   assert.equal(createHash("sha256").update(report(page).replace(/\r\n/g,"\n")).digest("hex"),"3015c74b600b33c39877024415f9b6eb9ed0b68ccce9079dd39413a310bf7c5c");
   assert.match(page,/const schoolWeeklyPublicationPercent = publicationSummary.percent/);
-  assert.equal((page.match(/>\{schoolWeeklyPublicationPercent\}%<\//g)||[]).length,2);
+  assert.equal((page.match(/>\{schoolWeeklyPublicationPercent\}%<\//g)||[]).length,1);
+  assert.match(page,/reportReady \? `\$\{schoolWeeklyPublicationPercent\}%` : "—"/);
+  assert.match(page,/if \(!reportPending \|\| loading \|\| loadedReportWeek !== selectedPlanWeekId \|\| !selectedPlanWeek\) return/);
   assert.doesNotMatch(page,/plan\?\.status === "published" && selectedPlanWeek\?\.parent_portal_visible/);
   assert.doesNotMatch(page,/Awaiting remaining approvals|This teacher\x27s plan is visible to families/);
   assert.match(page,/classApprovalLabel\(coverage.approvalState/);
