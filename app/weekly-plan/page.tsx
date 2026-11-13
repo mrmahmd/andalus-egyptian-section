@@ -19,6 +19,7 @@ type LiveQuiz = { course: string; date: string; details: string };
 type LiveHoliday = { day_of_week: number; title: string; note: string | null };
 type LiveDictation = { day: number; words: string[] };
 type PublishedEntry = {
+  teacher_id: string | null;
   day_of_week: number;
   period_number: number;
   classwork: string;
@@ -27,6 +28,7 @@ type PublishedEntry = {
   subjects: { parent_plan_name: string; name_en: string } | { parent_plan_name: string; name_en: string }[] | null;
 };
 type ParentTimetableSlot = {
+  teacher_id: string | null;
   day_of_week: number;
   period_number: number;
   requires_weekly_plan_submission: boolean;
@@ -170,10 +172,10 @@ export default function WeeklyPlanPage() {
         const supabase = getSupabasePublicClient();
         const [planResult, holidayResult, timetableResult] = await Promise.all([
         supabase.from("weekly_plans")
-        .select("plan_entries(day_of_week, period_number, classwork, homework, classera_notes, subjects(parent_plan_name, name_en)), plan_quizzes(quiz_date, details, subjects(parent_plan_name)), plan_notes(note_text)")
+        .select("plan_entries(day_of_week, period_number, teacher_id, classwork, homework, classera_notes, subjects(parent_plan_name, name_en)), plan_quizzes(quiz_date, details, subjects(parent_plan_name)), plan_notes(note_text, teacher_id)")
         .eq("id", selectedPlan.id).eq("status", "published").maybeSingle(),
         supabase.from("weekly_plan_holidays").select("day_of_week, title, note").eq("week_id", selectedPlan.weekId),
-        supabase.from("timetable_slots").select("day_of_week, period_number, requires_weekly_plan_submission, subjects(code, parent_plan_name, name_en, include_in_weekly_plan)").eq("class_id", selectedPlan.classId).order("day_of_week").order("period_number"),
+        supabase.from("timetable_slots").select("day_of_week, period_number, teacher_id, requires_weekly_plan_submission, subjects(code, parent_plan_name, name_en, include_in_weekly_plan)").eq("class_id", selectedPlan.classId).order("day_of_week").order("period_number"),
         ]);
         if (planResult.error) throw planResult.error;
         if (holidayResult.error) throw holidayResult.error;
@@ -187,7 +189,41 @@ export default function WeeklyPlanPage() {
       const holidayRows = (holidayData ?? []) as LiveHoliday[];
       const publishedEntryByPeriod = new Map(entries.map((entry) => [`${entry.day_of_week}-${entry.period_number}`, entry]));
       const parentSlots = (timetableData ?? []) as unknown as ParentTimetableSlot[];
+      const hasFunTrip = selectedPlan.weekNumber === 11 && selectedPlan.startsOn === "2026-11-15"
+        && selectedPlan.grade >= 1 && selectedPlan.grade <= 6;
+      const tripDay = hasFunTrip ? (selectedPlan.grade <= 3 ? 1 : 2) : null;
+      const displayHolidays = holidayRows.filter((holiday) => holiday.day_of_week !== tripDay);
+      if (tripDay !== null) displayHolidays.push({ day_of_week: tripDay, title: "Fun trip", note: null });
+      const blockedDays = new Set(displayHolidays.map((holiday) => holiday.day_of_week));
+      const faridTeacherId = "f81f4543-3cdf-4131-91b4-f4a17204f139";
+      const isThursdayQuiz = (slot: ParentTimetableSlot) => tripDay !== null
+        && selectedPlan.grade === 5 && selectedPlan.section === "B"
+        && slot.day_of_week === 4 && slot.period_number === 7
+        && one(slot.subjects)?.code === "english_al" && slot.teacher_id === faridTeacherId;
+
+      // Each official slot can take one written lesson of the same subject and teacher.
+      const pending = new Map<string, PublishedEntry[]>();
+      const dictationDestinations = new Map<string, number>();
+      const slotKey = (slot: ParentTimetableSlot) => `${slot.day_of_week}-${slot.period_number}`;
+      const streamKey = (slot: ParentTimetableSlot) => `${one(slot.subjects)?.code}:${slot.teacher_id}`;
+      if (tripDay !== null) {
+        for (const slot of parentSlots) {
+          const entry = publishedEntryByPeriod.get(slotKey(slot));
+          const subject = one(slot.subjects);
+          if (slot.day_of_week < tripDay || slot.day_of_week >= 4 || !slot.teacher_id
+            || holidayRows.some((holiday) => holiday.day_of_week === slot.day_of_week)
+            || !slot.requires_weekly_plan_submission || !subject?.include_in_weekly_plan || fixedLessonText[subject.code]
+            || !entry || entry.teacher_id !== slot.teacher_id || one(entry.subjects)?.name_en !== subject.name_en) continue;
+          if (selectedPlan.grade === 4 && slot.day_of_week === 2 && entry.teacher_id === faridTeacherId) continue;
+          if (![entry.classwork, entry.homework, entry.classera_notes].some((field) => field?.trim())) continue;
+          const key = streamKey(slot);
+          const queue = pending.get(key) ?? [];
+          queue.push(entry);
+          pending.set(key, queue);
+        }
+      }
       const lessonRows = parentSlots.flatMap((slot) => {
+        if (blockedDays.has(slot.day_of_week)) return [];
         if (isOctoberExam(selectedPlan.weekNumber, slot.period_number, slot.day_of_week, selectedPlan.grade)) return [{ day_of_week: slot.day_of_week, period_number: slot.period_number, course: "Examination", classwork: octoberExamText, homework: "—", notes: "—" }];
         const previousPosition = gradeEightHistoricalCounterpart(selectedPlan.grade, selectedPlan.section, selectedPlan.weekNumber, slot.day_of_week, slot.period_number);
         const previous = previousPosition && parentSlots.find((candidate) => candidate.day_of_week === previousPosition[0] && candidate.period_number === previousPosition[1]);
@@ -196,47 +232,44 @@ export default function WeeklyPlanPage() {
         const fixed = fixedLessonText[subject.code];
         if (fixed) return [{ day_of_week: slot.day_of_week, period_number: slot.period_number, course: fixed.course, classwork: fixed.classwork, homework: "—", notes: "—" }];
         if (!slot.requires_weekly_plan_submission || !subject.include_in_weekly_plan) return [];
-        const publishedEntry = publishedEntryByPeriod.get(`${slot.day_of_week}-${slot.period_number}`);
+        if (isThursdayQuiz(slot)) {
+          return [{ day_of_week: 4, period_number: 7, course: "English AL", classwork: "Quiz", homework: "", notes: "" }];
+        }
+        const isRescheduled = tripDay !== null && slot.day_of_week > tripDay;
+        let publishedEntry = publishedEntryByPeriod.get(slotKey(slot));
+        if (isRescheduled) {
+          const queue = pending.get(streamKey(slot));
+          const next = queue?.[0];
+          publishedEntry = undefined;
+          if (next && (next.day_of_week < slot.day_of_week
+            || (next.day_of_week === slot.day_of_week && next.period_number <= slot.period_number))) {
+            publishedEntry = queue?.shift();
+            if (subject.code === "english_al" || subject.code === "english_ol") {
+              const key = `${next.teacher_id}:${next.day_of_week}`;
+              if (!dictationDestinations.has(key)) dictationDestinations.set(key, slot.day_of_week);
+            }
+          }
+        }
         const publishedSubject = publishedEntry ? one(publishedEntry.subjects) : null;
         return [{
           day_of_week: slot.day_of_week,
           period_number: slot.period_number,
-          course: publishedSubject?.parent_plan_name || publishedSubject?.name_en || subject.parent_plan_name || subject.name_en || "Subject",
-          classwork: publishedEntry?.classwork || "Plan not published",
+          course: (!isRescheduled && (publishedSubject?.parent_plan_name || publishedSubject?.name_en)) || subject.parent_plan_name || subject.name_en || "Subject",
+          classwork: publishedEntry?.classwork || (isRescheduled ? "—" : "Plan not published"),
           homework: publishedEntry?.homework || "—",
           notes: publishedEntry?.classera_notes || "—",
         }];
       });
-      // For this trip, move complete timetable days together, including each
-      // lesson's subject, classwork, homework, and Classera notes.
-      const hasFunTrip = selectedPlan.weekNumber === 11 && selectedPlan.startsOn === "2026-11-15"
-        && selectedPlan.grade >= 1 && selectedPlan.grade <= 6;
-      const tripDay = hasFunTrip ? (selectedPlan.grade <= 3 ? 1 : 2) : null;
-      const displayDay = (day: number) => tripDay === null || day < tripDay ? day : day < 4 ? day + 1 : null;
-      const displayHolidays = holidayRows.flatMap((holiday) => {
-        const day = displayDay(holiday.day_of_week);
-        return day === null ? [] : [{ ...holiday, day_of_week: day }];
-      });
-      if (tripDay !== null) displayHolidays.push({ day_of_week: tripDay, title: "Fun trip", note: null });
-      const blockedDays = new Set(displayHolidays.map((holiday) => holiday.day_of_week));
-      const hasGrade5BThursdayQuiz = hasFunTrip && selectedPlan.grade === 5 && selectedPlan.section === "B";
-      setLiveLessons(lessonRows.flatMap((lesson) => {
-        if (hasGrade5BThursdayQuiz && lesson.day_of_week === 3) return [];
-        const day = hasGrade5BThursdayQuiz && lesson.day_of_week === 4 ? 4 : displayDay(lesson.day_of_week);
-        if (day === null || blockedDays.has(day)) return [];
-        const quizSlot = hasGrade5BThursdayQuiz && day === 4 && lesson.period_number === 7
-          && one(parentSlots.find((slot) => slot.day_of_week === 4 && slot.period_number === 7)?.subjects ?? null)?.code === "english_al";
-        if (quizSlot) return [{ ...lesson, course: "English AL", classwork: "Quiz", homework: "", notes: "" }];
-        return [{ ...lesson, day_of_week: day }];
-      }).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number));
+      setLiveLessons(lessonRows.sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number));
       const quizzes = (data?.plan_quizzes ?? []) as unknown as { quiz_date: string | null; details: string; subjects: { parent_plan_name: string } | { parent_plan_name: string }[] | null }[];
       setLiveQuizzes(quizzes.filter((quiz) => Boolean(quiz.details)).map((quiz) => ({ course: one(quiz.subjects)?.parent_plan_name ?? "Subject", date: quiz.quiz_date ?? "", details: quiz.details })));
-      const dictations = ((data?.plan_notes ?? []) as unknown as { note_text: string }[])
-        .map((note) => parseEnglishDictation(note.note_text))
-        .filter((dictation): dictation is LiveDictation => Boolean(dictation))
-        .flatMap((dictation) => {
-          const day = displayDay(dictation.day);
-          return day === null ? [] : [{ ...dictation, day }];
+      const dictations = ((data?.plan_notes ?? []) as unknown as { note_text: string; teacher_id: string | null }[])
+        .flatMap((note) => {
+          const dictation = parseEnglishDictation(note.note_text);
+          if (!dictation) return [];
+          if (tripDay === null || dictation.day < tripDay) return [dictation];
+          const day = dictationDestinations.get(`${note.teacher_id}:${dictation.day}`);
+          return day === undefined ? [] : [{ ...dictation, day }];
         })
         .sort((a, b) => a.day - b.day);
       setLiveDictations(dictations);
