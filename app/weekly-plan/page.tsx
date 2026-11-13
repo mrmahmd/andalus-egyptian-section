@@ -211,12 +211,13 @@ export default function WeeklyPlanPage() {
       // lesson's subject, classwork, homework, and Classera notes.
       const hasFunTrip = selectedPlan.weekNumber === 11 && selectedPlan.startsOn === "2026-11-15"
         && selectedPlan.grade >= 1 && selectedPlan.grade <= 6;
-      const displayDay = (day: number) => hasFunTrip && day > 0 ? (day < 4 ? day + 1 : null) : day;
+      const tripDay = hasFunTrip ? (selectedPlan.grade <= 3 ? 1 : 2) : null;
+      const displayDay = (day: number) => tripDay === null || day < tripDay ? day : day < 4 ? day + 1 : null;
       const displayHolidays = holidayRows.flatMap((holiday) => {
         const day = displayDay(holiday.day_of_week);
         return day === null ? [] : [{ ...holiday, day_of_week: day }];
       });
-      if (hasFunTrip) displayHolidays.push({ day_of_week: 1, title: "Fun trip", note: null });
+      if (tripDay !== null) displayHolidays.push({ day_of_week: tripDay, title: "Fun trip", note: null });
       const blockedDays = new Set(displayHolidays.map((holiday) => holiday.day_of_week));
       setLiveLessons(lessonRows.flatMap((lesson) => {
         const day = displayDay(lesson.day_of_week);
