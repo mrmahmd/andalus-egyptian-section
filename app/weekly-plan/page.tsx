@@ -219,9 +219,15 @@ export default function WeeklyPlanPage() {
       });
       if (tripDay !== null) displayHolidays.push({ day_of_week: tripDay, title: "Fun trip", note: null });
       const blockedDays = new Set(displayHolidays.map((holiday) => holiday.day_of_week));
+      const hasGrade5BThursdayQuiz = hasFunTrip && selectedPlan.grade === 5 && selectedPlan.section === "B";
       setLiveLessons(lessonRows.flatMap((lesson) => {
-        const day = displayDay(lesson.day_of_week);
-        return day === null || blockedDays.has(day) ? [] : [{ ...lesson, day_of_week: day }];
+        if (hasGrade5BThursdayQuiz && lesson.day_of_week === 3) return [];
+        const day = hasGrade5BThursdayQuiz && lesson.day_of_week === 4 ? 4 : displayDay(lesson.day_of_week);
+        if (day === null || blockedDays.has(day)) return [];
+        const quizSlot = hasGrade5BThursdayQuiz && day === 4 && lesson.period_number === 7
+          && one(parentSlots.find((slot) => slot.day_of_week === 4 && slot.period_number === 7)?.subjects ?? null)?.code === "english_al";
+        if (quizSlot) return [{ ...lesson, course: "English AL", classwork: "Quiz", homework: "", notes: "" }];
+        return [{ ...lesson, day_of_week: day }];
       }).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number));
       const quizzes = (data?.plan_quizzes ?? []) as unknown as { quiz_date: string | null; details: string; subjects: { parent_plan_name: string } | { parent_plan_name: string }[] | null }[];
       setLiveQuizzes(quizzes.filter((quiz) => Boolean(quiz.details)).map((quiz) => ({ course: one(quiz.subjects)?.parent_plan_name ?? "Subject", date: quiz.quiz_date ?? "", details: quiz.details })));
