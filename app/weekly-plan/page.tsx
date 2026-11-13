@@ -207,15 +207,33 @@ export default function WeeklyPlanPage() {
           notes: publishedEntry?.classera_notes || "—",
         }];
       });
-      setLiveLessons(lessonRows.filter((lesson) => !holidayRows.some((holiday) => holiday.day_of_week === lesson.day_of_week)).concat(holidayRows.map((holiday) => ({ day_of_week: holiday.day_of_week, period_number: 0, course: holiday.title, classwork: holiday.note || "No classes today.", homework: "—", notes: "School-wide holiday" }))).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number));
+      // For this trip, move complete timetable days together, including each
+      // lesson's subject, classwork, homework, and Classera notes.
+      const hasFunTrip = selectedPlan.weekNumber === 11 && selectedPlan.startsOn === "2026-11-15"
+        && selectedPlan.grade >= 1 && selectedPlan.grade <= 6;
+      const displayDay = (day: number) => hasFunTrip && day > 0 ? (day < 4 ? day + 1 : null) : day;
+      const displayHolidays = holidayRows.flatMap((holiday) => {
+        const day = displayDay(holiday.day_of_week);
+        return day === null ? [] : [{ ...holiday, day_of_week: day }];
+      });
+      if (hasFunTrip) displayHolidays.push({ day_of_week: 1, title: "Fun trip", note: null });
+      const blockedDays = new Set(displayHolidays.map((holiday) => holiday.day_of_week));
+      setLiveLessons(lessonRows.flatMap((lesson) => {
+        const day = displayDay(lesson.day_of_week);
+        return day === null || blockedDays.has(day) ? [] : [{ ...lesson, day_of_week: day }];
+      }).sort((a, b) => a.day_of_week - b.day_of_week || a.period_number - b.period_number));
       const quizzes = (data?.plan_quizzes ?? []) as unknown as { quiz_date: string | null; details: string; subjects: { parent_plan_name: string } | { parent_plan_name: string }[] | null }[];
       setLiveQuizzes(quizzes.filter((quiz) => Boolean(quiz.details)).map((quiz) => ({ course: one(quiz.subjects)?.parent_plan_name ?? "Subject", date: quiz.quiz_date ?? "", details: quiz.details })));
       const dictations = ((data?.plan_notes ?? []) as unknown as { note_text: string }[])
         .map((note) => parseEnglishDictation(note.note_text))
         .filter((dictation): dictation is LiveDictation => Boolean(dictation))
+        .flatMap((dictation) => {
+          const day = displayDay(dictation.day);
+          return day === null ? [] : [{ ...dictation, day }];
+        })
         .sort((a, b) => a.day - b.day);
       setLiveDictations(dictations);
-      setLiveHolidays((holidayData ?? []) as LiveHoliday[]);
+      setLiveHolidays(displayHolidays);
       } catch (error) {
         if (cancelled) return;
         setLiveLessons([]);
